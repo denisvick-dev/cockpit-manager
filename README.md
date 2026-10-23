@@ -32,6 +32,7 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 | `dados2026.py` | A DB F1 2026: 11 equipes, 49 pilotos, 10 motores, calendário de 24 etapas |
 | `dbs.py` | Sistema de DBs: F1, **Fórmula Indy** (25 carros, 18 etapas, Indy 500), **Stock Car** (34 SUVs V8, sprint+principal), **DTM** (GT3, 2 corridas/etapa) + validação de DBs personalizadas |
 | `editor_db.py` | Editor de DBs na tela inicial: edite equipes/pilotos/calendário/fornecedores, valide, baixe/compartilhe o `.json` e jogue na hora |
+| `bandeiras.py` + `assets/bandeiras/` | Bandeiras dos países como **imagens PNG locais** (o Windows não renderiza emoji de bandeira!) — 40 países, fonte: flagcdn.com (domínio público) |
 | `minhas_dbs/` | (criada ao salvar) Suas DBs personalizadas em `.json` viram opções permanentes na lista de DBs |
 | `.streamlit/config.toml` | Tema escuro estilo F1 |
 | `requirements.txt` | `streamlit` + `pandas` |
