@@ -15,6 +15,7 @@ Melhorias em relação às limitações apontadas pela comunidade:
 """
 import copy
 import random
+from typing import cast
 
 import dados2026 as db
 
@@ -37,16 +38,20 @@ def fmt_dinheiro_m(valor_m):
     return f"US$ {valor_m:,.1f} mi".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-def equipe(game, equipe_id):
-    return next((e for e in game["equipes"] if e["id"] == equipe_id), None)
+def equipe(game, equipe_id) -> dict:
+    """Equipe pelo id. Os ids do jogo vêm validados pelas DBs (ausência = bug de
+    dados), então os chamadores tratam o retorno como dict — verificado em runtime."""
+    return cast(dict, next((e for e in game["equipes"] if e["id"] == equipe_id), None))
 
 
-def piloto(game, piloto_id):
-    return next((p for p in game["pilotos"] if p["id"] == piloto_id), None)
+def piloto(game, piloto_id) -> dict:
+    """Piloto pelo id (mesma premissa de equipe)."""
+    return cast(dict, next((p for p in game["pilotos"] if p["id"] == piloto_id), None))
 
 
-def motor(game, motor_id):
-    return next((m for m in game["motores"] if m["id"] == motor_id), None)
+def motor(game, motor_id) -> dict:
+    """Motor/fornecedor pelo id (mesma premissa de equipe)."""
+    return cast(dict, next((m for m in game["motores"] if m["id"] == motor_id), None))
 
 
 PAPEIS_TITULARES = ("P1", "P2", "P3", "P4")

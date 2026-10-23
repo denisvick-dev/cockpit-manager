@@ -23,7 +23,7 @@ MARGEM = 4                        # respiro em volta da bandeira
 
 def padronizar(img):
     img = img.convert("RGBA")
-    img.thumbnail((LARGURA - 2 * MARGEM, ALTURA - 2 * MARGEM), Image.LANCZOS)
+    img.thumbnail((LARGURA - 2 * MARGEM, ALTURA - 2 * MARGEM), Image.Resampling.LANCZOS)
     canvas = Image.new("RGBA", (LARGURA, ALTURA), (0, 0, 0, 0))
     x = (LARGURA - img.width) // 2
     y = (ALTURA - img.height) // 2

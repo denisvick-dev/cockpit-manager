@@ -8,6 +8,7 @@ validar, baixar em .json, salvar na pasta minhas_dbs/ e jogar na hora.
 """
 import copy
 import json
+from typing import cast
 
 import pandas as pd
 import streamlit as st
@@ -243,7 +244,7 @@ def aba_editor_db(dbs_disponiveis):
                 st.error("❌ " + e)
 
     if ss.get("db_validada"):
-        dados = ss.db_validada
+        dados = cast(dict, ss.db_validada)  # guardado pelo `if` acima (st.session_state)
         a1, a2 = st.columns(2)
         a1.download_button("⬇️ Baixar DB (.json) para compartilhar",
                            json.dumps(dados, ensure_ascii=False, indent=1),

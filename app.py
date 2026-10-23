@@ -333,9 +333,10 @@ def tela_inicial():
         nome_custom = c1.text_input("Nome da equipe", "Minha Equipe")
         pais_custom = c2.text_input("País sede", "Brasil")
         cor_custom = c1.color_picker("Cor do carro", "#009C3B")
-        fornecedores_disp = [m for m in sel_db["motores"] if not m.get("proprio_de") and m["id"] != "fia"]
+        fornecedores_disp: list[dict] = [m for m in sel_db["motores"] if not m.get("proprio_de") and m["id"] != "fia"]
         mot_custom = c2.selectbox(f"{meta.get('rotulo_fornecedor', 'Motor')}", fornecedores_disp,
                                   format_func=lambda m: f"{m['nome']} — desempenho {m['potencia']} · US$ {m['preco']:.0f} mi/ano")
+        assert mot_custom is not None  # selectbox com lista não vazia sempre escolhe um valor
         perfil = st.radio("Perfil do projeto", ["🥾 Estreante pé-rapado", "💼 Investidor sério", "🏭 Projeto de montadora"],
                           horizontal=True)
         perfil_map = {"🥾 Estreante pé-rapado": (70.0, 55, 35), "💼 Investidor sério": (140.0, 62, 50),
@@ -735,11 +736,12 @@ def pagina_pilotos(game):
     with tab2:
         st.caption("Como no original: você negocia **durante** a temporada, mas o piloto só veste seu macacão "
                    "na **próxima**. Salários são por corrida.")
-        ativos = [p for p in game["pilotos"] if not p["aposentado"]]
+        ativos: list[dict] = [p for p in game["pilotos"] if not p["aposentado"]]
         ativos.sort(key=lambda p: -sim.overall(p))
         sel = st.selectbox("Piloto", ativos,
                            format_func=lambda p: f"[{bnd.codigo_texto(p['bandeira'])}] {p['nome']} — ovr {sim.overall(p)} · {p['idade']} anos · "
                                                  f"{(sim.equipe(game, p['equipe_id'])['nome'] if p['equipe_id'] else 'LIVRE')} ({p['papel']})")
+        assert sel is not None  # selectbox com lista não vazia sempre escolhe um valor
         a = sel["atributos"]
         st.bar_chart(pd.Series({db.ATRIBUTOS[k]: v for k, v in a.items()}))
         st.caption(f"Auge: {sel['auge_inicio']}–{sel['auge_fim']} anos (platô) · Potencial: {sel['potencial']} · "
@@ -795,9 +797,10 @@ def pagina_motores(game):
                 "Seu motor evolui um pouco a cada temporada junto com o investimento da fábrica.")
     else:
         st.subheader(f"🔁 Contrato para {game['ano'] + 1}")
-        disponiveis = [m for m in game["motores"] if not m["proprio_de"] and m["id"] != "fia"]
+        disponiveis: list[dict] = [m for m in game["motores"] if not m["proprio_de"] and m["id"] != "fia"]
         escolhido = st.selectbox("Próximo motor", disponiveis,
                                  format_func=lambda m: f"{m['nome']} — pot {m['potencia']} · US$ {m['preco']:.0f} mi/ano")
+        assert escolhido is not None  # selectbox com lista não vazia sempre escolhe um valor
         if game["motor_proxima"]:
             st.success(f"Acordo fechado: motor **{sim.motor(game, game['motor_proxima'])['nome']}** em {game['ano'] + 1} "
                        f"(o valor é debitado na virada da temporada).")
