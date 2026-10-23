@@ -13,6 +13,8 @@ import pandas as pd
 import streamlit as st
 
 import dados2026 as db
+import dbs as dbsmod
+import editor_db
 import simulacao as sim
 
 st.set_page_config(page_title="Cockpit Manager — F1 2026", page_icon="🏎️", layout="wide")
@@ -65,95 +67,160 @@ def mostrar_flash():
 
 
 # ======================================================================
-#  TELA INICIAL
+#  TELA INICIAL (seleção de DB, equipe, tamanho do grid, editor de DBs)
 # ======================================================================
+def dbs_disponiveis():
+    """DBs embutidas + personalizadas salvas em minhas_dbs/ + validadas no editor."""
+    disp = dbsmod.dbs_embutidas()
+    personalizadas, _ = dbsmod.carregar_dbs_personalizadas()
+    disp.update(personalizadas)
+    if st.session_state.get("db_validada"):
+        dv = st.session_state.db_validada
+        disp[f"custom:editor:{dv['meta']['id']}"] = dv
+    saida = {}
+    for chave, dados in disp.items():
+        norm, erros, _ = dbsmod.validar_e_normalizar(dados)
+        if norm:
+            saida[chave] = norm
+    return saida
+
+
+def _slider_grid(sel_db, key_suffix=""):
+    natural = dbsmod.grid_natural(sel_db)
+    maximo = dbsmod.grid_maximo(sel_db)
+    minimo = 22 if maximo >= 22 else max(4, len(sel_db["equipes"]))
+    padrao = max(minimo, min(maximo, natural))
+    return st.slider(
+        "👥 Pilotos no grid (titulares) — começa em 22", minimo, maximo, padrao,
+        help=f"Grid natural desta DB: {natural}. Acima disso, as equipes inscrevem 3º e 4º carros "
+             f"com reservas e jovens do mercado; abaixo, os carros excedentes sao cortados.",
+        key=f"qtd_grid{key_suffix}")
+
+
 def tela_inicial():
     st.title("🏎️ Cockpit Manager — Edição Streamlit")
-    st.subheader("DB F1 2026 · O 'Brasfoot da Fórmula 1' de volta ao navegador")
+    st.subheader("F1 · Fórmula Indy · Stock Car · DTM · suas próprias DBs")
     st.caption("Remake de fã inspirado no *Cockpit Manager '14* (Cartola Games) e na "
                "[DB F1 2026 by Jonathan Daniel]"
                "(http://cockpitmanager.blogspot.com/2026/05/db-f1-2026-v10-by-jonathan-daniel.html). "
-               "Contrate pilotos, desenvolva o carro, negocie motores e patrocinadores, "
-               "acerte a estratégia de pneus e paradas — e não deixe o caixa zerar, "
-               "senão a FIA te impõe o motor de 50% de potência!")
+               "Escolha uma **base de dados (DB)**, a sua equipe e **quantos pilotos terá o grid** — "
+               "ou crie a sua própria categoria na aba 🛠️ **Criar / editar DB**.")
 
-    tab_equipe, tab_criar, tab_load = st.tabs(["🏁 Escolher uma equipe", "🆕 Criar minha equipe", "💾 Carregar save"])
+    disp = dbs_disponiveis()
+    db_chave = st.selectbox(
+        "📚 Base de dados (DB)", list(disp.keys()),
+        format_func=lambda k: f"{disp[k]['meta'].get('nome', k)} — {disp[k]['meta'].get('categoria', '')}")
+    sel_db = disp[db_chave]
+    meta = sel_db["meta"]
+    ci1, ci2, ci3, ci4 = st.columns(4)
+    ci1.metric("Categoria", meta.get("categoria", "—"))
+    ci2.metric("Ano inicial", meta.get("ano", "—"))
+    ci3.metric("Equipes", len(sel_db["equipes"]))
+    ci4.metric("Grid natural / Etapas", f"{dbsmod.grid_natural(sel_db)} pilotos · {len(sel_db['calendario'])} etapas")
+    if meta.get("descricao"):
+        st.info(meta["descricao"])
+    tem_cancelavel = any(e.get("cancelavel") for e in sel_db["calendario"])
+
+    tab_equipe, tab_criar, tab_editor, tab_load = st.tabs(
+        ["🏁 Escolher uma equipe", "🆕 Criar minha equipe", "🛠️ Criar / editar DB", "💾 Carregar save"])
 
     with tab_equipe:
-        nomes = {e["id"]: f"{e['bandeira']} {e['nome']} — carro {e['nivel_carro']} · caixa {sim.fmt_dinheiro_m(e['caixa'])}"
-                 for e in db.EQUIPES}
-        eq_id = st.selectbox("Sua equipe para 2026", list(nomes.keys()), format_func=lambda x: nomes[x])
-        eq = next(e for e in db.EQUIPES if e["id"] == eq_id)
-        mot = next(m for m in db.MOTORES if m["id"] == eq["motor_id"])
+        nomes = {e["id"]: f"{e['bandeira']} {e['nome']} — carro {e['nivel_carro']:.0f} · caixa {sim.fmt_dinheiro_m(e['caixa'])}"
+                 for e in sel_db["equipes"]}
+        eq_id = st.selectbox(f"Sua equipe para {meta.get('ano', '')}", list(nomes.keys()), format_func=lambda x: nomes[x])
+        eq = next(e for e in sel_db["equipes"] if e["id"] == eq_id)
+        mot = next((m for m in sel_db["motores"] if m["id"] == eq["motor_id"]), sel_db["motores"][0])
+        rot = meta.get("rotulo_fornecedor", "Motor")
         st.markdown(f'<div class="team-bar" style="background:linear-gradient(90deg,{eq["cor"]},#151B2D)">'
                     f'<h2>{eq["bandeira"]} {eq["nome_completo"]}</h2>'
-                    f'<p>Motor {"próprio" if eq["motor_proprio"] else "cliente"}: <b>{mot["nome"]}</b> '
-                    f'(potência {mot["potencia"]}) · Títulos de construtores: {eq["titulos_construtores"]} · '
-                    f'Prestígio: {eq["prestigio"]}</p></div>', unsafe_allow_html=True)
-        quad = [p for p in db.PILOTOS if p["equipe_id"] == eq_id]
+                    f'<p>{rot} {"próprio" if eq.get("motor_proprio") else "cliente"}: <b>{mot["nome"]}</b> '
+                    f'(desempenho {mot["potencia"]}) · Prestígio: {eq["prestigio"]}</p></div>', unsafe_allow_html=True)
+        quad = sorted([p for p in sel_db["pilotos"] if p["equipe_id"] == eq_id],
+                      key=lambda p: {"P1": 0, "P2": 1, "P3": 2, "P4": 3, "teste": 4}.get(p["papel"], 5))
         st.dataframe(pd.DataFrame([{
             "Piloto": f"{p['bandeira']} {p['nome']}", "#": p["numero"], "Idade": p["idade"],
-            "Função": {"P1": "1º piloto", "P2": "2º piloto", "teste": "Testes/reserva"}[p["papel"]],
+            "Função": {"P1": "1o piloto", "P2": "2o piloto", "P3": "3o piloto", "P4": "4o piloto", "teste": "Testes/reserva"}.get(p["papel"], p["papel"]),
             "Overall": sim.overall(p), "Salário/corrida": sim.fmt_dinheiro_k(p["salario_corrida"]),
         } for p in quad]), hide_index=True, width="stretch")
 
+        qtd_grid = _slider_grid(sel_db)
         c1, c2, c3 = st.columns(3)
-        incluir = c1.checkbox("Calendário com 24 etapas (inclui Bahrein e Arábia Saudita)", value=True,
-                              help="Na DB original as 24 etapas foram mantidas mesmo com os cancelamentos de 2026.")
-        imp = c2.slider("Importância do carro (%)", 30, 90, 60, 5,
-                        help="Padrão 60% das DBs da comunidade — reflete a F1 moderna.") / 100.0
+        incluir = True
+        if tem_cancelavel:
+            incluir = c1.checkbox("Calendário completo (inclui etapas canceláveis da DB)", value=True)
+        imp = c2.slider("Importância do carro (%)", 30, 90,
+                        int(float(meta.get("importancia_carro_sugerida", 0.6)) * 100), 5,
+                        help="Sugerido pela DB: F1 60%, Indy 45%, Stock 40%, DTM 50%.") / 100.0
         semente = c3.number_input("semente (aleatoriedade)", 1, 99999, 2026)
         if st.button("🚥 Iniciar carreira", type="primary", width="stretch"):
-            st.session_state.game = sim.criar_novo_jogo(eq_id, int(semente), incluir, imp)
+            st.session_state.game = sim.criar_novo_jogo(eq_id, int(semente), incluir, imp,
+                                                        db_dados=sel_db, qtd_pilotos=qtd_grid)
             st.session_state.fds = None
-            flash("success", f"Bem-vindo ao comando da {eq['nome']}! Primeira parada: GP da Austrália 🇦🇺")
+            st.session_state.menu = MENUS[0]
+            flash("success", f"Bem-vindo ao comando da {eq['nome']}! Primeira parada: "
+                             f"{sel_db['calendario'][0]['gp']}. Grid com {qtd_grid} pilotos.")
             st.rerun()
 
     with tab_criar:
-        st.write("Entre como a **12ª equipe** do grid, do seu jeito — como no modo 'nova equipe' do original.")
+        st.write(f"Entre como **equipe extra** no grid da DB **{meta.get('nome')}**, do seu jeito — "
+                 f"como no modo 'nova equipe' do original. O grid terá o tamanho natural da DB + os seus 2 carros.")
         c1, c2 = st.columns(2)
-        nome_custom = c1.text_input("Nome da equipe", "Minha Equipe F1")
+        nome_custom = c1.text_input("Nome da equipe", "Minha Equipe")
         pais_custom = c2.text_input("País sede", "Brasil")
         cor_custom = c1.color_picker("Cor do carro", "#009C3B")
-        motores_disp = [m for m in db.MOTORES if not m["proprio_de"] and m["id"] != "fia"]
-        mot_custom = c2.selectbox("Motor (fornecedores independentes/clientes)", motores_disp,
-                                  format_func=lambda m: f"{m['nome']} — potência {m['potencia']} · US$ {m['preco']:.0f} mi/ano")
+        fornecedores_disp = [m for m in sel_db["motores"] if not m.get("proprio_de") and m["id"] != "fia"]
+        mot_custom = c2.selectbox(f"{meta.get('rotulo_fornecedor', 'Motor')}", fornecedores_disp,
+                                  format_func=lambda m: f"{m['nome']} — desempenho {m['potencia']} · US$ {m['preco']:.0f} mi/ano")
         perfil = st.radio("Perfil do projeto", ["🥾 Estreante pé-rapado", "💼 Investidor sério", "🏭 Projeto de montadora"],
                           horizontal=True)
         perfil_map = {"🥾 Estreante pé-rapado": (70.0, 55, 35), "💼 Investidor sério": (140.0, 62, 50),
                       "🏭 Projeto de montadora": (190.0, 70, 60)}
         caixa_c, carro_c, prest_c = perfil_map[perfil]
-        livres = [p for p in db.PILOTOS if p["papel"] == "livre"]
-        fmt_p = lambda pid: next(f"{p['bandeira']} {p['nome']} (ovr {sim.overall(p)}, {p['idade']} anos)" for p in livres if p["id"] == pid)
-        ids_livres = [p["id"] for p in livres]
-        c1, c2, c3 = st.columns(3)
-        p1 = c1.selectbox("1º piloto", ids_livres, format_func=fmt_p)
-        p2 = c2.selectbox("2º piloto", ids_livres, index=1, format_func=fmt_p)
-        pt = c3.selectbox("Piloto de testes", ids_livres, index=2, format_func=fmt_p)
-        incluir_c = st.checkbox("24 etapas (Bahrein + Arábia Saudita)", value=True, key="inc_c")
-        if len({p1, p2, pt}) < 3:
-            st.error("Escolha três pilotos diferentes.")
-        elif st.button("🚥 Fundar equipe e iniciar", type="primary", width="stretch"):
-            eq_c = {"id": "custom", "nome": nome_custom, "nome_completo": nome_custom,
-                    "pais": pais_custom, "bandeira": "🏁", "cor": cor_custom,
-                    "motor_id": mot_custom["id"], "motor_proprio": False, "nivel_carro": carro_c,
-                    "confiabilidade": 84, "caixa": caixa_c, "prestigio": prest_c,
-                    "investimento_corrida": 1000, "titulos_construtores": 0,
-                    "patrocinador": "Lanchonetes BigBurguer"}
-            contr = [(pid, papel, sim.salario_esperado(None, next(p for p in livres if p["id"] == pid), papel))
-                     for pid, papel in [(p1, "P1"), (p2, "P2"), (pt, "teste")]]
-            st.session_state.game = sim.criar_novo_jogo("custom", 2026, incluir_c, 0.60,
-                                                        equipe_custom=eq_c, pilotos_custom=contr)
-            st.session_state.fds = None
-            flash("success", f"A {nome_custom} nasceu! 24 carros no grid em 2026. Boa sorte, chefe!")
-            st.rerun()
+        livres = [p for p in sel_db["pilotos"] if p["papel"] == "livre"]
+        if len(livres) < 3:
+            st.warning("Esta DB tem poucos pilotos livres para montar uma equipe nova. "
+                       "Edite a DB na aba 🛠️ e adicione pilotos 'livre', ou escolha outra DB.")
+        else:
+            fmt_p = lambda pid: next(f"{p['bandeira']} {p['nome']} (ovr {sim.overall(p)}, {p['idade']} anos)" for p in livres if p["id"] == pid)
+            ids_livres = [p["id"] for p in livres]
+            c1, c2, c3 = st.columns(3)
+            p1 = c1.selectbox("1o piloto", ids_livres, format_func=fmt_p)
+            p2 = c2.selectbox("2o piloto", ids_livres, index=min(1, len(ids_livres) - 1), format_func=fmt_p)
+            pt = c3.selectbox("Piloto de testes", ids_livres, index=min(2, len(ids_livres) - 1), format_func=fmt_p)
+            if len({p1, p2, pt}) < 3:
+                st.error("Escolha três pilotos diferentes.")
+            elif st.button("🚥 Fundar equipe e iniciar", type="primary", width="stretch"):
+                eq_c = {"id": "custom", "nome": nome_custom, "nome_completo": nome_custom,
+                        "pais": pais_custom, "bandeira": "🏁", "cor": cor_custom,
+                        "motor_id": mot_custom["id"], "motor_proprio": False, "nivel_carro": carro_c,
+                        "confiabilidade": 84, "caixa": caixa_c, "prestigio": prest_c,
+                        "investimento_corrida": 1000, "titulos_construtores": 0,
+                        "patrocinador": "Lanchonetes BigBurguer"}
+                contr = [(pid, papel, sim.salario_esperado(None, next(p for p in livres if p["id"] == pid), papel))
+                         for pid, papel in [(p1, "P1"), (p2, "P2"), (pt, "teste")]]
+                st.session_state.game = sim.criar_novo_jogo("custom", 2026, True,
+                                                            float(meta.get("importancia_carro_sugerida", 0.6)),
+                                                            equipe_custom=eq_c, pilotos_custom=contr,
+                                                            db_dados=sel_db)
+                st.session_state.fds = None
+                st.session_state.menu = MENUS[0]
+                flash("success", f"A {nome_custom} nasceu na {meta.get('categoria')}! Boa sorte, chefe!")
+                st.rerun()
+
+    with tab_editor:
+        editor_db.aba_editor_db(disp)
 
     with tab_load:
-        up = st.file_uploader("Arquivo de save (.json)", type="json")
+        up = st.file_uploader("Arquivo de save (.json)", type="json", key="load_save")
         if up and st.button("Carregar save", type="primary"):
             try:
                 dados = json.loads(up.read().decode("utf-8"))
                 assert "equipes" in dados and "pilotos" in dados and "ano" in dados
+                dados.setdefault("meta", {"nome": "Save (F1 2026)", "categoria": "Fórmula 1",
+                                          "rotulo_fornecedor": "Motor", "rotulo_corrida2": "Sprint",
+                                          "pontos_corrida": db.PONTOS_CORRIDA, "pontos_corrida2": db.PONTOS_SPRINT})
+                dados.setdefault("patrocinadores", db.PATROCINADORES)
+                dados.setdefault("calendario_base", dados.get("calendario", []))
                 st.session_state.game = dados
                 st.session_state.fds = None
                 flash("success", f"Save carregado: temporada {dados['ano']}, etapa {dados['rodada'] + 1}.")
@@ -165,13 +232,29 @@ def tela_inicial():
 # ======================================================================
 #  COMPONENTES REUTILIZÁVEIS
 # ======================================================================
+ROTULOS_PAPEL = {"P1": "1o piloto", "P2": "2o piloto", "P3": "3o piloto", "P4": "4o piloto",
+                 "teste": "Testes/reserva", "livre": "Livre"}
+
+
+def meta_game(game):
+    return (game or {}).get("meta") or {}
+
+
+def rot_fornecedor(game):
+    return meta_game(game).get("rotulo_fornecedor", "Motor")
+
+
+def rot_corrida2(game):
+    return meta_game(game).get("rotulo_corrida2") or "Sprint"
+
+
 def df_pilotos_equipe(game, equipe_id):
     linhas = []
     for p in sorted([x for x in game["pilotos"] if x["equipe_id"] == equipe_id and not x["aposentado"]],
-                    key=lambda x: {"P1": 0, "P2": 1, "teste": 2}.get(x["papel"], 3)):
+                    key=lambda x: {"P1": 0, "P2": 1, "P3": 2, "P4": 3, "teste": 4}.get(x["papel"], 5)):
         a = p["atributos"]
         linhas.append({"Piloto": f"{p['bandeira']} {p['nome']}", "#": p["numero"], "Idade": p["idade"],
-                       "Função": {"P1": "1º piloto", "P2": "2º piloto", "teste": "Testes"}[p["papel"]],
+                       "Função": ROTULOS_PAPEL.get(p["papel"], p["papel"]),
                        "Overall": sim.overall(p), "Velocidade": a["velocidade"], "Chuva": a["chuva"],
                        "Concentração": a["concentracao"], "Largada": a["largada"],
                        "Ultrapassagem": a["ultrapassagem"], "Acerto": a["acerto"], "Físico": a["fisico"],
@@ -232,7 +315,7 @@ def pagina_escritorio(game):
         st.subheader("🔧 Seu carro")
         st.write(f"Nível do chassi: **{eqj['nivel_carro']:.1f}**")
         st.progress(min(1.0, eqj["nivel_carro"] / 100))
-        st.write(f"Motor **{mot['nome']}** — potência **{mot['potencia']}** "
+        st.write(f"{rot_fornecedor(game)} **{mot['nome']}** — desempenho **{mot['potencia']}** "
                  f"{'(próprio)' if eqj.get('motor_proprio') else '(cliente)'}")
         st.progress(mot["potencia"] / 100)
         st.write(f"Desempenho combinado: **{sim.desempenho_carro(game, eqj):.1f}** · "
@@ -249,7 +332,7 @@ def pagina_escritorio(game):
             etapa = game["calendario"][game["rodada"]]
             st.subheader(f"📅 Próxima corrida: {etapa['bandeira']} {etapa['gp']}")
             st.write(f"**{etapa['circuito']}** — {etapa['pais']} · {etapa['voltas']} voltas · {etapa['data']}"
-                     + (" · ⚡ **fim de semana Sprint**" if etapa["sprint"] else ""))
+                     + (f" · ⚡ **fim de semana com {rot_corrida2(game)} + corrida principal**" if etapa["sprint"] else ""))
             st.write(f"🌧️ Chance histórica de chuva: **{etapa['chuva'] * 100:.0f}%** · "
                      f"Desgaste de pneus: **{etapa['desgaste']:.1f}/3** · "
                      f"Ultrapassagem: **{etapa['ultrap'] * 100:.0f}%**")
@@ -317,7 +400,7 @@ def pagina_corrida(game):
     c1.metric("Etapa", f"{game['rodada'] + 1}/{len(game['calendario'])} · {game['ano']}")
     c2.metric("Voltas", etapa["voltas"])
     c3.metric("Clima", "🌧️ Molhado" if molhado else "☀️ Seco")
-    c4.metric("Formato", "⚡ Sprint + GP" if etapa["sprint"] else "GP clássico")
+    c4.metric("Formato", f"⚡ {rot_corrida2(game)} + principal" if etapa["sprint"] else "Corrida única")
     st.caption(f"Características: peso do motor {etapa['potencia'] * 100:.0f}% · facilidade de ultrapassar "
                f"{etapa['ultrap'] * 100:.0f}% · desgaste {etapa['desgaste']:.1f}/3 → estratégia típica: "
                f"**{sim.paradas_ideais(etapa)} parada(s)**")
@@ -348,9 +431,9 @@ def pagina_corrida(game):
     # ---------------- sprint
     if etapa["sprint"]:
         st.divider()
-        st.subheader("⚡ Corrida Sprint (sábado)")
+        st.subheader(f"⚡ {rot_corrida2(game)} (primeira corrida do fim de semana)")
         if fds["sprint"] is None:
-            if st.button("▶️ Simular Sprint", width="stretch"):
+            if st.button(f"▶️ Simular {rot_corrida2(game)}", width="stretch"):
                 grid_s = sim.simular_classificacao(game, etapa, molhado)
                 est_s = {pid: {**e, "paradas": sim.paradas_ideais(etapa)} for pid, e in estrategias.items()}
                 res_s, ev_s = sim.simular_corrida(game, etapa, grid_s, est_s, molhado, sprint=True)
@@ -359,7 +442,7 @@ def pagina_corrida(game):
                 st.rerun()
         else:
             st.dataframe(df_resultado(game, fds["sprint"]), hide_index=True, width="stretch")
-            st.caption("Pontos da sprint (8-7-6-5-4-3-2-1) já somados ao campeonato.")
+            st.caption(f"Pontos da {rot_corrida2(game)} já somados ao campeonato.")
 
     # ---------------- classificação
     st.divider()
@@ -372,7 +455,7 @@ def pagina_corrida(game):
             flash("info", f"Pole position: {pole['bandeira']} {pole['nome']} ({fmt_tempo(fds['grid'][0]['tempo'])})")
             st.rerun()
         if etapa["sprint"] and fds["sprint"] is None:
-            st.caption("Primeiro simule a Sprint de sábado.")
+            st.caption(f"Primeiro simule a {rot_corrida2(game)}.")
     else:
         st.dataframe(df_grid(game, fds["grid"]), hide_index=True, width="stretch")
 
@@ -488,8 +571,9 @@ def pagina_pilotos(game):
         st.caption(f"Auge: {sel['auge_inicio']}–{sel['auge_fim']} anos (platô) · Potencial: {sel['potencial']} · "
                    f"Vitórias no save: {sel['vitorias']} · Títulos: {sel['titulos']}")
         with st.form("form_contrato"):
-            papel = st.radio("Papel oferecido", ["P1", "P2", "teste"], horizontal=True,
-                             format_func=lambda x: {"P1": "1º piloto", "P2": "2º piloto", "teste": "Testes/reserva"}[x])
+            _vagas = list((game.get("vagas_por_equipe") or {}).get(eqj["id"], ["P1", "P2"])) + ["teste"]
+            papel = st.radio("Papel oferecido", _vagas, horizontal=True,
+                             format_func=lambda x: ROTULOS_PAPEL.get(x, x))
             esperado = sim.salario_esperado(game, sel, papel)
             salario = st.number_input(f"Salário oferecido (US$ mil/corrida) — o mercado pagaria ±{sim.fmt_dinheiro_k(esperado)}",
                                       min_value=10, max_value=6000, value=int(esperado), step=10)
@@ -516,7 +600,7 @@ def pagina_pilotos(game):
 # ======================================================================
 def pagina_motores(game):
     eqj = sim.equipe(game, game["equipe_jogador"])
-    st.header("⚙️ Motores")
+    st.header(f"⚙️ {rot_fornecedor(game)}s")
     atual = sim.motor(game, eqj["motor_id"])
     st.write(f"Motor atual: **{atual['nome']}** — potência {atual['potencia']}, confiabilidade {atual['confiabilidade']}"
              + (" · **motor próprio** (custo interno reduzido; herança da equipe, como na DB: Audi/Ferrari/Mercedes/Red Bull)."
@@ -557,7 +641,8 @@ def pagina_motores(game):
 def pagina_financas(game):
     eqj = sim.equipe(game, game["equipe_jogador"])
     st.header("💰 Patrocinadores & Finanças")
-    spon = next(s for s in db.PATROCINADORES if s["nome"] == eqj["patrocinador"])
+    lista_spon = game.get("patrocinadores") or db.PATROCINADORES
+    spon = next((s for s in lista_spon if s["nome"] == eqj["patrocinador"]), lista_spon[-1])
     salarios = sum(p["salario_corrida"] for p in game["pilotos"] if p["equipe_id"] == eqj["id"])
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Caixa", sim.fmt_dinheiro_m(eqj["caixa"]))
@@ -575,9 +660,9 @@ def pagina_financas(game):
                "Bônus/pódio": s["bonus_podio"], "Bônus/vitória": s["bonus_vitoria"],
                "Prestígio mín.": s["prestigio_min"],
                "Status": "✅ assina" if eqj["prestigio"] >= s["prestigio_min"] else "🔒 prestígio insuficiente"}
-              for s in db.PATROCINADORES]
+              for s in lista_spon]
     st.dataframe(pd.DataFrame(linhas), hide_index=True, width="stretch")
-    elegiveis = [s for s in db.PATROCINADORES if eqj["prestigio"] >= s["prestigio_min"]]
+    elegiveis = [s for s in lista_spon if eqj["prestigio"] >= s["prestigio_min"]]
     novo = st.selectbox("Negociar para a próxima temporada", elegiveis,
                         format_func=lambda s: f"{s['nome']} — {s['desc']}")
     if game["patrocinador_proxima"]:
@@ -637,7 +722,7 @@ def pagina_campeonato(game):
         for i, etapa in enumerate(game["calendario"]):
             regs = [r for r in game["resultados"] if r["ano"] == game["ano"] and r["rodada"] == i + 1 and not r["sprint"]]
             with st.expander(f"{i + 1}. {etapa['bandeira']} {etapa['gp']} — {etapa['circuito']} · {etapa['voltas']} voltas"
-                             + (" · ⚡Sprint" if etapa["sprint"] else "") + (" ✅" if regs else "")):
+                             + (f" · ⚡{rot_corrida2(game)}" if etapa["sprint"] else "") + (" ✅" if regs else "")):
                 if regs:
                     r = regs[-1]
                     st.caption("🌧️ Corrida molhada" if r["molhado"] else "☀️ Corrida seca")
@@ -739,6 +824,22 @@ e salário baixo são o atalho clássico das equipes pequenas. Lembre que contra
 10 conquistas para caçar (como no original!) e um Hall da Fama com Senna, Schumacher, Lauda, Hunt...
 Seus pilotos entram nele ao pendurar o capacete com 2+ títulos ou 30+ vitórias neste save.
 
+### 🏎️ Categorias além da F1
+- **Fórmula Indy** — ovais, ruas e mistos; todos pontuam (50 pts a vitória) e as **500 Milhas** são o auge do ano.
+- **Stock Car** — sprint no sábado (55 pts) + principal no domingo (80 pts), grid de 34 SUVs V8, Corrida do Milhão e Endurance.
+- **DTM** — GT3 alemães com **duas corridas iguais** por fim de semana (25 pts cada vitória).
+Em cada DB, o "fornecedor" muda de nome (motor, montadora ou carro GT3), mas o coração do jogo é o mesmo.
+
+### 👥 Tamanho do grid (começa em 22)
+Na tela inicial você escolhe quantos pilotos titulares o grid terá. Acima do natural da DB, as equipes
+inscrevem **3º e 4º carros** com reservas e jovens; o mercado mantém o grid cheio temporada após temporada.
+
+### 🛠️ Editor de DBs
+Na aba **Criar / editar DB** (tela inicial) você edita equipes, pilotos (atributos!), calendário e
+fornecedores de qualquer DB — ou cria a sua categoria do zero. Depois é só **Validar**, jogar na hora,
+**baixar o .json** para compartilhar com a comunidade ou salvar em `minhas_dbs/` para ela virar uma
+DB permanente no seu jogo. DBs recebidas de outros criadores entram pelo *upload* do editor.
+
 ---
 **Créditos**: Jogo original *Cockpit Manager '14* — Cartola Games (2014), evolução do *Projeto F1* de Antonio Neto.
 DB F1 2026 v1.0 por **Jonathan Daniel** — blog [Cockpit Manager - Brasil](http://cockpitmanager.blogspot.com/2026/05/db-f1-2026-v10-by-jonathan-daniel.html).
@@ -757,7 +858,8 @@ else:
     eqj = sim.equipe(game, game["equipe_jogador"])
     with st.sidebar:
         st.markdown(f"## 🏎️ {eqj['bandeira']} {eqj['nome']}")
-        st.caption(f"Temporada {game['ano']} · Etapa {min(game['rodada'] + 1, len(game['calendario']))}/{len(game['calendario'])}")
+        st.caption(f"📚 {meta_game(game).get('nome', 'F1 2026')} · grid com {len(sim.titulares(game))} pilotos\n"
+                   f"Temporada {game['ano']} · Etapa {min(game['rodada'] + 1, len(game['calendario']))}/{len(game['calendario'])}")
         st.metric("Caixa", sim.fmt_dinheiro_m(eqj["caixa"]))
         st.metric("Construtores", f"{sim.posicao_equipe(game, eqj['id'])}º · {eqj['pontos']} pts")
         st.radio("Menu", MENUS, key="menu", label_visibility="collapsed")

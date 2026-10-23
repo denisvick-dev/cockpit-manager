@@ -49,11 +49,14 @@ def motor(game, motor_id):
     return next((m for m in game["motores"] if m["id"] == motor_id), None)
 
 
+PAPEIS_TITULARES = ("P1", "P2", "P3", "P4")
+
+
 def titulares(game, equipe_id=None):
-    ps = [p for p in game["pilotos"] if p["papel"] in ("P1", "P2")]
+    ps = [p for p in game["pilotos"] if p["papel"] in PAPEIS_TITULARES]
     if equipe_id:
         ps = [p for p in ps if p["equipe_id"] == equipe_id]
-    return sorted(ps, key=lambda p: p["papel"])
+    return sorted(ps, key=lambda p: PAPEIS_TITULARES.index(p["papel"]))
 
 
 def piloto_teste(game, equipe_id):
@@ -77,10 +80,59 @@ def lancar_financa(game, descricao, valor_k):
 
 
 # --------------------------------------------------------------- novo jogo
+def ajustar_grid(equipes, pilotos, qtd_pilotos):
+    """Ajusta o nº de carros titulares: promove reservas/livres (3º/4º carros)
+    ou rebaixa excedentes, mantendo ao menos 1 carro por equipe."""
+    if not qtd_pilotos:
+        return
+    def tits(eq_id=None):
+        return [x for x in pilotos if x["papel"] in PAPEIS_TITULARES
+                and (eq_id is None or x["equipe_id"] == eq_id)]
+    qtd_pilotos = max(len(equipes), min(int(qtd_pilotos), len(pilotos), len(equipes) * 4))
+    while len(tits()) > qtd_pilotos:
+        cands = [x for x in tits() if len(tits(x["equipe_id"])) > 1]
+        if not cands:
+            break
+        cands.sort(key=lambda x: (-PAPEIS_TITULARES.index(x["papel"]), overall(x)))
+        x = cands[0]
+        if any(y["equipe_id"] == x["equipe_id"] and y["papel"] == "teste" for y in pilotos):
+            x["equipe_id"], x["papel"] = None, "livre"
+        else:
+            x["papel"] = "teste"
+    while len(tits()) < qtd_pilotos:
+        pool = sorted([x for x in pilotos if x["papel"] == "teste" and not x.get("aposentado")],
+                      key=lambda x: -overall(x)) + \
+               sorted([x for x in pilotos if x["papel"] == "livre" and not x.get("aposentado")],
+                      key=lambda x: -(overall(x) * 0.7 + x["potencial"] * 0.3))
+        if not pool:
+            break
+        eqs = sorted(equipes, key=lambda e: (len(tits(e["id"])), e["nivel_carro"]))
+        eqs = [e for e in eqs if len(tits(e["id"])) < 4]
+        if not eqs:
+            break
+        alvo, x = eqs[0], pool[0]
+        x["equipe_id"] = alvo["id"]
+        x["papel"] = f"P{len(tits(alvo['id'])) + 1}"
+
+
+def _db_legado_f1():
+    return {"meta": {"id": "f1_2026", "nome": "F1 2026", "categoria": "Fórmula 1", "ano": 2026,
+                     "rotulo_fornecedor": "Motor", "rotulo_corrida2": "Sprint",
+                     "pontos_corrida": list(db.PONTOS_CORRIDA), "pontos_corrida2": list(db.PONTOS_SPRINT),
+                     "importancia_carro_sugerida": 0.60, "fator_pontos_bonus": 1.0, "pontua_abandono": False},
+            "equipes": db.EQUIPES, "pilotos": db.PILOTOS, "motores": db.MOTORES,
+            "calendario": db.CALENDARIO_2026, "hall_da_fama": db.HALL_DA_FAMA_INICIAL,
+            "patrocinadores": db.PATROCINADORES}
+
+
 def criar_novo_jogo(equipe_jogador_id, semente=2026, incluir_canceladas=True,
-                    importancia_carro=0.60, equipe_custom=None, pilotos_custom=None):
-    equipes = copy.deepcopy(db.EQUIPES)
-    pilotos = copy.deepcopy(db.PILOTOS)
+                    importancia_carro=0.60, equipe_custom=None, pilotos_custom=None,
+                    db_dados=None, qtd_pilotos=None):
+    if db_dados is None:
+        db_dados = _db_legado_f1()
+    db_dados = copy.deepcopy(db_dados)
+    equipes = db_dados["equipes"]
+    pilotos = db_dados["pilotos"]
 
     if equipe_custom:  # modo "crie sua equipe" (12ª equipe do grid)
         equipes.append(equipe_custom)
@@ -92,7 +144,9 @@ def criar_novo_jogo(equipe_jogador_id, semente=2026, incluir_canceladas=True,
             p["salario_corrida"] = salario
             p["contrato_anos"] = 2
 
-    calendario = [dict(e) for e in db.CALENDARIO_2026
+    ajustar_grid(equipes, pilotos, qtd_pilotos)
+    calendario_base = [dict(e) for e in db_dados["calendario"]]
+    calendario = [dict(e) for e in calendario_base
                   if incluir_canceladas or not e.get("cancelavel")]
 
     for e in equipes:
@@ -104,13 +158,20 @@ def criar_novo_jogo(equipe_jogador_id, semente=2026, incluir_canceladas=True,
                   "abandonos": 0, "titulos": 0, "forma": 50, "aposentado": False,
                   "equipes_historico": [p["equipe_id"]] if p["equipe_id"] else []})
 
+    meta = db_dados.get("meta") or {}
+    vagas = {e["id"]: [x["papel"] for x in sorted(
+        [y for y in pilotos if y["equipe_id"] == e["id"] and y["papel"] in PAPEIS_TITULARES],
+        key=lambda y: PAPEIS_TITULARES.index(y["papel"]))] or ["P1", "P2"] for e in equipes}
     game = {
-        "versao": 1, "ano": 2026, "rodada": 0, "semente": int(semente), "contador_rng": 0,
+        "versao": 2, "ano": int(meta.get("ano", 2026)), "rodada": 0, "semente": int(semente), "contador_rng": 0,
+        "meta": meta, "db_id": meta.get("id", "f1_2026"), "vagas_por_equipe": vagas,
+        "patrocinadores": db_dados.get("patrocinadores") or copy.deepcopy(db.PATROCINADORES),
+        "calendario_base": calendario_base,
         "equipe_jogador": equipe_jogador_id,
         "importancia_carro": float(importancia_carro),
         "incluir_canceladas": incluir_canceladas,
         "equipes": equipes, "pilotos": pilotos,
-        "motores": copy.deepcopy(db.MOTORES),
+        "motores": db_dados["motores"],
         "calendario": calendario,
         "resultados": [],            # um dict por etapa concluída
         "historico_pontos": [],      # snapshots p/ gráfico de evolução
@@ -119,16 +180,18 @@ def criar_novo_jogo(equipe_jogador_id, semente=2026, incluir_canceladas=True,
         "noticias": [], "extrato": [],
         "contratos_proxima": {},     # piloto_id -> {papel, salario, anos}
         "motor_proxima": None, "patrocinador_proxima": None,
-        "hall_da_fama": copy.deepcopy(db.HALL_DA_FAMA_INICIAL),
+        "hall_da_fama": db_dados.get("hall_da_fama") or [],
         "conquistas": [],
         "temporadas_completas": 0,
         "regen_usados": 0,
     }
     eq = equipe(game, equipe_jogador_id)
-    noticia(game, f"🏁 Você assumiu o comando da **{eq['nome_completo']}** para a temporada 2026, "
-                  f"a primeira do novo regulamento. O paddock observa cada movimento...")
+    n_grid = len(titulares(game))
+    noticia(game, f"🏁 Você assumiu o comando da **{eq['nome_completo']}** para a temporada {game['ano']} "
+                  f"da **{meta.get('categoria', meta.get('nome', 'categoria'))}** — grid com {n_grid} pilotos. "
+                  f"O paddock observa cada movimento...")
     if eq["motor_id"] == "fia":
-        noticia(game, "⚠️ Sem verba para um motor decente, a FIA emprestou o motor compulsório (50% de potência).")
+        noticia(game, "⚠️ Sem verba para um fornecedor decente, a organização emprestou o compulsório (50% de desempenho).")
     return game
 
 
@@ -286,11 +349,12 @@ def simular_corrida(game, etapa, grid, estrategias_jogador, molhado, sprint=Fals
 
     safety_car = rng.random() < 0.28 and not sprint
     melhor = terminaram[0]["score"] if terminaram else 0
-    tabela = db.PONTOS_SPRINT if sprint else db.PONTOS_CORRIDA
+    _meta = game.get("meta") or {}
+    tabela = (_meta.get("pontos_corrida2") or db.PONTOS_SPRINT) if sprint else (_meta.get("pontos_corrida") or db.PONTOS_CORRIDA)
     fator_gap = etapa["voltas"] * (0.16 if sprint else 0.55) * (0.55 if safety_car else 1.0)
     for i, l in enumerate(ordem):
         l["pos"] = i + 1
-        l["pontos"] = tabela[i] if (i < len(tabela) and not l["dnf"]) else 0
+        l["pontos"] = tabela[i] if (i < len(tabela) and (not l["dnf"] or _meta.get("pontua_abandono"))) else 0
         l["gap_seg"] = None if l["dnf"] else round((melhor - l["score"]) * fator_gap, 1)
         l["status"] = f"Abandono ({l['motivo']}, volta {l['volta_dnf']})" if l["dnf"] else "Terminou"
         l.pop("score")
@@ -315,8 +379,9 @@ def simular_corrida(game, etapa, grid, estrategias_jogador, molhado, sprint=Fals
 
 
 # ----------------------------------------------------- aplicar resultado
-def _patrocinador(nome):
-    return next((s for s in db.PATROCINADORES if s["nome"] == nome), db.PATROCINADORES[-1])
+def _patrocinador(nome, game=None):
+    lista = (game or {}).get("patrocinadores") or db.PATROCINADORES
+    return next((s for s in lista if s["nome"] == nome), lista[-1])
 
 
 def desenvolver_carros(game, etapa):
@@ -347,7 +412,7 @@ def desenvolver_carros(game, etapa):
         # desgaste natural da confiabilidade
         eq["confiabilidade"] = round(max(70.0, eq["confiabilidade"] - rng.uniform(0, 0.25)), 2)
         if eq["id"] != game["equipe_jogador"]:
-            receita = _patrocinador(eq["patrocinador"])["por_corrida"] / 1000.0 + eq["pontos"] * 0.004
+            receita = _patrocinador(eq["patrocinador"], game)["por_corrida"] / 1000.0 + eq["pontos"] * 0.004
             custos = investimento / 1000.0 + sum(t["salario_corrida"] for t in titulares_eq) / 1000.0
             eq["caixa"] = round(max(-30.0, eq["caixa"] + receita - custos), 2)
 
@@ -378,11 +443,12 @@ def aplicar_resultado(game, etapa, grid, resultado, molhado, sprint=False, event
     # ---------------- finanças do jogador (corrida principal cobra os custos)
     eqj = equipe(game, game["equipe_jogador"])
     if not sprint:
-        spon = _patrocinador(eqj["patrocinador"])
+        spon = _patrocinador(eqj["patrocinador"], game)
         pts_eq = sum(l["pontos"] for l in resultado if l["equipe_id"] == eqj["id"])
         podios = sum(1 for l in resultado if l["equipe_id"] == eqj["id"] and l["pos"] <= 3 and not l["dnf"])
         vits = sum(1 for l in resultado if l["equipe_id"] == eqj["id"] and l["pos"] == 1 and not l["dnf"])
-        rec = spon["por_corrida"] + pts_eq * spon["bonus_ponto"] + podios * spon["bonus_podio"] + vits * spon["bonus_vitoria"]
+        pts_bonus = round(pts_eq * float((game.get("meta") or {}).get("fator_pontos_bonus", 1.0)))
+        rec = spon["por_corrida"] + pts_bonus * spon["bonus_ponto"] + podios * spon["bonus_podio"] + vits * spon["bonus_vitoria"]
         lancar_financa(game, f"Patrocínio {spon['nome']} + bônus ({etapa['gp']})", rec); resumo.append((f"Patrocínio e bônus", rec))
         salarios = sum(p["salario_corrida"] for p in game["pilotos"] if p["equipe_id"] == eqj["id"] and not p["aposentado"])
         lancar_financa(game, "Salários dos pilotos", -salarios); resumo.append(("Salários", -salarios))
@@ -400,9 +466,13 @@ def aplicar_resultado(game, etapa, grid, resultado, molhado, sprint=False, event
     vencedor = next((l for l in resultado if l["pos"] == 1 and not l["dnf"]), None)
     if vencedor:
         pv = piloto(game, vencedor["piloto_id"])
-        tipo = "Sprint de" if sprint else "🏆"
-        noticia(game, f"{tipo} **{pv['nome']}** ({equipe(game, pv['equipe_id'])['nome']}) venceu "
-                      f"{'a sprint d' if sprint else ''}o **{etapa['gp']}** em {etapa['circuito']}.")
+        rot2 = (game.get("meta") or {}).get("rotulo_corrida2") or "Sprint"
+        if sprint:
+            noticia(game, f"⚡ **{pv['nome']}** ({equipe(game, pv['equipe_id'])['nome']}) venceu a "
+                          f"{rot2} da etapa **{etapa['gp']}** ({etapa['circuito']}).")
+        else:
+            noticia(game, f"🏆 **{pv['nome']}** ({equipe(game, pv['equipe_id'])['nome']}) venceu "
+                          f"**{etapa['gp']}** em {etapa['circuito']}.")
 
     if not sprint:
         desenvolver_carros(game, etapa)
@@ -411,7 +481,7 @@ def aplicar_resultado(game, etapa, grid, resultado, molhado, sprint=False, event
         game["historico_caixa"].append({"rodada": game["rodada"] + 1, "caixa": round(eqj["caixa"], 1)})
         if eqj["caixa"] < 0:
             noticia(game, "🔴 **ALERTA FINANCEIRO:** o caixa está negativo! Sem dinheiro na virada da "
-                          "temporada, a FIA pode impor o motor compulsório de 50% de potência.")
+                          "temporada, a organização pode impor o fornecedor compulsório de 50% de desempenho.")
         verificar_conquistas(game, resultado, etapa)
         game["rodada"] += 1
     return resumo
@@ -437,6 +507,8 @@ def salario_esperado(game, p, papel):
                + max(0.0, p["potencial"] - ov) * 15)
     if papel == "P2":
         base *= 0.72
+    elif papel in ("P3", "P4"):
+        base *= 0.60
     elif papel == "teste":
         base *= 0.22
     return int(round(base / 10.0) * 10)
@@ -455,7 +527,7 @@ def negociar_piloto(game, piloto_id, papel, salario, anos):
         prob += 0.20  # qualquer vaga na F1 é um sonho para quem está sem equipe
     if p["equipe_id"] == eqj["id"]:
         prob += 0.18  # renovar em casa é mais fácil
-    if papel == "teste" and p["papel"] in ("P1", "P2") and overall(p) > 84:
+    if papel == "teste" and p["papel"] in PAPEIS_TITULARES and overall(p) > 84:
         prob -= 0.35  # titular bom não aceita virar reserva fácil
     if papel == "P1":
         prob += 0.08
@@ -465,8 +537,8 @@ def negociar_piloto(game, piloto_id, papel, salario, anos):
         game["contratos_proxima"][piloto_id] = {"papel": papel, "salario": int(salario), "anos": int(anos)}
         noticia(game, f"✍️ **{p['nome']}** fechou com a {eqj['nome']} para {game['ano'] + 1} "
                       f"({papel}, {fmt_dinheiro_k(salario)}/corrida, {anos} ano(s)).")
-        return True, (f"{p['nome']} aceitou! Contrato assinado para {game['ano'] + 1} como "
-                      f"{'1º piloto' if papel == 'P1' else '2º piloto' if papel == 'P2' else 'piloto de testes'}.")
+        _rot = {"P1": "1º piloto", "P2": "2º piloto", "P3": "3º piloto", "P4": "4º piloto"}.get(papel, "piloto de testes")
+        return True, f"{p['nome']} aceitou! Contrato assinado para {game['ano'] + 1} como {_rot}."
     motivos = [
         f"{p['nome']} recusou: achou {fmt_dinheiro_k(salario)}/corrida pouco (esperava algo perto de {fmt_dinheiro_k(esperado)}).",
         f"{p['nome']} agradeceu, mas não se convenceu com o projeto da equipe neste momento.",
@@ -565,7 +637,7 @@ def virar_temporada(game):
 
     # premiação de construtores
     for i, e in enumerate(tab_c):
-        premio = db.PREMIACAO_CONSTRUTORES[i] if i < len(db.PREMIACAO_CONSTRUTORES) else 40
+        premio = db.PREMIACAO_CONSTRUTORES[i] if i < len(db.PREMIACAO_CONSTRUTORES) else max(18, 42 - (i - 11) * 3)
         if e["id"] == eqj["id"]:
             lancar_financa(game, f"Premiação de Construtores ({i + 1}º lugar)", premio * 1000)
         else:
@@ -578,12 +650,12 @@ def virar_temporada(game):
         _evoluir_piloto(game, p, rng)
         p["contrato_anos"] = max(0, p["contrato_anos"] - 1)
         chance_aposentar = 0.0
-        if p["idade"] > p["auge_fim"] + 4:
-            chance_aposentar += 0.25
-        if p["idade"] >= 40:
-            chance_aposentar += 0.35
-        if p["idade"] >= 45:
-            chance_aposentar += 0.45
+        if p["idade"] > p["auge_fim"]:  # só após o fim do platô (turismo corre até os 50!)
+            chance_aposentar += 0.15 + (p["idade"] - p["auge_fim"]) * 0.06
+            if p["idade"] >= 45:
+                chance_aposentar += 0.20
+            if p["idade"] >= 50:
+                chance_aposentar += 0.25
         if rng.random() < chance_aposentar:
             p["aposentado"] = True
             p["papel"] = "aposentado"
@@ -620,9 +692,20 @@ def virar_temporada(game):
     # negociou durante o ano pega o que sobrou — às pressas, como no original)
     ordem_mercado = sorted([e for e in game["equipes"] if e["id"] != eqj["id"]],
                             key=lambda x: -x["prestigio"]) + [eqj]
-    for e in ordem_mercado:
-        for papel in ("P1", "P2", "teste"):
+    # fase 0 = vagas titulares (promovendo reservas se preciso), fase 1 = testes
+    for fase in (0, 1):
+     for e in ordem_mercado:
+        vagas_tit = list((game.get("vagas_por_equipe") or {}).get(e["id"], ["P1", "P2"]))
+        vagas_eq = vagas_tit if fase == 0 else ["teste"]
+        for papel in vagas_eq:
             ocupados = [p for p in game["pilotos"] if p["equipe_id"] == e["id"] and p["papel"] == papel]
+            if not ocupados and fase == 0 and not livres:
+                reservas = sorted([p for p in game["pilotos"] if p["papel"] == "teste" and not p["aposentado"]],
+                                  key=lambda x: (x["equipe_id"] != e["id"], -overall(x)))
+                if reservas:
+                    livres.append(reservas[0])
+                else:
+                    livres.append(_gerar_jovem(game, rng))
             while not ocupados and livres:
                 janela = livres[:5] if e["prestigio"] > 70 else livres[:9]
                 p = rng.choice(janela)
@@ -635,9 +718,10 @@ def virar_temporada(game):
                 ocupados = [p]
                 if papel != "teste":
                     noticia(game, f"📰 Mercado: **{p['nome']}** assume como {papel} da {e['nome']} em {game['ano'] + 1}.")
-    for _ in range(3):
-        novo = _gerar_jovem(game, rng)
-    noticia(game, "🌱 Três jovens das categorias de base entraram no mercado de pilotos.")
+    n_jovens = max(3, len(game["equipes"]) // 3)
+    for _ in range(n_jovens):
+        _gerar_jovem(game, rng)
+    noticia(game, f"🌱 {n_jovens} jovens das categorias de base entraram no mercado de pilotos.")
 
     # ------------------------------ motores e patrocinador do jogador
     if game["motor_proxima"] and not eqj.get("motor_proprio"):
@@ -660,7 +744,7 @@ def virar_temporada(game):
         if not e.get("motor_proprio") and e["caixa"] < custo and mot["id"] != "fia":
             e["motor_id"] = "fia"
             e["usou_motor_fia"] = True
-            noticia(game, f"😬 A {e['nome']} não pagou o motor e correrá com o **FIA compulsório (50%)**.")
+            noticia(game, f"😬 A {e['nome']} não pagou o fornecedor e correrá com o **compulsório da organização (50%)**.")
             mot, custo = motor(game, "fia"), 0.0
         if e["id"] == eqj["id"]:
             lancar_financa(game, f"Motor {mot['nome']} — temporada {game['ano'] + 1}", -custo * 1000)
@@ -689,7 +773,7 @@ def virar_temporada(game):
         p["pontos"] = 0
         p["forma"] = 50
 
-    game["calendario"] = [dict(e) for e in db.CALENDARIO_2026
+    game["calendario"] = [dict(e) for e in (game.get("calendario_base") or game["calendario"])
                            if game["incluir_canceladas"] or not e.get("cancelavel")]
     game["ano"] += 1
     game["rodada"] = 0

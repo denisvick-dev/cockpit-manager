@@ -1,0 +1,5 @@
+Coloque aqui as suas DBs personalizadas (.json) criadas no editor do jogo
+(aba "Criar / editar DB" -> Validar -> Salvar nesta pasta), ou DBs .json
+recebidas de outros criadores.
+
+Elas aparecem automaticamente na lista "Base de dados (DB)" da tela inicial.

@@ -5,10 +5,11 @@ Um remake em **Python + Streamlit** do clássico brasileiro **Cockpit Manager '1
 [**DB F1 2026 v1.0 by Jonathan Daniel**](http://cockpitmanager.blogspot.com/2026/05/db-f1-2026-v10-by-jonathan-daniel.html)
 do blog *Cockpit Manager - Brasil*.
 
-Comande uma das 11 equipes de 2026 (ou crie a sua, como 12ª do grid), desenvolva o carro,
-negocie motores e patrocinadores, contrate pilotos, acerte a estratégia de pneus e paradas
-e jogue **temporadas sem limite**: pilotos envelhecem, evoluem, se aposentam, jovens da
-F2/F3 sobem e lendas entram para o Hall da Fama.
+Comande equipes em **4 categorias** — Fórmula 1, Fórmula Indy, Stock Car e DTM — (ou crie a sua),
+desenvolva o carro, negocie fornecedores e patrocinadores, contrate pilotos, acerte a estratégia
+de pneus e paradas e jogue **temporadas sem limite**: pilotos envelhecem, evoluem, se aposentam,
+jovens sobem da base e lendas entram para o Hall da Fama. Você ainda pode **criar e compartilhar
+suas próprias DBs** e escolher **quantos pilotos terá o grid (a partir de 22)**.
 
 ## ▶️ Como rodar
 
@@ -28,7 +29,10 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 |---|---|
 | `app.py` | Interface Streamlit (telas: Escritório, Corrida, Carro, Pilotos, Motores, Finanças, Campeonato, Hall da Fama…) |
 | `simulacao.py` | Motor do jogo: classificação, corrida, estratégia, desenvolvimento, finanças, mercado, evolução e virada de temporada |
-| `dados2026.py` | A DB 2026: 11 equipes, 49 pilotos (titulares, reservas e jovens), 10 motores, 7 patrocinadores, calendário de 24 etapas |
+| `dados2026.py` | A DB F1 2026: 11 equipes, 49 pilotos, 10 motores, calendário de 24 etapas |
+| `dbs.py` | Sistema de DBs: F1, **Fórmula Indy** (25 carros, 18 etapas, Indy 500), **Stock Car** (34 SUVs V8, sprint+principal), **DTM** (GT3, 2 corridas/etapa) + validação de DBs personalizadas |
+| `editor_db.py` | Editor de DBs na tela inicial: edite equipes/pilotos/calendário/fornecedores, valide, baixe/compartilhe o `.json` e jogue na hora |
+| `minhas_dbs/` | (criada ao salvar) Suas DBs personalizadas em `.json` viram opções permanentes na lista de DBs |
 | `.streamlit/config.toml` | Tema escuro estilo F1 |
 | `requirements.txt` | `streamlit` + `pandas` |
 
@@ -50,6 +54,17 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
   independente, Chevrolet rumo ao motor da Cadillac, 1 reserva por equipe, calendário original de
   24 etapas (Bahrein e Arábia Saudita podem ser removidas na criação do jogo), Bortoleto 🇧🇷 na Audi,
   Drugovich e Rafael Câmara no mercado de jovens
+
+## 🆕 Novidades desta versão
+
+- **Editor de DBs** (aba *Criar / editar DB*): crie categorias do zero ou modifique as existentes —
+  nomes, atributos dos pilotos, calendário, pontuação… — baixe o `.json`, compartilhe com a
+  comunidade e carregue DBs de outros criadores pelo upload.
+- **Fórmula Indy, Stock Car e DTM** como DBs completas, cada uma com equipes, pilotos, calendário,
+  fornecedores, Hall da Fama e sistema de pontuação da categoria real.
+- **Tamanho do grid configurável**: slider na criação do jogo, **a partir de 22 pilotos** — equipes
+  podem inscrever 3º e 4º carros (grid da F1 vai até 44!), e o mercado mantém o grid cheio
+  virada após virada.
 
 ## ✨ Melhorias sobre limitações conhecidas do CM14
 
