@@ -8,6 +8,7 @@ e na DB F1 2026 v1.0 by Jonathan Daniel (blog Cockpit Manager - Brasil).
 Rode com:  streamlit run app.py
 """
 import json
+import re
 
 import pandas as pd
 import streamlit as st
@@ -18,18 +19,133 @@ import dbs as dbsmod
 import editor_db
 import simulacao as sim
 
-st.set_page_config(page_title="Cockpit Manager — F1 2026", page_icon="🏎️", layout="wide")
+st.set_page_config(page_title="Cockpit Manager", page_icon="🏎️", layout="wide",
+                   initial_sidebar_state="expanded")
 
 st.markdown("""
 <style>
-  .team-bar {border-radius:10px; padding:14px 18px; color:#fff; margin-bottom:10px;}
-  .team-bar h2 {margin:0; color:#fff;}
-  .team-bar p {margin:2px 0 0 0; opacity:.92;}
-  .news-card {background:rgba(255,255,255,.04); border-left:4px solid #E10600;
-              border-radius:6px; padding:8px 12px; margin-bottom:6px;}
-  .small {opacity:.75; font-size:.85em;}
-  div[data-testid="stMetric"] {background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07);
-                               border-radius:10px; padding:10px;}
+  :root{
+    --cm-red:#E10600; --cm-red2:#FF3B30; --cm-bg:#0A0E17; --cm-panel:#121A2B;
+    --cm-border:rgba(148,163,184,.16); --cm-text:#F4F7FB; --cm-muted:#94A3B8;
+  }
+  .stApp{
+    background:
+      radial-gradient(1100px 520px at 85% -10%, rgba(225,6,0,.14), transparent 60%),
+      radial-gradient(900px 480px at -10% 0%, rgba(37,99,235,.10), transparent 55%),
+      linear-gradient(180deg,#0A0E17 0%, #0B101E 100%);
+    color:var(--cm-text);
+  }
+  .block-container{max-width:1480px; padding:2rem 2.4rem 3.2rem;}
+  @media (max-width:760px){ .block-container{padding:1.1rem .9rem 2rem;} }
+  h1,h2{letter-spacing:-.03em; color:#F8FAFC; font-weight:850;}
+  h3{letter-spacing:.045em; color:#E2E8F0; font-weight:750;}
+  a{color:#FF6B61 !important;}
+  footer{visibility:hidden;} .stDeployButton{display:none;}
+
+  /* ---------- bandeiras (imagens padronizadas 96x72) ---------- */
+  .flag-img{border-radius:4px; object-fit:contain; vertical-align:-3px;
+    box-shadow:0 1px 5px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.14);}
+
+  /* ---------- hero / marcas ---------- */
+  .hero{border:1px solid var(--cm-border); border-radius:22px; overflow:hidden; margin-bottom:1.15rem;
+    background:linear-gradient(115deg, rgba(225,6,0,.30), rgba(18,26,43,.94) 46%, rgba(10,14,23,.98));
+    box-shadow:0 22px 55px rgba(0,0,0,.35);}
+  .hero-inner{padding:1.65rem 1.8rem 1.25rem; display:flex; gap:1.15rem; align-items:center;}
+  .logo-mark{width:66px;height:66px;flex:0 0 66px;border-radius:18px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(145deg,#FF2A1F,#8F0400); color:#fff; font-size:1.45rem; font-weight:950; letter-spacing:-.05em;
+    box-shadow:0 14px 30px rgba(225,6,0,.35), inset 0 1px 0 rgba(255,255,255,.35);}
+  .kicker{font-size:.68rem; font-weight:850; letter-spacing:.19em; text-transform:uppercase; color:#FF8A80;}
+  .hero h1{font-size:2.55rem; line-height:.98; margin:.18rem 0 .35rem;}
+  .hero p{margin:0; color:#CBD5E1; max-width:820px; font-size:.98rem;}
+  .chips{display:flex; flex-wrap:wrap; gap:.45rem; padding:0 1.8rem 1.35rem;}
+  .chip{border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06); color:#E2E8F0;
+    border-radius:999px; padding:.30rem .68rem; font-size:.76rem; font-weight:750;}
+  .chip.hot{background:rgba(225,6,0,.18); border-color:rgba(255,59,48,.45); color:#FFD7D3;}
+  .checker{height:10px; opacity:.92; background:repeating-conic-gradient(#E5E7EB 0% 25%, #111827 0% 50%); background-size:18px 18px;}
+  @media (max-width:760px){ .hero-inner{padding:1.15rem} .hero h1{font-size:2rem} .logo-mark{width:52px;height:52px;flex-basis:52px} .chips{padding:0 1.15rem 1.1rem} }
+
+  .page-head{border-bottom:1px solid var(--cm-border); margin:.1rem 0 1.15rem; padding-bottom:.85rem;}
+  .page-head .kicker{color:#FF6B61;}
+  .page-head h1{font-size:2rem; margin:.12rem 0 .15rem;}
+  .page-head p{margin:0; color:var(--cm-muted);}
+
+  /* ---------- cartao da equipe ---------- */
+  .team-bar{position:relative; overflow:hidden; border-radius:18px; padding:20px 22px; color:#fff; margin-bottom:14px;
+    border:1px solid rgba(255,255,255,.14); box-shadow:0 18px 42px rgba(0,0,0,.32);}
+  .team-bar::after{content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(115deg, rgba(255,255,255,.16), transparent 42%);}
+  .team-main{position:relative; z-index:1; display:flex; align-items:center; gap:16px;}
+  .team-flag{background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18); border-radius:14px; padding:9px 11px;}
+  .team-bar .kicker{color:rgba(255,255,255,.82);}
+  .team-bar h2{margin:.08rem 0 .12rem; color:#fff; font-size:1.65rem; line-height:1.05;}
+  .team-bar p{margin:0; color:rgba(255,255,255,.88);}
+
+  /* ---------- metricas, botoes, abas e tabelas ---------- */
+  div[data-testid="stMetric"]{background:linear-gradient(160deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+    border:1px solid var(--cm-border); border-radius:15px; padding:13px 14px; box-shadow:0 10px 24px rgba(0,0,0,.20);}
+  div[data-testid="stMetric"] label{font-size:.68rem !important; letter-spacing:.13em; text-transform:uppercase; color:var(--cm-muted) !important; font-weight:800;}
+  div[data-testid="stMetric"] div[data-testid="stMetricValue"]{font-weight:850; letter-spacing:-.025em;}
+  .stButton>button,.stDownloadButton>button{border-radius:12px; border:1px solid rgba(255,255,255,.14);
+    font-weight:750; padding:.58rem 1rem; transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;}
+  .stButton>button:hover,.stDownloadButton>button:hover{transform:translateY(-1px); filter:brightness(1.08);}
+  .stButton>button[kind="primary"],.stDownloadButton>button[kind="primary"]{
+    background:linear-gradient(135deg,#FF2418,#A80400); color:#fff; border-color:rgba(255,255,255,.12);
+    box-shadow:0 12px 28px rgba(225,6,0,.28);}
+  .stTabs [data-baseweb="tab-list"]{gap:5px; border-bottom:1px solid var(--cm-border); padding-bottom:6px;}
+  .stTabs [data-baseweb="tab"]{border-radius:10px 10px 0 0; padding:.48rem .78rem; font-weight:700;}
+  .stTabs [aria-selected="true"]{background:rgba(225,6,0,.14); color:#fff;}
+  div[data-testid="stDataFrame"],div[data-testid="stDataEditor"]{border:1px solid var(--cm-border);
+    border-radius:14px; overflow:hidden; box-shadow:0 10px 28px rgba(0,0,0,.18);}
+  div[data-testid="stExpander"]{border:1px solid var(--cm-border); border-radius:13px; background:rgba(255,255,255,.022);}
+  div[data-baseweb="select"]>div,input,textarea{border-radius:11px !important;}
+  div[data-testid="stAlert"]{border-radius:13px;}
+  hr{border-color:var(--cm-border);}
+
+  /* ---------- sidebar profissional ---------- */
+  section[data-testid="stSidebar"]{background:linear-gradient(180deg,#0D1424 0%,#080C15 100%); border-right:1px solid var(--cm-border);}
+  .side-brand{display:flex; gap:10px; align-items:center; margin:.15rem 0 .9rem;}
+  .logo-mini{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(145deg,#FF2A1F,#8F0400); color:#fff; font-weight:950; box-shadow:0 9px 20px rgba(225,6,0,.30);}
+  .side-brand .b1{font-weight:950; letter-spacing:.08em; line-height:.95; color:#fff;}
+  .side-brand .b2{font-size:.65rem; letter-spacing:.24em; color:#FF8A80; font-weight:850;}
+  .side-team{border-radius:15px; padding:13px 14px; margin-bottom:.75rem; color:#fff;
+    border:1px solid rgba(255,255,255,.13); box-shadow:0 12px 28px rgba(0,0,0,.25);}
+  .side-team .nome{font-size:1.02rem; font-weight:850; line-height:1.15; margin:.35rem 0 .18rem;}
+  .side-team .meta{font-size:.74rem; color:rgba(255,255,255,.82); line-height:1.45;}
+  section[data-testid="stSidebar"] div[role="radiogroup"] label{border:1px solid transparent; border-radius:11px;
+    padding:.42rem .62rem; margin-bottom:2px; transition:background .12s ease,border-color .12s ease;}
+  section[data-testid="stSidebar"] div[role="radiogroup"] label:hover{background:rgba(255,255,255,.055);}
+  section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked){
+    background:linear-gradient(90deg, rgba(225,6,0,.24), rgba(225,6,0,.07)); border-color:rgba(255,59,48,.38);}
+
+  /* ---------- barras de desempenho e noticias ---------- */
+  .stat{margin:.35rem 0 .75rem;}
+  .stat-top{display:flex; justify-content:space-between; gap:12px; font-size:.82rem; color:#CBD5E1; margin-bottom:.28rem;}
+  .stat-top strong{color:#fff; font-size:.9rem;}
+  .stat-track{height:9px; border-radius:999px; background:rgba(255,255,255,.075); overflow:hidden; border:1px solid rgba(255,255,255,.06);}
+  .stat-fill{height:100%; border-radius:999px;}
+  .stat small{color:var(--cm-muted);}
+  .news-card{background:linear-gradient(120deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+    border:1px solid var(--cm-border); border-left:4px solid var(--cm-red); border-radius:11px;
+    padding:9px 13px; margin-bottom:7px; box-shadow:0 8px 20px rgba(0,0,0,.16);}
+  .small{opacity:.72; font-size:.83em;}
+  .race-hero{border:1px solid var(--cm-border); border-radius:18px; padding:18px 20px; margin-bottom:12px;
+    background:linear-gradient(115deg, rgba(225,6,0,.22), rgba(18,26,43,.92) 48%, rgba(10,14,23,.98));}
+  .race-hero h1{font-size:1.85rem; margin:.1rem 0;}
+  ::-webkit-scrollbar{width:10px;height:10px} ::-webkit-scrollbar-thumb{background:#26324A;border-radius:99px}
+
+  /* ---------- polimento final ---------- */
+  [data-testid="stAppDeployButton"], .stDeployButton{display:none !important}
+  div[data-testid="stMetricValue"]{font-size:1.5rem !important; line-height:1.15 !important}
+  div[data-testid="stMetricValue"] > div{white-space:normal !important; overflow:visible !important}
+  .stTabs [data-baseweb="tab-list"]{padding-left:4px}
+  div[role="radiogroup"] > label{width:100%; box-sizing:border-box}
+  .side-stats{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px}
+  .side-stat{background:linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.02));
+    border:1px solid var(--cm-border); border-radius:12px; padding:9px 11px}
+  .side-stat .lab{font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--cm-muted)}
+  .side-stat .val{font-size:1rem; font-weight:800; margin-top:3px; white-space:nowrap}
+  .flag-img{box-shadow:0 1px 4px rgba(0,0,0,.35)}
 </style>
 """, unsafe_allow_html=True)
 
@@ -47,7 +163,7 @@ if "flash" not in st.session_state:
     st.session_state.flash = None
 
 
-CFG_BANDEIRA = {"Bandeira": st.column_config.ImageColumn("", width="small")}
+CFG_BANDEIRA = {"Bandeira": st.column_config.ImageColumn("", width=38)}
 
 
 def ir_para(menu):
@@ -68,6 +184,47 @@ def mostrar_flash():
         tipo, texto = st.session_state.flash
         getattr(st, tipo, st.info)(texto)
         st.session_state.flash = None
+
+
+# ======================================================================
+#  COMPONENTES VISUAIS
+# ======================================================================
+def titulo_pagina(kicker, titulo, subtitulo=None):
+    sub = f"<p>{subtitulo}</p>" if subtitulo else ""
+    st.markdown(f'<div class="page-head"><div class="kicker">{kicker}</div><h1>{titulo}</h1>{sub}</div>',
+                unsafe_allow_html=True)
+
+
+def cabecalho_inicial():
+    st.markdown("""
+    <div class="hero">
+      <div class="hero-inner">
+        <div class="logo-mark">CM</div>
+        <div>
+          <div class="kicker">Manager de automobilismo · Edição Streamlit</div>
+          <h1>Cockpit Manager</h1>
+          <p>Comande uma equipe temporada após temporada: pilotos, carro, fornecedores,
+             patrocinadores, estratégia de corrida e mercado — sem limite de anos.</p>
+        </div>
+      </div>
+      <div class="chips">
+        <span class="chip hot">Fórmula 1</span><span class="chip">Fórmula Indy</span>
+        <span class="chip">Stock Car</span><span class="chip">DTM</span>
+        <span class="chip">🛠️ Editor de DBs</span><span class="chip">👥 Grid a partir de 22</span>
+      </div>
+      <div class="checker"></div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def barra_stat(rotulo, valor, obs="", cor="#E10600"):
+    v = max(0.0, min(100.0, float(valor)))
+    small = f"<small>{obs}</small>" if obs else ""
+    st.markdown(
+        f'<div class="stat"><div class="stat-top"><span>{rotulo}</span><strong>{v:.0f}</strong></div>'
+        f'<div class="stat-track"><div class="stat-fill" style="width:{v:.0f}%;'
+        f'background:linear-gradient(90deg,{cor},#FF7A6E)"></div></div>{small}</div>',
+        unsafe_allow_html=True)
 
 
 # ======================================================================
@@ -102,8 +259,7 @@ def _slider_grid(sel_db, key_suffix=""):
 
 
 def tela_inicial():
-    st.title("🏎️ Cockpit Manager — Edição Streamlit")
-    st.subheader("F1 · Fórmula Indy · Stock Car · DTM · suas próprias DBs")
+    cabecalho_inicial()
     st.caption("Remake de fã inspirado no *Cockpit Manager '14* (Cartola Games) e na "
                "[DB F1 2026 by Jonathan Daniel]"
                "(http://cockpitmanager.blogspot.com/2026/05/db-f1-2026-v10-by-jonathan-daniel.html). "
@@ -120,7 +276,7 @@ def tela_inicial():
     ci1.metric("Categoria", meta.get("categoria", "—"))
     ci2.metric("Ano inicial", meta.get("ano", "—"))
     ci3.metric("Equipes", len(sel_db["equipes"]))
-    ci4.metric("Grid natural / Etapas", f"{dbsmod.grid_natural(sel_db)} pilotos · {len(sel_db['calendario'])} etapas")
+    ci4.metric("Pilotos no grid / Etapas", f"{dbsmod.grid_natural(sel_db)} / {len(sel_db['calendario'])}")
     if meta.get("descricao"):
         st.info(meta["descricao"])
     tem_cancelavel = any(e.get("cancelavel") for e in sel_db["calendario"])
@@ -135,10 +291,11 @@ def tela_inicial():
         eq = next(e for e in sel_db["equipes"] if e["id"] == eq_id)
         mot = next((m for m in sel_db["motores"] if m["id"] == eq["motor_id"]), sel_db["motores"][0])
         rot = meta.get("rotulo_fornecedor", "Motor")
-        st.markdown(f'<div class="team-bar" style="background:linear-gradient(90deg,{eq["cor"]},#151B2D)">'
-                    f'<h2>{bnd.img_bandeira(eq["bandeira"], 24)} {eq["nome_completo"]}</h2>'
+        st.markdown(f'<div class="team-bar" style="background:linear-gradient(112deg,{eq["cor"]} 0%, rgba(11,16,32,.93) 58%, #0B1020 100%)">'
+                    f'<div class="team-main"><div class="team-flag">{bnd.img_bandeira(eq["bandeira"], 44)}</div>'
+                    f'<div><div class="kicker">{eq["pais"]}</div><h2>{eq["nome_completo"]}</h2>'
                     f'<p>{rot} {"próprio" if eq.get("motor_proprio") else "cliente"}: <b>{mot["nome"]}</b> '
-                    f'(desempenho {mot["potencia"]}) · Prestígio: {eq["prestigio"]}</p></div>', unsafe_allow_html=True)
+                    f'(desempenho {mot["potencia"]}) · Prestígio: {eq["prestigio"]}</p></div></div></div>', unsafe_allow_html=True)
         quad = sorted([p for p in sel_db["pilotos"] if p["equipe_id"] == eq_id],
                       key=lambda p: {"P1": 0, "P2": 1, "P3": 2, "P4": 3, "teste": 4}.get(p["papel"], 5))
         st.dataframe(pd.DataFrame([{
@@ -268,8 +425,12 @@ def df_pilotos_equipe(game, equipe_id):
 
 
 def barra_equipe(eq):
-    st.markdown(f'<div class="team-bar" style="background:linear-gradient(90deg,{eq["cor"]},#151B2D)">'
-                f'<h2>{bnd.img_bandeira(eq["bandeira"], 24)} {eq["nome_completo"]}</h2></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="team-bar" style="background:linear-gradient(112deg,{eq["cor"]} 0%, rgba(11,16,32,.93) 58%, #0B1020 100%)">'
+        f'<div class="team-main"><div class="team-flag">{bnd.img_bandeira(eq["bandeira"], 44)}</div>'
+        f'<div><div class="kicker">Sua equipe · {eq["pais"]}</div><h2>{eq["nome_completo"]}</h2>'
+        f'<p>Prestígio {eq["prestigio"]} · {eq.get("titulos_construtores", 0)} título(s) de construtores na história</p></div></div></div>',
+        unsafe_allow_html=True)
 
 
 def painel_fim_temporada(game):
@@ -317,13 +478,11 @@ def pagina_escritorio(game):
     col_carro, col_prox = st.columns([1, 1])
     with col_carro:
         st.subheader("🔧 Seu carro")
-        st.write(f"Nível do chassi: **{eqj['nivel_carro']:.1f}**")
-        st.progress(min(1.0, eqj["nivel_carro"] / 100))
-        st.write(f"{rot_fornecedor(game)} **{mot['nome']}** — desempenho **{mot['potencia']}** "
-                 f"{'(próprio)' if eqj.get('motor_proprio') else '(cliente)'}")
-        st.progress(mot["potencia"] / 100)
-        st.write(f"Desempenho combinado: **{sim.desempenho_carro(game, eqj):.1f}** · "
-                 f"Confiabilidade: **{eqj['confiabilidade']:.0f}**")
+        barra_stat("Chassi / aerodinâmica", eqj["nivel_carro"], cor=eqj["cor"])
+        barra_stat(f"{rot_fornecedor(game)} — {mot['nome']} {'(próprio)' if eqj.get('motor_proprio') else '(cliente)'}",
+                   mot["potencia"], cor="#F59E0B")
+        barra_stat("Desempenho combinado", sim.desempenho_carro(game, eqj))
+        barra_stat("Confiabilidade", eqj["confiabilidade"], cor="#22C55E")
         st.write(f"Investimento por corrida: **{sim.fmt_dinheiro_k(eqj['investimento_corrida'])}** "
                  f"· Foco: **{eqj['foco']}** · Patrocinador: **{eqj['patrocinador']}**")
         ranking = sorted(game["equipes"], key=lambda e: -sim.desempenho_carro(game, e))
@@ -334,7 +493,7 @@ def pagina_escritorio(game):
             painel_fim_temporada(game)
         else:
             etapa = game["calendario"][game["rodada"]]
-            st.markdown(f"### 📅 Próxima corrida: {bnd.img_bandeira(etapa['bandeira'], 20)} {etapa['gp']}", unsafe_allow_html=True)
+            st.markdown(f"### 📅 Próxima corrida: {bnd.img_bandeira(etapa['bandeira'], 22)} {etapa['gp']}", unsafe_allow_html=True)
             st.write(f"**{etapa['circuito']}** — {etapa['pais']} · {etapa['voltas']} voltas · {etapa['data']}"
                      + (f" · ⚡ **fim de semana com {rot_corrida2(game)} + corrida principal**" if etapa["sprint"] else ""))
             st.write(f"🌧️ Chance histórica de chuva: **{etapa['chuva'] * 100:.0f}%** · "
@@ -351,7 +510,8 @@ def pagina_escritorio(game):
 
     st.subheader("📰 Notícias do paddock")
     for n in game["noticias"][:8]:
-        st.markdown(f'<div class="news-card"><span class="small">{n["ano"]} · etapa {n["rodada"]}</span><br>{bnd.substituir_emojis(n["texto"])}</div>',
+        _txt = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", bnd.substituir_emojis(n["texto"]))
+        st.markdown(f'<div class="news-card"><span class="small">{n["ano"]} · etapa {n["rodada"]}</span><br>{_txt}</div>',
                     unsafe_allow_html=True)
 
 
@@ -400,7 +560,11 @@ def pagina_corrida(game):
     eqj = sim.equipe(game, game["equipe_jogador"])
     meus = sim.titulares(game, eqj["id"])
 
-    st.markdown(f"# {bnd.img_bandeira(etapa['bandeira'], 30)} {etapa['gp']} — {etapa['circuito']}", unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="race-hero"><div class="kicker">Etapa {game["rodada"] + 1} · {game["ano"]}</div>'
+        f'<h1>{bnd.img_bandeira(etapa["bandeira"], 36)} {etapa["gp"]}</h1>'
+        f'<p style="margin:0;color:#CBD5E1">{etapa["circuito"]} · {etapa["pais"]}</p></div>',
+        unsafe_allow_html=True)
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Etapa", f"{game['rodada'] + 1}/{len(game['calendario'])} · {game['ano']}")
     c2.metric("Voltas", etapa["voltas"])
@@ -416,7 +580,7 @@ def pagina_corrida(game):
     cols = st.columns(len(meus))
     opcoes_pneu = sim.PNEUS_MOLHADO + sim.PNEUS_SECO if molhado else sim.PNEUS_SECO
     for col, p in zip(cols, meus):
-        with col:
+        with col, st.container(border=True):
             st.markdown(bnd.com_bandeira(p['bandeira'], f"**#{p['numero']} {p['nome']}** ({ROTULOS_PAPEL.get(p['papel'], p['papel'])})"), unsafe_allow_html=True)
             pneu = st.selectbox("Pneu de largada", opcoes_pneu, index=0 if molhado else 1,
                                 key=f"pneu_{p['id']}_{fds['chave']}")
@@ -498,7 +662,7 @@ def pagina_corrida(game):
 def pagina_carro(game):
     eqj = sim.equipe(game, game["equipe_jogador"])
     mot = sim.motor(game, eqj["motor_id"])
-    st.header("🔧 Carro & Investimentos")
+    titulo_pagina("Engenharia", "Carro & Investimentos", "Desenvolva o chassi, proteja a confiabilidade e acompanhe as rivais.")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Nível do chassi", f"{eqj['nivel_carro']:.1f}")
     c2.metric(f"Motor {mot['nome']}", f"{mot['potencia']} pot / {mot['confiabilidade']} conf")
@@ -547,7 +711,7 @@ def pagina_carro(game):
 # ======================================================================
 def pagina_pilotos(game):
     eqj = sim.equipe(game, game["equipe_jogador"])
-    st.header("👨‍✈️ Pilotos & Contratos")
+    titulo_pagina("Mercado", "Pilotos & Contratos", "Seus pilotos de hoje — e as negociações que desenham o amanhã.")
     tab1, tab2, tab3 = st.tabs(["Minha equipe", "🤝 Negociar (próxima temporada)", "🌍 Todos os pilotos"])
 
     with tab1:
@@ -606,7 +770,7 @@ def pagina_pilotos(game):
 # ======================================================================
 def pagina_motores(game):
     eqj = sim.equipe(game, game["equipe_jogador"])
-    st.header(f"⚙️ {rot_fornecedor(game)}s")
+    titulo_pagina("Fornecedores", f"{rot_fornecedor(game)}s", "Desempenho de verdade custa caro. Ficar sem caixa sai mais caro ainda.")
     atual = sim.motor(game, eqj["motor_id"])
     st.write(f"Motor atual: **{atual['nome']}** — potência {atual['potencia']}, confiabilidade {atual['confiabilidade']}"
              + (" · **motor próprio** (custo interno reduzido; herança da equipe, como na DB: Audi/Ferrari/Mercedes/Red Bull)."
@@ -646,7 +810,7 @@ def pagina_motores(game):
 # ======================================================================
 def pagina_financas(game):
     eqj = sim.equipe(game, game["equipe_jogador"])
-    st.header("💰 Patrocinadores & Finanças")
+    titulo_pagina("Dinheiro", "Patrocinadores & Finanças", "Quem paga a conta, para onde vai cada centavo — e o que sobra no fim.")
     lista_spon = game.get("patrocinadores") or db.PATROCINADORES
     spon = next((s for s in lista_spon if s["nome"] == eqj["patrocinador"]), lista_spon[-1])
     salarios = sum(p["salario_corrida"] for p in game["pilotos"] if p["equipe_id"] == eqj["id"])
@@ -694,7 +858,7 @@ def pagina_financas(game):
 #  CAMPEONATO
 # ======================================================================
 def pagina_campeonato(game):
-    st.header(f"📊 Campeonato {game['ano']}")
+    titulo_pagina("Classificação", f"Campeonato {game['ano']}", "Pilotos, construtores, evolução dos pontos e todos os resultados.")
     tab1, tab2, tab3, tab4 = st.tabs(["👨‍✈️ Pilotos", "🏭 Construtores", "📈 Evolução", "🗓️ Calendário & Resultados"])
 
     with tab1:
@@ -741,7 +905,7 @@ def pagina_campeonato(game):
 #  HALL DA FAMA & CONQUISTAS
 # ======================================================================
 def pagina_hall(game):
-    st.header("🏆 Hall da Fama & Conquistas")
+    titulo_pagina("Legado", "Hall da Fama & Conquistas", "As lendas da categoria — e as suas 10 conquistas para caçar.")
     tab1, tab2 = st.tabs(["🌟 Hall da Fama", "🎖️ Conquistas (10)"])
     with tab1:
         st.caption(f"Pilotos do seu save entram para a eternidade ao se aposentar com "
@@ -765,7 +929,7 @@ def pagina_hall(game):
 #  SALVAR / CARREGAR
 # ======================================================================
 def pagina_save(game):
-    st.header("💾 Salvar / Carregar")
+    titulo_pagina("Sistema", "Salvar / Carregar", "Baixe o save da sua carreira e continue quando quiser.")
     save_json = json.dumps(game, ensure_ascii=False, indent=1)
     st.download_button("⬇️ Baixar save (.json)", save_json,
                        file_name=f"cockpit_save_{game['ano']}_etapa{game['rodada'] + 1}.json",
@@ -783,7 +947,7 @@ def pagina_save(game):
 #  COMO JOGAR
 # ======================================================================
 def pagina_ajuda():
-    st.header("❓ Como Jogar — Cockpit Manager (Streamlit)")
+    titulo_pagina("Manual", "Como Jogar", "Tudo o que um chefe de equipe precisa saber antes da primeira largada.")
     st.markdown("""
 Comande uma equipe de F1 temporada após temporada, **sem limite de anos** — exatamente como o original de 2014.
 
@@ -863,11 +1027,26 @@ if game is None:
 else:
     eqj = sim.equipe(game, game["equipe_jogador"])
     with st.sidebar:
-        st.markdown(f"## 🏎️ {bnd.img_bandeira(eqj['bandeira'], 22)} {eqj['nome']}", unsafe_allow_html=True)
-        st.caption(f"📚 {meta_game(game).get('nome', 'F1 2026')} · grid com {len(sim.titulares(game))} pilotos\n"
-                   f"Temporada {game['ano']} · Etapa {min(game['rodada'] + 1, len(game['calendario']))}/{len(game['calendario'])}")
-        st.metric("Caixa", sim.fmt_dinheiro_m(eqj["caixa"]))
-        st.metric("Construtores", f"{sim.posicao_equipe(game, eqj['id'])}º · {eqj['pontos']} pts")
+        total_etapas = max(1, len(game["calendario"]))
+        st.markdown(
+            '<div class="side-brand"><div class="logo-mini">CM</div>'
+            '<div><div class="b1">COCKPIT</div><div class="b2">MANAGER</div></div></div>',
+            unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="side-team" style="background:linear-gradient(125deg,{eqj["cor"]} 0%, rgba(11,16,32,.94) 62%)">'
+            f'{bnd.img_bandeira(eqj["bandeira"], 26)}'
+            f'<div class="nome">{eqj["nome"]}</div>'
+            f'<div class="meta">{meta_game(game).get("nome", "F1 2026")} · grid com {len(sim.titulares(game))} pilotos</div></div>',
+            unsafe_allow_html=True)
+        st.progress(min(1.0, game["rodada"] / total_etapas),
+                    text=f"Temporada {game['ano']} · {game['rodada']}/{total_etapas} etapas concluídas")
+        st.markdown(
+            '<div class="side-stats">'
+            f'<div class="side-stat"><div class="lab">Caixa</div>'
+            f'<div class="val">{sim.fmt_dinheiro_m(eqj["caixa"]).replace("US$ ", "$")}</div></div>'
+            f'<div class="side-stat"><div class="lab">Construtores</div>'
+            f'<div class="val">{sim.posicao_equipe(game, eqj["id"])}º · {eqj["pontos"]} pts</div></div></div>',
+            unsafe_allow_html=True)
         st.radio("Menu", MENUS, key="menu", label_visibility="collapsed")
         st.divider()
         save_json = json.dumps(game, ensure_ascii=False)

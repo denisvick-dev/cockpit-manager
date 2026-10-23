@@ -44,14 +44,19 @@ def url_bandeira(emoji):
     return _data_uri(codigo) or f"https://flagcdn.com/w80/{codigo}.png"
 
 
+TAMANHOS = {"mini": 13, "padrao": 15, "destaque": 20, "titulo": 26, "hero": 36}
+
+
 def img_bandeira(emoji, altura=15):
-    """Tag <img> HTML da bandeira (para st.markdown com unsafe_allow_html)."""
+    """Tag <img> HTML da bandeira. altura em px ou nome: mini/padrao/destaque/titulo/hero."""
     codigo = codigo_bandeira(emoji)
     if not codigo:
         return str(emoji or "")
+    if isinstance(altura, str):
+        altura = TAMANHOS.get(altura, 15)
     src = url_bandeira(emoji)
-    return (f'<img src="{src}" alt="{codigo.upper()}" '
-            f'style="height:{altura}px;vertical-align:-2px;border-radius:2px;">')
+    return (f'<img class="flag-img" src="{src}" alt="{codigo.upper()}" '
+            f'style="height:{int(altura)}px;width:auto;">')
 
 
 def com_bandeira(emoji, texto, altura=15):

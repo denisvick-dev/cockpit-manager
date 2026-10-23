@@ -32,9 +32,10 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 | `dados2026.py` | A DB F1 2026: 11 equipes, 49 pilotos, 10 motores, calendário de 24 etapas |
 | `dbs.py` | Sistema de DBs: F1, **Fórmula Indy** (25 carros, 18 etapas, Indy 500), **Stock Car** (34 SUVs V8, sprint+principal), **DTM** (GT3, 2 corridas/etapa) + validação de DBs personalizadas |
 | `editor_db.py` | Editor de DBs na tela inicial: edite equipes/pilotos/calendário/fornecedores, valide, baixe/compartilhe o `.json` e jogue na hora |
-| `bandeiras.py` + `assets/bandeiras/` | Bandeiras dos países como **imagens PNG locais** (o Windows não renderiza emoji de bandeira!) — 40 países, fonte: flagcdn.com (domínio público) |
+| `bandeiras.py` + `assets/bandeiras/` | Bandeiras dos países como **imagens PNG locais** (o Windows não renderiza emoji de bandeira!) — 40 países padronizados em 96×72 px, fonte: flagcdn.com (domínio público) |
+| `tools/padronizar_bandeiras.py` | Regenera/atualiza as bandeiras: baixa do flagcdn e encaixa todas no mesmo tamanho, sem distorcer (`python tools/padronizar_bandeiras.py`) |
 | `minhas_dbs/` | (criada ao salvar) Suas DBs personalizadas em `.json` viram opções permanentes na lista de DBs |
-| `.streamlit/config.toml` | Tema escuro estilo F1 |
+| `.streamlit/config.toml` | Tema escuro profissional (design system do jogo) |
 | `requirements.txt` | `streamlit` + `pandas` |
 
 ## 🎮 O que foi recriado do original
@@ -58,6 +59,9 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 
 ## 🆕 Novidades desta versão
 
+- **Visual profissional**: nova identidade do jogo (hero com marca CM, barra lateral com cartão da
+  equipe e progresso da temporada, cartões, métricas e tabelas redesenhados) e **bandeiras com
+  tamanho uniforme** em todas as telas — tabelas, títulos e cartões — sem distorção.
 - **Editor de DBs** (aba *Criar / editar DB*): crie categorias do zero ou modifique as existentes —
   nomes, atributos dos pilotos, calendário, pontuação… — baixe o `.json`, compartilhe com a
   comunidade e carregue DBs de outros criadores pelo upload.
