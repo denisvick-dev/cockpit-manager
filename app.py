@@ -38,7 +38,9 @@ st.markdown("""
   .block-container{max-width:1480px; padding:2rem 2.4rem 3.2rem;}
   @media (max-width:760px){ .block-container{padding:1.1rem .9rem 2rem;} }
   h1,h2{letter-spacing:-.02em; color:#F8FAFC; font-weight:700;}
-  h3{letter-spacing:.045em; color:#E2E8F0; font-weight:600;}
+  h3{letter-spacing:.03em; color:#E2E8F0; font-weight:400;}
+  /* marcas/kickers com a tipografia oficial da F1 (Formula1 Display) */
+  .kicker,.logo-mark,.logo-mini,.side-brand .b1,.side-brand .b2,.chip.hot{font-family:"Formula1","Titillium Web",sans-serif;}
   a{color:#E4636F !important;}
   footer{visibility:hidden;} .stDeployButton{display:none;}
 

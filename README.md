@@ -12,8 +12,9 @@ de pneus e paradas e jogue **temporadas sem limite**: pilotos envelhecem, evolue
 jovens sobem da base e lendas entram para o Hall da Fama. Você ainda pode **criar e compartilhar
 suas próprias DBs** e escolher **quantos pilotos terá o grid (a partir de 22)**.
 
-Visual **corporativo** com a família de fontes **IBM Plex Sans/Mono** (auto-hospedadas em `static/fonts/`,
-licença OFL) e tema grafite + crimson no `.streamlit/config.toml`.
+Visual **com a tipografia da F1**: família oficial **Formula1 Display** nos títulos e marcas + **Titillium Web**
+no texto — o par usado pelo site da F1 — auto-hospedadas em `static/fonts/`, com tema grafite + crimson no
+`.streamlit/config.toml` (blocos de código em IBM Plex Mono, licença OFL).
 
 ## ▶️ Como rodar
 
@@ -76,8 +77,10 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
   (o time dos sonhos em Monza com banking, Nordschleife, Spa original e Reims, com motores de época —
   DFV, Climax, Repco, Offy) e **Indy Legends** (as lendas da IndyCar nas 500 Milhas e nos ovais
   clássicos: Milwaukee, Pocono, Michigan e Ontario).
-- **Tipografia corporativa IBM Plex Sans/Mono** auto-hospedada (`.streamlit/config.toml` +
-  `static/fonts/`), com tema grafite + crimson e pesos de fonte uniformes.
+- **Tipografia padrão da F1** — família oficial **Formula1 Display** (títulos e marcas) + **Titillium Web**
+  (texto), auto-hospedadas (`.streamlit/config.toml` + `static/fonts/`), com tema grafite + crimson.
+  A fonte Formula1 e as marcas são propriedade da Formula 1, usadas neste projeto de fã não comercial;
+  Titillium Web sob licença OFL.
 - **Tamanho do grid configurável**: slider na criação do jogo, **a partir de 22 pilotos** — equipes
   podem inscrever 3º e 4º carros (grid da F1 vai até 44!), e o mercado mantém o grid cheio
   virada após virada.
