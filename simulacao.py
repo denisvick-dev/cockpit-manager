@@ -181,6 +181,7 @@ def criar_novo_jogo(equipe_jogador_id, semente=2026, incluir_canceladas=True,
         "contratos_proxima": {},     # piloto_id -> {papel, salario, anos}
         "motor_proxima": None, "patrocinador_proxima": None,
         "hall_da_fama": db_dados.get("hall_da_fama") or [],
+        "regen_nomes": db_dados.get("regen_nomes"),
         "conquistas": [],
         "temporadas_completas": 0,
         "regen_usados": 0,
@@ -588,10 +589,11 @@ def _evoluir_piloto(game, p, rng):
 
 
 def _gerar_jovem(game, rng):
-    idx = game["regen_usados"] % len(db.REGEN_NOMES)
+    pool = game.get("regen_nomes") or db.REGEN_NOMES  # DBs podem definir a própria base (ex.: F1 Academy)
+    idx = game["regen_usados"] % len(pool)
     game["regen_usados"] += 1
-    nome1, sobrenome, pais, bandeira = db.REGEN_NOMES[idx]
-    ger = game["regen_usados"] // len(db.REGEN_NOMES)
+    nome1, sobrenome, pais, bandeira = pool[idx]
+    ger = game["regen_usados"] // len(pool)
     pid = f"regen{game['regen_usados']}"
     nome = f"{nome1} {sobrenome}" + (f" {ger}º" if ger else "")
     base = rng.randint(68, 80)

@@ -5,11 +5,15 @@ Um remake em **Python + Streamlit** do clássico brasileiro **Cockpit Manager '1
 [**DB F1 2026 v1.0 by Jonathan Daniel**](http://cockpitmanager.blogspot.com/2026/05/db-f1-2026-v10-by-jonathan-daniel.html)
 do blog *Cockpit Manager - Brasil*.
 
-Comande equipes em **4 categorias** — Fórmula 1, Fórmula Indy, Stock Car e DTM — (ou crie a sua),
+Comande equipes em **7 DBs** — F1 2026, **F1 Academy**, **F1 Legends**, Fórmula Indy, **Indy Legends**,
+Stock Car e DTM — (ou crie a sua),
 desenvolva o carro, negocie fornecedores e patrocinadores, contrate pilotos, acerte a estratégia
 de pneus e paradas e jogue **temporadas sem limite**: pilotos envelhecem, evoluem, se aposentam,
 jovens sobem da base e lendas entram para o Hall da Fama. Você ainda pode **criar e compartilhar
 suas próprias DBs** e escolher **quantos pilotos terá o grid (a partir de 22)**.
+
+Visual **corporativo** com a família de fontes **IBM Plex Sans/Mono** (auto-hospedadas em `static/fonts/`,
+licença OFL) e tema grafite + crimson no `.streamlit/config.toml`.
 
 ## ▶️ Como rodar
 
@@ -30,9 +34,9 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 | `app.py` | Interface Streamlit (telas: Escritório, Corrida, Carro, Pilotos, Motores, Finanças, Campeonato, Hall da Fama…) |
 | `simulacao.py` | Motor do jogo: classificação, corrida, estratégia, desenvolvimento, finanças, mercado, evolução e virada de temporada |
 | `dados2026.py` | A DB F1 2026: 11 equipes, 49 pilotos, 10 motores, calendário de 24 etapas |
-| `dbs.py` | Sistema de DBs: F1, **Fórmula Indy** (25 carros, 18 etapas, Indy 500), **Stock Car** (34 SUVs V8, sprint+principal), **DTM** (GT3, 2 corridas/etapa) + validação de DBs personalizadas |
+| `dbs.py` | Sistema de DBs: **F1 2026**, **F1 Academy** (18 Tatuus idênticos, grade real de 2026), **F1 Legends** (Schumacher, Senna, Fangio… nos circuitos clássicos), **Fórmula Indy** (25 carros, 18 etapas, Indy 500), **Indy Legends** (Foyt, Unser, Mario Andretti nos ovais históricos), **Stock Car** (34 SUVs V8, sprint+principal), **DTM** (GT3, 2 corridas/etapa) + validação de DBs personalizadas |
 | `editor_db.py` | Editor de DBs na tela inicial: edite equipes/pilotos/calendário/fornecedores, valide, baixe/compartilhe o `.json` e jogue na hora |
-| `bandeiras.py` + `assets/bandeiras/` | Bandeiras dos países como **imagens PNG locais** (o Windows não renderiza emoji de bandeira!) — 40 países padronizados em 96×72 px, fonte: flagcdn.com (domínio público) |
+| `bandeiras.py` + `assets/bandeiras/` | Bandeiras dos países como **imagens PNG locais** (o Windows não renderiza emoji de bandeira!) — 45 países padronizados em 96×72 px, fonte: flagcdn.com / flag-icons (domínio público) |
 | `tools/padronizar_bandeiras.py` | Regenera/atualiza as bandeiras: baixa do flagcdn e encaixa todas no mesmo tamanho, sem distorcer (`python tools/padronizar_bandeiras.py`) |
 | `minhas_dbs/` | (criada ao salvar) Suas DBs personalizadas em `.json` viram opções permanentes na lista de DBs |
 | `.streamlit/config.toml` | Tema escuro profissional (design system do jogo) |
@@ -67,6 +71,13 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
   comunidade e carregue DBs de outros criadores pelo upload.
 - **Fórmula Indy, Stock Car e DTM** como DBs completas, cada uma com equipes, pilotos, calendário,
   fornecedores, Hall da Fama e sistema de pontuação da categoria real.
+- **Três DBs novas**: **F1 Academy 2026** (grade real de 18 carros com Prema, ART, Campos, MP, Rodin e
+  Hitech, regra das duas temporadas e jovens gerados só com nomes da base feminina), **F1 Legends**
+  (o time dos sonhos em Monza com banking, Nordschleife, Spa original e Reims, com motores de época —
+  DFV, Climax, Repco, Offy) e **Indy Legends** (as lendas da IndyCar nas 500 Milhas e nos ovais
+  clássicos: Milwaukee, Pocono, Michigan e Ontario).
+- **Tipografia corporativa IBM Plex Sans/Mono** auto-hospedada (`.streamlit/config.toml` +
+  `static/fonts/`), com tema grafite + crimson e pesos de fonte uniformes.
 - **Tamanho do grid configurável**: slider na criação do jogo, **a partir de 22 pilotos** — equipes
   podem inscrever 3º e 4º carros (grid da F1 vai até 44!), e o mercado mantém o grid cheio
   virada após virada.

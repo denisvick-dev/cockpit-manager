@@ -422,9 +422,336 @@ def db_dtm_2026():
             "hall_da_fama": hall, "patrocinadores": copy.deepcopy(_f1.PATROCINADORES)}
 
 
+# =====================================================================
+#  DB F1 ACADEMY 2026 (base feminina F4 — grade real de 2026)
+# =====================================================================
+def db_f1_academy_2026():
+    def E(nome, pais, bf, cor, nivel, caixa, prest, inv, completo=None, titulos=0):
+        return _equipe(nome, pais, bf, cor, "tatuus_f4", nivel, caixa, prest, inv,
+                       nome_completo=completo or nome, titulos=titulos, conf=90)
+    equipes = [
+        E("Prema Racing", "Itália", "🇮🇹", "#D81B21", 80, 30, 78, 750, titulos=3),
+        E("ART Grand Prix", "França", "🇫🇷", "#1E3A8A", 78, 26, 74, 700),
+        E("Campos Racing", "Espanha", "🇪🇸", "#0F8FE9", 77, 24, 70, 680),
+        E("MP Motorsport", "Países Baixos", "🇳🇱", "#FF7A00", 76, 22, 68, 650),
+        E("Rodin Motorsport", "Nova Zelândia", "🇳🇿", "#1FA97B", 75, 20, 64, 620),
+        E("Hitech", "Reino Unido", "🇬🇧", "#7C8794", 74, 18, 62, 600),
+    ]
+    P = lambda *a, **k: _piloto(*a, **k, contrato=2)
+    pilotos = [
+        # MP Motorsport
+        P("Nina Gademan", "GAD", 3, "Países Baixos", "🇳🇱", 18, "mp_motorsport", "P1", 75, 81, potencial=91),
+        P("Alba Hurup Larsen", "LAR", 12, "Dinamarca", "🇩🇰", 19, "mp_motorsport", "P2", 60, 80, potencial=90),
+        P("Esmee Kosterman", "KOS", 32, "Países Baixos", "🇳🇱", 19, "mp_motorsport", "P3", 45, 76, potencial=87),
+        # Campos Racing
+        P("Alisha Palmowski", "PAL", 21, "Reino Unido", "🇬🇧", 20, "campos_racing", "P1", 85, 84, potencial=94, velocidade=87),
+        P("Rafaela Ferreira", "FER", 18, "Brasil", "🇧🇷", 18, "campos_racing", "P2", 65, 83, potencial=93, ultrapassagem=86),
+        P("Megan Bruce", "BRU", 4, "Reino Unido", "🇬🇧", 19, "campos_racing", "P3", 45, 77, potencial=88),
+        # Rodin Motorsport
+        P("Ella Lloyd", "LLO", 20, "Reino Unido", "🇬🇧", 19, "rodin_motorsport", "P1", 75, 82, potencial=92),
+        P("Emma Felbermayr", "FEL", 5, "Áustria", "🇦🇹", 21, "rodin_motorsport", "P2", 60, 79, potencial=88),
+        P("Ella Stevens", "STE", 28, "Reino Unido", "🇬🇧", 18, "rodin_motorsport", "P3", 40, 76, potencial=88),
+        # Prema Racing
+        P("Payton Westcott", "WES", 9, "Estados Unidos", "🇺🇸", 21, "prema_racing", "P1", 75, 79, potencial=89),
+        P("Mathilda Paatz", "PAZ", 8, "Alemanha", "🇩🇪", 20, "prema_racing", "P2", 60, 78, potencial=88),
+        P("Natalia Granada", "GRA", 19, "Espanha", "🇪🇸", 18, "prema_racing", "P3", 45, 77, potencial=90),
+        # ART Grand Prix
+        P("Kaylee Countryman", "COU", 91, "Estados Unidos", "🇺🇸", 21, "art_grand_prix", "P1", 70, 80, potencial=90),
+        P("Jade Jacquet", "JAC", 95, "França", "🇫🇷", 19, "art_grand_prix", "P2", 55, 78, potencial=89),
+        P("Lisa Billard", "BIL", 14, "França", "🇫🇷", 19, "art_grand_prix", "P3", 45, 77, potencial=88),
+        # Hitech
+        P("Ava Dobson", "DOB", 55, "Estados Unidos", "🇺🇸", 19, "hitech", "P1", 70, 76, potencial=87),
+        P("Rachel Robertson", "ROB", 56, "Reino Unido", "🇬🇧", 20, "hitech", "P2", 55, 77, potencial=87),
+        P("Chiara Bättig", "BAT", 6, "Suíça", "🇨🇭", 18, "hitech", "P3", 40, 75, potencial=88),
+        # mercado / formandas (a regra de 2 temporadas esvazia o grid a cada virada)
+        P("Doriane Pin", "PIN", 7, "França", "🇫🇷", 21, None, "livre", 120, 86, potencial=93, concentracao=89),
+        P("Abbi Pulling", "PUL", 47, "Reino Unido", "🇬🇧", 22, None, "livre", 110, 85, potencial=91, acerto=88),
+        P("Maya Weug", "WEU", 64, "Países Baixos", "🇳🇱", 22, None, "livre", 100, 84, potencial=92),
+    ]
+    motores = [
+        _fornecedor("Tatuus T421 (Autotecnica)", 85, 90, 4.0,
+                    "Chassi único da F1 Academy: monoposto F4 turbo de 165 cv — mesma carroceria para todo mundo."),
+    ]
+    motores[0]["id"] = "tatuus_f4"
+    calendario = [
+        _etapa("GP da China", "Xangai", "China", "🇨🇳", 32, "15 mar", .55, .65, 2.1, .30, True),
+        _etapa("GP da Arábia Saudita", "Jeddah Corniche", "Arábia Saudita", "🇸🇦", 28, "19 abr", .70, .60, 1.6, .01, True),
+        _etapa("GP do Canadá", "Gilles Villeneuve", "Canadá", "🇨🇦", 40, "24 mai", .60, .65, 1.8, .35, True),
+        _etapa("GP da Grã-Bretanha", "Silverstone", "Reino Unido", "🇬🇧", 34, "5 jul", .55, .70, 2.3, .40, True),
+        _etapa("GP dos Países Baixos", "Zandvoort", "Países Baixos", "🇳🇱", 32, "23 ago", .45, .40, 2.0, .32, True),
+        _etapa("GP dos Estados Unidos", "COTA, Austin", "Estados Unidos", "🇺🇸", 36, "25 out", .60, .65, 2.1, .20, True),
+        _etapa("GP de Las Vegas", "Las Vegas Strip", "Estados Unidos", "🇺🇸", 32, "21 nov", .75, .75, 1.7, .05, True),
+    ]
+    # Jeddah foi cancelada em 2026 — opção de calendário completo, como na DB F1
+    calendario[1]["cancelavel"] = True
+    hall = [
+        {"nome": "Michèle Mouton", "pais": "França", "bandeira": "🇫🇷", "titulos": 0, "vitorias": 4, "anos": "1974-1986"},
+        {"nome": "Sabine Schmitz", "pais": "Alemanha", "bandeira": "🇩🇪", "titulos": 0, "vitorias": 2, "anos": "1988-2021"},
+        {"nome": "Jutta Kleinschmidt", "pais": "Alemanha", "bandeira": "🇩🇪", "titulos": 1, "vitorias": 1, "anos": "1985-2005"},
+        {"nome": "Desiré Wilson", "pais": "África do Sul", "bandeira": "🇿🇦", "titulos": 0, "vitorias": 1, "anos": "1978-1989"},
+        {"nome": "Ellen Lohr", "pais": "Alemanha", "bandeira": "🇩🇪", "titulos": 0, "vitorias": 1, "anos": "1985-2006"},
+        {"nome": "Maria Teresa de Filippis", "pais": "Itália", "bandeira": "🇮🇹", "titulos": 0, "vitorias": 0, "anos": "1958-1959"},
+    ]
+    # jovens gerados: as wildcard e graduadas da base feminina
+    regens = [
+        ("Chiara", "Bättig", "Suíça", "🇨🇭"), ("Zoe", "Florescu", "Romênia", "🇷🇴"),
+        ("Shi", "Wei", "China", "🇨🇳"), ("Alexia", "Danielsson", "Suécia", "🇸🇪"),
+        ("Autumn", "Fisher", "Canadá", "🇨🇦"), ("Ava", "Bennett", "Reino Unido", "🇬🇧"),
+        ("Camille", "Rousseau", "França", "🇫🇷"), ("Giulia", "Ferrari", "Itália", "🇮🇹"),
+        ("Hannah", "Keller", "Alemanha", "🇩🇪"), ("Isabel", "Navarro", "Espanha", "🇪🇸"),
+        ("Julia", "Mendes", "Brasil", "🇧🇷"), ("Kirsten", "Jansen", "Países Baixos", "🇳🇱"),
+        ("Freja", "Nielsen", "Dinamarca", "🇩🇰"), ("Erin", "Campbell", "Estados Unidos", "🇺🇸"),
+        ("Yuki", "Sato", "Japão", "🇯🇵"), ("Mackenzie", "Reid", "Austrália", "🇦🇺"),
+        ("Ingrid", "Berg", "Noruega", "🇳🇴"), ("Aoife", "Byrne", "Irlanda", "🇮🇪"),
+        ("Zeynep", "Yilmaz", "Turquia", "🇹🇷"), ("Patrycja", "Nowak", "Polônia", "🇵🇱"),
+    ]
+    return {"meta": {"id": "f1_academy_2026", "nome": "F1 Academy 2026",
+                     "categoria": "F1 Academy (F4 feminina)", "ano": 2026,
+                     "descricao": "A base da F1: 18 monopostos Tatuus idênticos, seis equipes do alto escalão júnior e as jovens que querem o grid maior — Xangai, Jeddah, Montreal, Silverstone, Zandvoort, Austin e Las Vegas. Carro igual, talento à mostra.",
+                     "rotulo_fornecedor": "Chassi", "rotulo_corrida2": "Corrida 2",
+                     "pontos_corrida": list(_f1.PONTOS_CORRIDA), "pontos_corrida2": list(_f1.PONTOS_SPRINT),
+                     "importancia_carro_sugerida": 0.45, "fator_pontos_bonus": 0.7, "pontua_abandono": False},
+            "equipes": equipes, "pilotos": pilotos, "motores": motores, "calendario": calendario,
+            "hall_da_fama": hall, "patrocinadores": copy.deepcopy(_f1.PATROCINADORES),
+            "regen_nomes": regens}
+
+
+# =====================================================================
+#  DB F1 LEGENDS (o time dos sonhos da Fórmula 1)
+# =====================================================================
+def db_f1_legends():
+    leg = dict(auge=(25, 75), contrato=12)   # lendas em auge eterno e fiéis ao time
+    E = lambda nome, cor, mot, nivel, caixa, prest, inv, titulos, proprio=False, pais="Reino Unido", bf="🇬🇧": \
+        _equipe(nome, pais, bf, cor, mot, nivel, caixa, prest, inv, titulos=titulos,
+                proprio=proprio, conf=87)
+    equipes = [
+        E("Ferrari", "#E8002D", "ferrari_v12", 92, 150, 98, 1900, 16, True, "Itália", "🇮🇹"),
+        E("McLaren", "#FF8000", "cosworth", 91, 140, 95, 1800, 10),
+        E("Mercedes", "#27F4D2", "mercedes", 90, 130, 93, 1700, 8, True, "Alemanha", "🇩🇪"),
+        E("Lotus", "#C9A227", "climax", 88, 95, 94, 1300, 7, True),
+        E("Williams", "#64C4FF", "cosworth", 87, 110, 92, 1400, 9),
+        E("Brabham", "#2E5BBC", "repco", 85, 85, 90, 1200, 2, True),
+    ]
+    P = lambda nome, sig, num, pais, bf, idade, eq, papel, sal, ovr, **k: \
+        _piloto(nome, sig, num, pais, bf, idade, eq, papel, sal, ovr, **leg, **k)
+    pilotos = [
+        # --- Ferrari
+        P("Michael Schumacher", "SCH", 1, "Alemanha", "🇩🇪", 37, "ferrari", "P1", 1900, 97,
+          velocidade=98, concentracao=97, ultrapassagem=97),
+        P("Niki Lauda", "LAU", 11, "Áustria", "🇦🇹", 30, "ferrari", "P2", 1200, 94,
+          concentracao=97, acerto=96),
+        P("Sebastian Vettel", "VET", 7, "Alemanha", "🇩🇪", 28, "ferrari", "P3", 1200, 93, largada=96),
+        P("José Froilán González", "GON", 20, "Argentina", "🇦🇷", 35, "ferrari", "teste", 450, 89),
+        # --- McLaren
+        P("Ayrton Senna", "SEN", 12, "Brasil", "🇧🇷", 31, "mclaren", "P1", 1800, 98,
+          chuva=99, velocidade=98, ultrapassagem=98),
+        P("Alain Prost", "PRO", 2, "França", "🇫🇷", 34, "mclaren", "P2", 1400, 96,
+          concentracao=97, acerto=96),
+        P("Mika Häkkinen", "HAK", 8, "Finlândia", "🇫🇮", 30, "mclaren", "P3", 1200, 94, velocidade=97),
+        P("Bruce McLaren", "BMC", 21, "Nova Zelândia", "🇳🇿", 30, "mclaren", "teste", 400, 88),
+        # --- Mercedes
+        P("Juan Manuel Fangio", "FAN", 18, "Argentina", "🇦🇷", 40, "mercedes", "P1", 1700, 97,
+          concentracao=96, acerto=97),
+        P("Stirling Moss", "MOS", 17, "Reino Unido", "🇬🇧", 28, "mercedes", "P2", 1500, 96,
+          velocidade=98, ultrapassagem=96),
+        P("Rudolf Caracciola", "CAR", 19, "Alemanha", "🇩🇪", 31, "mercedes", "P3", 800, 91, chuva=96),
+        P("Karl Kling", "KLI", 24, "Alemanha", "🇩🇪", 35, "mercedes", "teste", 350, 84),
+        # --- Lotus
+        P("Jim Clark", "CLA", 4, "Reino Unido", "🇬🇧", 28, "lotus", "P1", 1700, 97,
+          velocidade=98, fisico=95),
+        P("Emerson Fittipaldi", "FIT", 9, "Brasil", "🇧🇷", 29, "lotus", "P2", 1200, 93,
+          chuva=94, largada=93),
+        P("Jochen Rindt", "RIN", 10, "Áustria", "🇦🇹", 28, "lotus", "P3", 1100, 93, velocidade=96),
+        P("Graham Hill", "GHI", 0, "Reino Unido", "🇬🇧", 36, "lotus", "teste", 550, 88, concentracao=94),
+        # --- Williams
+        P("Jackie Stewart", "STE", 3, "Reino Unido", "🇬🇧", 32, "williams", "P1", 1500, 94,
+          chuva=96, concentracao=95),
+        P("Nelson Piquet", "PIQ", 6, "Brasil", "🇧🇷", 33, "williams", "P2", 1300, 93,
+          acerto=96, concentracao=92),
+        P("Nigel Mansell", "MAN", 5, "Reino Unido", "🇬🇧", 37, "williams", "P3", 1300, 93,
+          velocidade=97, ultrapassagem=96),
+        P("Damon Hill", "DHI", 22, "Reino Unido", "🇬🇧", 34, "williams", "teste", 500, 87, chuva=93),
+        # --- Brabham
+        P("Jack Brabham", "BRA", 14, "Austrália", "🇦🇺", 34, "brabham", "P1", 1100, 93),
+        P("Denny Hulme", "HUL", 15, "Nova Zelândia", "🇳🇿", 31, "brabham", "P2", 900, 91, concentracao=93),
+        P("Carlos Reutemann", "REU", 16, "Argentina", "🇦🇷", 30, "brabham", "P3", 1000, 91, chuva=94),
+        P("John Watson", "WAT", 23, "Reino Unido", "🇬🇧", 31, "brabham", "teste", 400, 86),
+        # --- mercado de lendas livres
+        P("Gilles Villeneuve", "VIL", 27, "Canadá", "🇨🇦", 28, None, "livre", 900, 93,
+          velocidade=97, concentracao=76, ultrapassagem=97),
+        P("Ronnie Peterson", "PET", 28, "Suécia", "🇸🇪", 34, None, "livre", 700, 93, ultrapassagem=97),
+        P("Jacky Ickx", "ICK", 33, "Bélgica", "🇧🇪", 31, None, "livre", 700, 92, chuva=97),
+        P("Clay Regazzoni", "REG", 32, "Suíça", "🇨🇭", 34, None, "livre", 600, 89, ultrapassagem=93),
+        P("Giuseppe Farina", "FAR", 30, "Itália", "🇮🇹", 44, None, "livre", 500, 88, concentracao=94),
+        P("Mike Hawthorn", "HAW", 29, "Reino Unido", "🇬🇧", 28, None, "livre", 500, 87, largada=94),
+    ]
+    motores = [
+        _fornecedor("Ferrari 312 V12", 96, 88, 24.0,
+                    "O V12 vermelho do lendário 312B/312T — rugido de Maranello na era dourada.", "ferrari"),
+        _fornecedor("Mercedes-Benz W196", 95, 90, 23.0,
+                    "As Flechas Prateadas dos anos 50: injeção direta antes dos outros.", "mercedes"),
+        _fornecedor("Cosworth DFV", 94, 86, 15.0,
+                    "O motor que qualquer equipe podia comprar e que mudou a F1 para sempre.", None),
+        _fornecedor("Coventry-Climax FPF", 93, 89, 16.0,
+                    "O 4-cilindros britânico que deu a Lotus (e Clark) o recorde da época.", "lotus"),
+        _fornecedor("Repco V8", 92, 87, 15.0,
+                    "O V8 australiano simples e leve com o qual Brabham foi bicampeão.", "brabham"),
+        _fornecedor("Maserati 250F", 90, 84, 10.0,
+                    "O monoposto cinza-azulado de 1957 — o dia de Nürburgring de Fangio.", None),
+    ]
+    for m, mid in zip(motores, ["ferrari_v12", "mercedes", "cosworth", "climax", "repco", "maserati"]):
+        m["id"] = mid
+    calendario = [
+        _etapa("GP da África do Sul", "Kyalami", "África do Sul", "🇿🇦", 78, "8 mar", .70, .65, 1.8, .18),
+        _etapa("GP de Mônaco", "Circuito de Mônaco", "Mônaco", "🇲🇨", 76, "10 mai", .20, .05, 1.2, .22),
+        _etapa("GP da França", "Reims-Gueux", "França", "🇫🇷", 60, "24 mai", .75, .75, 1.6, .28),
+        _etapa("GP da Bélgica", "Spa-Francorchamps (original)", "Bélgica", "🇧🇪", 28, "7 jun", .80, .70, 1.8, .45),
+        _etapa("GP da Grã-Bretanha", "Silverstone", "Reino Unido", "🇬🇧", 65, "5 jul", .60, .65, 2.0, .35),
+        _etapa("GP da Alemanha", "Nürburgring Nordschleife", "Alemanha", "🇩🇪", 22, "2 ago", .60, .35, 2.4, .40),
+        _etapa("GP da Áustria", "Österreichring", "Áustria", "🇦🇹", 54, "16 ago", .75, .75, 1.7, .30),
+        _etapa("GP dos Países Baixos", "Zandvoort", "Países Baixos", "🇳🇱", 70, "30 ago", .45, .40, 2.0, .33),
+        _etapa("GP da Itália", "Monza (com banking)", "Itália", "🇮🇹", 70, "6 set", .95, .80, 1.4, .18),
+        _etapa("GP dos Estados Unidos", "Watkins Glen", "Estados Unidos", "🇺🇸", 59, "4 out", .65, .70, 1.9, .30),
+        _etapa("GP do Japão", "Fuji Speedway", "Japão", "🇯🇵", 73, "1 nov", .85, .75, 1.6, .30),
+        _etapa("GP do Brasil", "Interlagos (original)", "Brasil", "🇧🇷", 71, "8 nov", .55, .70, 2.0, .40),
+    ]
+    hall = [
+        {"nome": "Lewis Hamilton* (em atividade)", "pais": "Reino Unido", "bandeira": "🇬🇧", "titulos": 7, "vitorias": 105, "anos": "2007-"},
+        {"nome": "Alberto Ascari", "pais": "Itália", "bandeira": "🇮🇹", "titulos": 2, "vitorias": 13, "anos": "1950-1955"},
+        {"nome": "Kimi Räikkönen", "pais": "Finlândia", "bandeira": "🇫🇮", "titulos": 1, "vitorias": 21, "anos": "2001-2021"},
+        {"nome": "David Coulthard", "pais": "Reino Unido", "bandeira": "🇬🇧", "titulos": 0, "vitorias": 13, "anos": "1994-2008"},
+        {"nome": "Rubens Barrichello", "pais": "Brasil", "bandeira": "🇧🇷", "titulos": 0, "vitorias": 11, "anos": "1996-2017"},
+        {"nome": "Felipe Massa", "pais": "Brasil", "bandeira": "🇧🇷", "titulos": 0, "vitorias": 11, "anos": "2002-2017"},
+        {"nome": "Jody Scheckter", "pais": "África do Sul", "bandeira": "🇿🇦", "titulos": 1, "vitorias": 10, "anos": "1972-1980"},
+        {"nome": "John Surtees", "pais": "Reino Unido", "bandeira": "🇬🇧", "titulos": 1, "vitorias": 6, "anos": "1960-1972"},
+        {"nome": "Dan Gurney", "pais": "Estados Unidos", "bandeira": "🇺🇸", "titulos": 0, "vitorias": 4, "anos": "1959-1970"},
+        {"nome": "Phil Hill", "pais": "Estados Unidos", "bandeira": "🇺🇸", "titulos": 1, "vitorias": 3, "anos": "1958-1964"},
+    ]
+    return {"meta": {"id": "f1_legends", "nome": "F1 Legends", "categoria": "F1 Legends", "ano": 2026,
+                     "descricao": "O time dos sonhos da Fórmula 1: Schumacher, Senna, Fangio, Clark, Prost, Moss e mais 20 lendas disputando os circuitos clássicos — Nordschleife, Spa original, Reims, Monza com banking e Kyalami. Motor de época, lendas em auge eterno.",
+                     "rotulo_fornecedor": "Motor", "rotulo_corrida2": None,
+                     "pontos_corrida": list(_f1.PONTOS_CORRIDA), "pontos_corrida2": list(_f1.PONTOS_SPRINT),
+                     "importancia_carro_sugerida": 0.55, "fator_pontos_bonus": 1.0, "pontua_abandono": False},
+            "equipes": equipes, "pilotos": pilotos, "motores": motores, "calendario": calendario,
+            "hall_da_fama": hall, "patrocinadores": copy.deepcopy(_f1.PATROCINADORES)}
+
+
+# =====================================================================
+#  DB INDY LEGENDS (lendas da IndyCar: ovais e ruas)
+# =====================================================================
+def db_indy_legends():
+    leg = dict(auge=(25, 75), contrato=12)
+    E = lambda nome, cor, mot, nivel, caixa, prest, inv, titulos: \
+        _equipe(nome, "Estados Unidos", "🇺🇸", cor, mot, nivel, caixa, prest, inv,
+                titulos=titulos, conf=88)
+    equipes = [
+        E("Team Penske", "#F5C400", "chevrolet", 93, 140, 97, 1500, 17),
+        E("Chip Ganassi", "#E4002B", "honda", 92, 135, 95, 1500, 17),
+        E("Newman-Haas", "#CE2B37", "cosworth_indy", 91, 125, 94, 1450, 8),
+        E("A.J. Foyt Enterprises", "#FF6712", "offenhauser", 88, 100, 92, 1200, 2),
+        E("Parnelli Jones Racing", "#26458A", "offenhauser", 87, 95, 90, 1150, 3),
+        E("Patrick Racing", "#1E5BD6", "oldsmobile", 86, 90, 88, 1100, 2),
+    ]
+    P = lambda nome, sig, num, idade, eq, papel, sal, ovr, pais="Estados Unidos", bf="🇺🇸", **k: \
+        _piloto(nome, sig, num, pais, bf, idade, eq, papel, sal, ovr, **leg, **k)
+    pilotos = [
+        # --- Team Penske
+        P("Rick Mears", "MEA", 4, 32, "team_penske", "P1", 1600, 96, concentracao=95),
+        P("Gil de Ferran", "FER", 12, 33, "team_penske", "P2", 1400, 94, acerto=96),
+        P("Hélio Castroneves", "CAS", 3, 31, "team_penske", "P3", 1300, 93, largada=95),
+        P("Danny Sullivan", "SUL", 21, 35, "team_penske", "teste", 550, 88, "Estados Unidos", "🇺🇸"),
+        # --- Chip Ganassi
+        P("Dario Franchitti", "FRA", 27, 37, "chip_ganassi", "P1", 1500, 95,
+          pais="Reino Unido", bf="🇬🇧", chuva=97, concentracao=94),
+        P("Juan Pablo Montoya", "MON", 9, 30, "chip_ganassi", "P2", 1500, 94,
+          pais="Colômbia", bf="🇨🇴", velocidade=97, ultrapassagem=96),
+        P("Bruno Junqueira", "JUN", 34, 28, "chip_ganassi", "P3", 900, 90, pais="Brasil", bf="🇧🇷"),
+        P("Tony Stewart", "TST", 16, 30, "chip_ganassi", "teste", 600, 86),
+        # --- Newman-Haas
+        P("Mario Andretti", "AND", 6, 39, "newman_haas", "P1", 1600, 97,
+          velocidade=98, ultrapassagem=97),
+        P("Michael Andretti", "MIA", 10, 33, "newman_haas", "P2", 1300, 93),
+        P("Nigel Mansell", "MAN", 5, 33, "newman_haas", "P3", 1400, 93,
+          pais="Reino Unido", bf="🇬🇧", velocidade=97),
+        P("Christian Fittipaldi", "CFP", 22, 31, "newman_haas", "teste", 550, 87, pais="Brasil", bf="🇧🇷"),
+        # --- A.J. Foyt Enterprises
+        P("A.J. Foyt", "FOY", 14, 40, "a_j_foyt_enterprises", "P1", 2200, 98,
+          fisico=97, concentracao=96, ultrapassagem=96),
+        P("Tony Kanaan", "KAN", 11, 31, "a_j_foyt_enterprises", "P2", 1400, 94, pais="Brasil", bf="🇧🇷",
+          ultrapassagem=96),
+        P("Johnny Rutherford", "RUT", 2, 36, "a_j_foyt_enterprises", "P3", 900, 90),
+        P("George Snider", "SNI", 23, 38, "a_j_foyt_enterprises", "teste", 400, 84),
+        # --- Parnelli Jones Racing
+        P("Al Unser", "ALS", 1, 36, "parnelli_jones_racing", "P1", 1400, 95, concentracao=95),
+        P("Bobby Unser", "BUN", 7, 34, "parnelli_jones_racing", "P2", 1300, 94),
+        P("Parnelli Jones", "PJJ", 30, 30, "parnelli_jones_racing", "P3", 900, 90),
+        P("Arie Luyendyk", "LUY", 25, 34, "parnelli_jones_racing", "teste", 550, 87,
+          pais="Países Baixos", bf="🇳🇱", largada=94),
+        # --- Patrick Racing
+        P("Emerson Fittipaldi", "FIT", 20, 34, "patrick_racing", "P1", 1400, 94, pais="Brasil", bf="🇧🇷",
+          acerto=95),
+        P("Al Unser Jr.", "ALJ", 32, 31, "patrick_racing", "P2", 1300, 93, ultrapassagem=95),
+        P("Bobby Rahal", "RAH", 8, 34, "patrick_racing", "P3", 1200, 92, acerto=95),
+        P("Danica Patrick", "DPA", 28, 30, "patrick_racing", "teste", 500, 84),
+        # --- mercado de lendas livres
+        P("Dan Wheldon", "WHE", 26, 31, None, "livre", 850, 91, pais="Reino Unido", bf="🇬🇧",
+          largada=96),
+        P("Alex Zanardi", "ZAN", 44, 30, None, "livre", 800, 91, pais="Itália", bf="🇮🇹",
+          ultrapassagem=97),
+        P("Paul Tracy", "TRA", 33, 31, None, "livre", 900, 92, pais="Canadá", bf="🇨🇦",
+          velocidade=96, concentracao=76),
+        P("Justin Wilson", "WIL", 24, 30, None, "livre", 600, 87, pais="Reino Unido", bf="🇬🇧"),
+        P("Robby Gordon", "GOR", 42, 32, None, "livre", 650, 86, acerto=93),
+        P("Marco Andretti", "MRO", 99, 26, None, "livre", 700, 86, potencial=90),
+    ]
+    motores = [
+        _fornecedor("Chevrolet Indy", 96, 90, 16.0, "V6 biturbo da Ilmor/Chevrolet — o motor dos títulos modernos."),
+        _fornecedor("Honda Indy", 95, 91, 15.0, "V6 biturbo híbrido da Honda — parceira de Gonçalves e Ganassi."),
+        _fornecedor("Ford-Cosworth (CART)", 94, 87, 13.0,
+                    "O granada da era CART: Ford-Cosworth turbo — som que definiu os anos 90."),
+        _fornecedor("Offenhauser", 92, 94, 8.0,
+                    "O lendário 'Offy': quase indestrutível, reinou Indianápolis por décadas."),
+        _fornecedor("Oldsmobile Aurora V8", 91, 89, 10.0,
+                    "O V8 da era IRL dos anos 2000 — simples, robusto e barato."),
+    ]
+    for m, mid in zip(motores, ["chevrolet", "honda", "cosworth_indy", "offenhauser", "oldsmobile"]):
+        m["id"] = mid
+    calendario = [
+        _etapa("GP de Long Beach", "Ruas de Long Beach", "Estados Unidos", "🇺🇸", 85, "12 abr", .50, .35, 1.7, .12),
+        _etapa("500 Milhas de Indianápolis", "Indianapolis Motor Speedway (oval)", "Estados Unidos", "🇺🇸", 200, "25 mai", .95, .85, 1.5, .05),
+        _etapa("Milwaukee 250", "Milwaukee Mile (oval)", "Estados Unidos", "🇺🇸", 250, "21 jun", .90, .70, 1.8, .06),
+        _etapa("GP de Road America", "Road America", "Estados Unidos", "🇺🇸", 55, "28 jun", .55, .65, 2.1, .25),
+        _etapa("Pocono 500", "Pocono Raceway (oval)", "Estados Unidos", "🇺🇸", 200, "4 jul", .92, .80, 1.7, .15),
+        _etapa("GP de Mosport", "Canadian Tire Motorsport Park", "Canadá", "🇨🇦", 60, "19 jul", .50, .45, 2.0, .30),
+        _etapa("Michigan 500", "Michigan International Speedway (oval)", "Estados Unidos", "🇺🇸", 250, "9 ago", .95, .75, 1.6, .10),
+        _etapa("GP de Laguna Seca", "Laguna Seca", "Estados Unidos", "🇺🇸", 95, "13 set", .45, .40, 2.2, .08),
+        _etapa("Phoenix 200", "Phoenix Raceway (oval)", "Estados Unidos", "🇺🇸", 210, "15 mar", .90, .75, 1.6, .05),
+        _etapa("Ontario 500", "Ontario Motor Speedway (oval)", "Estados Unidos", "🇺🇸", 250, "1 nov", .90, .70, 1.6, .08),
+    ]
+    meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
+    calendario.sort(key=lambda c: (meses.index(c["data"].split()[1]), int(c["data"].split()[0])))
+    hall = [
+        {"nome": "Rodger Ward", "pais": "Estados Unidos", "bandeira": "🇺🇸", "titulos": 2, "vitorias": 26, "anos": "1951-1966"},
+        {"nome": "Gordon Johncock", "pais": "Estados Unidos", "bandeira": "🇺🇸", "titulos": 1, "vitorias": 25, "anos": "1962-1986"},
+        {"nome": "Tom Sneva", "pais": "Estados Unidos", "bandeira": "🇺🇸", "titulos": 2, "vitorias": 13, "anos": "1976-1995"},
+        {"nome": "Cristiano da Matta", "pais": "Brasil", "bandeira": "🇧🇷", "titulos": 1, "vitorias": 12, "anos": "1998-2006"},
+        {"nome": "Adrián Fernández", "pais": "México", "bandeira": "🇲🇽", "titulos": 0, "vitorias": 11, "anos": "1993-2004"},
+        {"nome": "Jimmy Vasser", "pais": "Estados Unidos", "bandeira": "🇺🇸", "titulos": 1, "vitorias": 10, "anos": "1992-2008"},
+    ]
+    return {"meta": {"id": "indy_legends", "nome": "Indy Legends", "categoria": "Indy Legends", "ano": 2026,
+                     "descricao": "As lendas da IndyCar com os mesmos monopostos de sempre: Foyt, os Unser, Mario Andretti, Mears, Montoya e Franchitti disputando as 500 Milhas de Indianápolis e os ovais clássicos — Milwaukee, Pocono, Michigan e o histórico Ontario Motor Speedway.",
+                     "rotulo_fornecedor": "Motor", "rotulo_corrida2": None,
+                     "pontos_corrida": list(PONTOS_INDY), "pontos_corrida2": list(PONTOS_INDY),
+                     "importancia_carro_sugerida": 0.50, "fator_pontos_bonus": 0.5, "pontua_abandono": True},
+            "equipes": equipes, "pilotos": pilotos, "motores": motores, "calendario": calendario,
+            "hall_da_fama": hall, "patrocinadores": copy.deepcopy(_f1.PATROCINADORES)}
+
+
 def dbs_embutidas():
-    return {"f1_2026": db_f1_2026(), "indy_2026": db_indy_2026(),
-            "stock_2026": db_stock_2026(), "dtm_2026": db_dtm_2026()}
+    return {"f1_2026": db_f1_2026(), "f1_academy_2026": db_f1_academy_2026(),
+            "f1_legends": db_f1_legends(), "indy_2026": db_indy_2026(),
+            "indy_legends": db_indy_legends(), "stock_2026": db_stock_2026(),
+            "dtm_2026": db_dtm_2026()}
 
 
 def grid_natural(db_dados):

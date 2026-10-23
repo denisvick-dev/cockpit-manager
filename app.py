@@ -25,21 +25,21 @@ st.set_page_config(page_title="Cockpit Manager", page_icon="🏎️", layout="wi
 st.markdown("""
 <style>
   :root{
-    --cm-red:#E10600; --cm-red2:#FF3B30; --cm-bg:#0A0E17; --cm-panel:#121A2B;
+    --cm-red:#C8102E; --cm-red2:#E02444; --cm-bg:#0B0F14; --cm-panel:#151C25;
     --cm-border:rgba(148,163,184,.16); --cm-text:#F4F7FB; --cm-muted:#94A3B8;
   }
   .stApp{
     background:
-      radial-gradient(1100px 520px at 85% -10%, rgba(225,6,0,.14), transparent 60%),
-      radial-gradient(900px 480px at -10% 0%, rgba(37,99,235,.10), transparent 55%),
-      linear-gradient(180deg,#0A0E17 0%, #0B101E 100%);
+      radial-gradient(1100px 520px at 85% -10%, rgba(200,16,46,.14), transparent 60%),
+      radial-gradient(900px 480px at -10% 0%, rgba(31,78,121,.16), transparent 55%),
+      linear-gradient(180deg,#0B0F14 0%, #0D111A 100%);
     color:var(--cm-text);
   }
   .block-container{max-width:1480px; padding:2rem 2.4rem 3.2rem;}
   @media (max-width:760px){ .block-container{padding:1.1rem .9rem 2rem;} }
-  h1,h2{letter-spacing:-.03em; color:#F8FAFC; font-weight:850;}
-  h3{letter-spacing:.045em; color:#E2E8F0; font-weight:750;}
-  a{color:#FF6B61 !important;}
+  h1,h2{letter-spacing:-.02em; color:#F8FAFC; font-weight:700;}
+  h3{letter-spacing:.045em; color:#E2E8F0; font-weight:600;}
+  a{color:#E4636F !important;}
   footer{visibility:hidden;} .stDeployButton{display:none;}
 
   /* ---------- bandeiras (imagens padronizadas 96x72) ---------- */
@@ -48,24 +48,24 @@ st.markdown("""
 
   /* ---------- hero / marcas ---------- */
   .hero{border:1px solid var(--cm-border); border-radius:22px; overflow:hidden; margin-bottom:1.15rem;
-    background:linear-gradient(115deg, rgba(225,6,0,.30), rgba(18,26,43,.94) 46%, rgba(10,14,23,.98));
+    background:linear-gradient(115deg, rgba(200,16,46,.30), rgba(21,28,37,.94) 46%, rgba(10,14,23,.98));
     box-shadow:0 22px 55px rgba(0,0,0,.35);}
   .hero-inner{padding:1.65rem 1.8rem 1.25rem; display:flex; gap:1.15rem; align-items:center;}
   .logo-mark{width:66px;height:66px;flex:0 0 66px;border-radius:18px;display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(145deg,#FF2A1F,#8F0400); color:#fff; font-size:1.45rem; font-weight:950; letter-spacing:-.05em;
-    box-shadow:0 14px 30px rgba(225,6,0,.35), inset 0 1px 0 rgba(255,255,255,.35);}
-  .kicker{font-size:.68rem; font-weight:850; letter-spacing:.19em; text-transform:uppercase; color:#FF8A80;}
+    background:linear-gradient(145deg,#D61437,#93021C); color:#fff; font-size:1.45rem; font-weight:700; letter-spacing:-.05em;
+    box-shadow:0 14px 30px rgba(200,16,46,.35), inset 0 1px 0 rgba(255,255,255,.35);}
+  .kicker{font-size:.68rem; font-weight:700; letter-spacing:.19em; text-transform:uppercase; color:#E88A90;}
   .hero h1{font-size:2.55rem; line-height:.98; margin:.18rem 0 .35rem;}
   .hero p{margin:0; color:#CBD5E1; max-width:820px; font-size:.98rem;}
   .chips{display:flex; flex-wrap:wrap; gap:.45rem; padding:0 1.8rem 1.35rem;}
   .chip{border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06); color:#E2E8F0;
-    border-radius:999px; padding:.30rem .68rem; font-size:.76rem; font-weight:750;}
-  .chip.hot{background:rgba(225,6,0,.18); border-color:rgba(255,59,48,.45); color:#FFD7D3;}
+    border-radius:999px; padding:.30rem .68rem; font-size:.76rem; font-weight:600;}
+  .chip.hot{background:rgba(200,16,46,.18); border-color:rgba(224,36,68,.5); color:#FFD7D3;}
   .checker{height:10px; opacity:.92; background:repeating-conic-gradient(#E5E7EB 0% 25%, #111827 0% 50%); background-size:18px 18px;}
   @media (max-width:760px){ .hero-inner{padding:1.15rem} .hero h1{font-size:2rem} .logo-mark{width:52px;height:52px;flex-basis:52px} .chips{padding:0 1.15rem 1.1rem} }
 
   .page-head{border-bottom:1px solid var(--cm-border); margin:.1rem 0 1.15rem; padding-bottom:.85rem;}
-  .page-head .kicker{color:#FF6B61;}
+  .page-head .kicker{color:#E4636F;}
   .page-head h1{font-size:2rem; margin:.12rem 0 .15rem;}
   .page-head p{margin:0; color:var(--cm-muted);}
 
@@ -83,17 +83,17 @@ st.markdown("""
   /* ---------- metricas, botoes, abas e tabelas ---------- */
   div[data-testid="stMetric"]{background:linear-gradient(160deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
     border:1px solid var(--cm-border); border-radius:15px; padding:13px 14px; box-shadow:0 10px 24px rgba(0,0,0,.20);}
-  div[data-testid="stMetric"] label{font-size:.68rem !important; letter-spacing:.13em; text-transform:uppercase; color:var(--cm-muted) !important; font-weight:800;}
-  div[data-testid="stMetric"] div[data-testid="stMetricValue"]{font-weight:850; letter-spacing:-.025em;}
+  div[data-testid="stMetric"] label{font-size:.68rem !important; letter-spacing:.13em; text-transform:uppercase; color:var(--cm-muted) !important; font-weight:600;}
+  div[data-testid="stMetric"] div[data-testid="stMetricValue"]{font-weight:700; letter-spacing:-.025em;}
   .stButton>button,.stDownloadButton>button{border-radius:12px; border:1px solid rgba(255,255,255,.14);
-    font-weight:750; padding:.58rem 1rem; transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;}
+    font-weight:600; padding:.58rem 1rem; transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;}
   .stButton>button:hover,.stDownloadButton>button:hover{transform:translateY(-1px); filter:brightness(1.08);}
   .stButton>button[kind="primary"],.stDownloadButton>button[kind="primary"]{
-    background:linear-gradient(135deg,#FF2418,#A80400); color:#fff; border-color:rgba(255,255,255,.12);
-    box-shadow:0 12px 28px rgba(225,6,0,.28);}
+    background:linear-gradient(135deg,#D61437,#93021C); color:#fff; border-color:rgba(255,255,255,.12);
+    box-shadow:0 12px 28px rgba(200,16,46,.28);}
   .stTabs [data-baseweb="tab-list"]{gap:5px; border-bottom:1px solid var(--cm-border); padding-bottom:6px;}
   .stTabs [data-baseweb="tab"]{border-radius:10px 10px 0 0; padding:.48rem .78rem; font-weight:700;}
-  .stTabs [aria-selected="true"]{background:rgba(225,6,0,.14); color:#fff;}
+  .stTabs [aria-selected="true"]{background:rgba(200,16,46,.14); color:#fff;}
   div[data-testid="stDataFrame"],div[data-testid="stDataEditor"]{border:1px solid var(--cm-border);
     border-radius:14px; overflow:hidden; box-shadow:0 10px 28px rgba(0,0,0,.18);}
   div[data-testid="stExpander"]{border:1px solid var(--cm-border); border-radius:13px; background:rgba(255,255,255,.022);}
@@ -102,21 +102,21 @@ st.markdown("""
   hr{border-color:var(--cm-border);}
 
   /* ---------- sidebar profissional ---------- */
-  section[data-testid="stSidebar"]{background:linear-gradient(180deg,#0D1424 0%,#080C15 100%); border-right:1px solid var(--cm-border);}
+  section[data-testid="stSidebar"]{background:linear-gradient(180deg,#0E131A 0%,#090D13 100%); border-right:1px solid var(--cm-border);}
   .side-brand{display:flex; gap:10px; align-items:center; margin:.15rem 0 .9rem;}
   .logo-mini{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(145deg,#FF2A1F,#8F0400); color:#fff; font-weight:950; box-shadow:0 9px 20px rgba(225,6,0,.30);}
-  .side-brand .b1{font-weight:950; letter-spacing:.08em; line-height:.95; color:#fff;}
-  .side-brand .b2{font-size:.65rem; letter-spacing:.24em; color:#FF8A80; font-weight:850;}
+    background:linear-gradient(145deg,#D61437,#93021C); color:#fff; font-weight:700; box-shadow:0 9px 20px rgba(200,16,46,.30);}
+  .side-brand .b1{font-weight:700; letter-spacing:.08em; line-height:.95; color:#fff;}
+  .side-brand .b2{font-size:.65rem; letter-spacing:.24em; color:#E88A90; font-weight:700;}
   .side-team{border-radius:15px; padding:13px 14px; margin-bottom:.75rem; color:#fff;
     border:1px solid rgba(255,255,255,.13); box-shadow:0 12px 28px rgba(0,0,0,.25);}
-  .side-team .nome{font-size:1.02rem; font-weight:850; line-height:1.15; margin:.35rem 0 .18rem;}
+  .side-team .nome{font-size:1.02rem; font-weight:700; line-height:1.15; margin:.35rem 0 .18rem;}
   .side-team .meta{font-size:.74rem; color:rgba(255,255,255,.82); line-height:1.45;}
   section[data-testid="stSidebar"] div[role="radiogroup"] label{border:1px solid transparent; border-radius:11px;
     padding:.42rem .62rem; margin-bottom:2px; transition:background .12s ease,border-color .12s ease;}
   section[data-testid="stSidebar"] div[role="radiogroup"] label:hover{background:rgba(255,255,255,.055);}
   section[data-testid="stSidebar"] div[role="radiogroup"] label:has(input:checked){
-    background:linear-gradient(90deg, rgba(225,6,0,.24), rgba(225,6,0,.07)); border-color:rgba(255,59,48,.38);}
+    background:linear-gradient(90deg, rgba(200,16,46,.24), rgba(200,16,46,.07)); border-color:rgba(224,36,68,.4);}
 
   /* ---------- barras de desempenho e noticias ---------- */
   .stat{margin:.35rem 0 .75rem;}
@@ -130,7 +130,7 @@ st.markdown("""
     padding:9px 13px; margin-bottom:7px; box-shadow:0 8px 20px rgba(0,0,0,.16);}
   .small{opacity:.72; font-size:.83em;}
   .race-hero{border:1px solid var(--cm-border); border-radius:18px; padding:18px 20px; margin-bottom:12px;
-    background:linear-gradient(115deg, rgba(225,6,0,.22), rgba(18,26,43,.92) 48%, rgba(10,14,23,.98));}
+    background:linear-gradient(115deg, rgba(200,16,46,.22), rgba(21,28,37,.92) 48%, rgba(10,14,23,.98));}
   .race-hero h1{font-size:1.85rem; margin:.1rem 0;}
   ::-webkit-scrollbar{width:10px;height:10px} ::-webkit-scrollbar-thumb{background:#26324A;border-radius:99px}
 
@@ -144,7 +144,7 @@ st.markdown("""
   .side-stat{background:linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.02));
     border:1px solid var(--cm-border); border-radius:12px; padding:9px 11px}
   .side-stat .lab{font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--cm-muted)}
-  .side-stat .val{font-size:1rem; font-weight:800; margin-top:3px; white-space:nowrap}
+  .side-stat .val{font-size:1rem; font-weight:600; margin-top:3px; white-space:nowrap}
   .flag-img{box-shadow:0 1px 4px rgba(0,0,0,.35)}
 </style>
 """, unsafe_allow_html=True)
@@ -208,8 +208,10 @@ def cabecalho_inicial():
         </div>
       </div>
       <div class="chips">
-        <span class="chip hot">Fórmula 1</span><span class="chip">Fórmula Indy</span>
-        <span class="chip">Stock Car</span><span class="chip">DTM</span>
+        <span class="chip hot">F1 2026</span><span class="chip hot">F1 Academy</span>
+        <span class="chip">F1 Legends</span><span class="chip">Fórmula Indy</span>
+        <span class="chip">Indy Legends</span><span class="chip">Stock Car</span>
+        <span class="chip">DTM</span>
         <span class="chip">🛠️ Editor de DBs</span><span class="chip">👥 Grid a partir de 22</span>
       </div>
       <div class="checker"></div>
@@ -217,13 +219,13 @@ def cabecalho_inicial():
     """, unsafe_allow_html=True)
 
 
-def barra_stat(rotulo, valor, obs="", cor="#E10600"):
+def barra_stat(rotulo, valor, obs="", cor="#C8102E"):
     v = max(0.0, min(100.0, float(valor)))
     small = f"<small>{obs}</small>" if obs else ""
     st.markdown(
         f'<div class="stat"><div class="stat-top"><span>{rotulo}</span><strong>{v:.0f}</strong></div>'
         f'<div class="stat-track"><div class="stat-fill" style="width:{v:.0f}%;'
-        f'background:linear-gradient(90deg,{cor},#FF7A6E)"></div></div>{small}</div>',
+        f'background:linear-gradient(90deg,{cor},#E4636F)"></div></div>{small}</div>',
         unsafe_allow_html=True)
 
 
@@ -291,7 +293,7 @@ def tela_inicial():
         eq = next(e for e in sel_db["equipes"] if e["id"] == eq_id)
         mot = next((m for m in sel_db["motores"] if m["id"] == eq["motor_id"]), sel_db["motores"][0])
         rot = meta.get("rotulo_fornecedor", "Motor")
-        st.markdown(f'<div class="team-bar" style="background:linear-gradient(112deg,{eq["cor"]} 0%, rgba(11,16,32,.93) 58%, #0B1020 100%)">'
+        st.markdown(f'<div class="team-bar" style="background:linear-gradient(112deg,{eq["cor"]} 0%, rgba(13,17,26,.93) 58%, #0D111A 100%)">'
                     f'<div class="team-main"><div class="team-flag">{bnd.img_bandeira(eq["bandeira"], 44)}</div>'
                     f'<div><div class="kicker">{eq["pais"]}</div><h2>{eq["nome_completo"]}</h2>'
                     f'<p>{rot} {"próprio" if eq.get("motor_proprio") else "cliente"}: <b>{mot["nome"]}</b> '
@@ -426,7 +428,7 @@ def df_pilotos_equipe(game, equipe_id):
 
 def barra_equipe(eq):
     st.markdown(
-        f'<div class="team-bar" style="background:linear-gradient(112deg,{eq["cor"]} 0%, rgba(11,16,32,.93) 58%, #0B1020 100%)">'
+        f'<div class="team-bar" style="background:linear-gradient(112deg,{eq["cor"]} 0%, rgba(13,17,26,.93) 58%, #0D111A 100%)">'
         f'<div class="team-main"><div class="team-flag">{bnd.img_bandeira(eq["bandeira"], 44)}</div>'
         f'<div><div class="kicker">Sua equipe · {eq["pais"]}</div><h2>{eq["nome_completo"]}</h2>'
         f'<p>Prestígio {eq["prestigio"]} · {eq.get("titulos_construtores", 0)} título(s) de construtores na história</p></div></div></div>',
@@ -994,11 +996,18 @@ e salário baixo são o atalho clássico das equipes pequenas. Lembre que contra
 10 conquistas para caçar (como no original!) e um Hall da Fama com Senna, Schumacher, Lauda, Hunt...
 Seus pilotos entram nele ao pendurar o capacete com 2+ títulos ou 30+ vitórias neste save.
 
-### 🏎️ Categorias além da F1
+### 🏎️ As 7 DBs embutidas
+- **F1 2026** — a DB clássica: 11 equipes, 24 etapas, novo regulamento, Bortoleto na Audi.
+- **F1 Academy** — a base feminina da F1: 18 monopostos **Tatuus idênticos**, 6 equipes reais de 2026
+  (Prema, ART, Campos, MP, Rodin, Hitech) e formandas que sobem a cada virada — carro igual, talento à mostra.
+- **F1 Legends** — o time dos sonhos: Schumacher, Senna, Fangio, Clark, Prost e Moss em circuitos
+  clássicos (Nordschleife, Spa original, Reims, Monza com banking) com motores de época (DFV, Climax, Repco).
 - **Fórmula Indy** — ovais, ruas e mistos; todos pontuam (50 pts a vitória) e as **500 Milhas** são o auge do ano.
+- **Indy Legends** — as lendas da IndyCar (Foyt, Unser, Mario Andretti, Mears, Montoya) nas 500 Milhas e
+  nos ovais clássicos: Milwaukee, Pocono, Michigan e o histórico Ontario Motor Speedway.
 - **Stock Car** — sprint no sábado (55 pts) + principal no domingo (80 pts), grid de 34 SUVs V8, Corrida do Milhão e Endurance.
 - **DTM** — GT3 alemães com **duas corridas iguais** por fim de semana (25 pts cada vitória).
-Em cada DB, o "fornecedor" muda de nome (motor, montadora ou carro GT3), mas o coração do jogo é o mesmo.
+Em cada DB, o "fornecedor" muda de nome (motor, montadora, chassi ou carro GT3), mas o coração do jogo é o mesmo.
 
 ### 👥 Tamanho do grid (começa em 22)
 Na tela inicial você escolhe quantos pilotos titulares o grid terá. Acima do natural da DB, as equipes
@@ -1033,7 +1042,7 @@ else:
             '<div><div class="b1">COCKPIT</div><div class="b2">MANAGER</div></div></div>',
             unsafe_allow_html=True)
         st.markdown(
-            f'<div class="side-team" style="background:linear-gradient(125deg,{eqj["cor"]} 0%, rgba(11,16,32,.94) 62%)">'
+            f'<div class="side-team" style="background:linear-gradient(125deg,{eqj["cor"]} 0%, rgba(13,17,26,.94) 62%)">'
             f'{bnd.img_bandeira(eqj["bandeira"], 26)}'
             f'<div class="nome">{eqj["nome"]}</div>'
             f'<div class="meta">{meta_game(game).get("nome", "F1 2026")} · grid com {len(sim.titulares(game))} pilotos</div></div>',
