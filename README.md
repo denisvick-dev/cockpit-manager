@@ -5,7 +5,8 @@ Um remake em **Python + Streamlit** do clássico brasileiro **Cockpit Manager '1
 [**DB F1 2026 v1.0 by Jonathan Daniel**](http://cockpitmanager.blogspot.com/2026/05/db-f1-2026-v10-by-jonathan-daniel.html)
 do blog *Cockpit Manager - Brasil*.
 
-Comande equipes em **7 DBs** — F1 2026, **F1 Academy**, **F1 Legends**, Fórmula Indy, **Indy Legends**,
+Comande equipes em **8 DBs** — F1 2026, **F1 Academy**, **F1 Legends**, **F1 Históricas (1950→2020)**,
+Fórmula Indy, **Indy Legends**,
 Stock Car e DTM — (ou crie a sua),
 desenvolva o carro, negocie fornecedores e patrocinadores, contrate pilotos, acerte a estratégia
 de pneus e paradas e jogue **temporadas sem limite**: pilotos envelhecem, evoluem, se aposentam,
@@ -35,7 +36,7 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 | `app.py` | Interface Streamlit (telas: Escritório, Corrida, Carro, Pilotos, Motores, Finanças, Campeonato, Hall da Fama…) |
 | `simulacao.py` | Motor do jogo: classificação, corrida, estratégia, desenvolvimento, finanças, mercado, evolução e virada de temporada |
 | `dados2026.py` | A DB F1 2026: 11 equipes, 49 pilotos, 10 motores, calendário de 24 etapas |
-| `dbs.py` | Sistema de DBs: **F1 2026**, **F1 Academy** (18 Tatuus idênticos, grade real de 2026), **F1 Legends** (Schumacher, Senna, Fangio… nos circuitos clássicos), **Fórmula Indy** (25 carros, 18 etapas, Indy 500), **Indy Legends** (Foyt, Unser, Mario Andretti nos ovais históricos), **Stock Car** (34 SUVs V8, sprint+principal), **DTM** (GT3, 2 corridas/etapa) + validação de DBs personalizadas |
+| `dbs.py` | Sistema de DBs: **F1 2026**, **F1 Academy** (18 Tatuus idênticos, grade real de 2026), **F1 Legends** (Schumacher, Senna, Fangio… nos circuitos clássicos), **F1 Históricas** (8 temporadas âncora: 1950·1960·…·2020 com grids, motores e calendários reais da época), **Fórmula Indy** (25 carros, 18 etapas, Indy 500), **Indy Legends** (Foyt, Unser, Mario Andretti nos ovais históricos), **Stock Car** (34 SUVs V8, sprint+principal), **DTM** (GT3, 2 corridas/etapa) + validação de DBs personalizadas |
 | `editor_db.py` | Editor de DBs na tela inicial: edite equipes/pilotos/calendário/fornecedores, valide, baixe/compartilhe o `.json` e jogue na hora |
 | `bandeiras.py` + `assets/bandeiras/` | Bandeiras dos países como **imagens PNG locais** (o Windows não renderiza emoji de bandeira!) — 45 países padronizados em 96×72 px, fonte: flagcdn.com / flag-icons (domínio público) |
 | `tools/padronizar_bandeiras.py` | Regenera/atualiza as bandeiras: baixa do flagcdn e encaixa todas no mesmo tamanho, sem distorcer (`python tools/padronizar_bandeiras.py`) |
@@ -51,7 +52,8 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
   de potência para quem ficar sem caixa
 - **Pilotos com os 7 atributos clássicos** (Velocidade, Chuva, Concentração, Largada, Ultrapassagem,
   Acerto de carro, Físico), salários por corrida, contratos de 1º/2º piloto e piloto de testes,
-  tudo negociado **para a temporada seguinte**
+  tudo negociado **para a temporada seguinte** — inclusive **pré-contrato com sinal** (fecha na
+  hora, sem chance de recusa, como no original)
 - **Estratégia de corrida**: pneu de largada, número de paradas e ritmo, com clima (seco/molhado)
 - **Patrocinadores** com bônus por ponto/pódio/vitória e premiação de construtores
 - **Hall da Fama** (Senna, Schumacher, Lauda, Hunt…) com indução dos seus pilotos
@@ -77,6 +79,13 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
   (o time dos sonhos em Monza com banking, Nordschleife, Spa original e Reims, com motores de época —
   DFV, Climax, Repco, Offy) e **Indy Legends** (as lendas da IndyCar nas 500 Milhas e nos ovais
   clássicos: Milwaukee, Pocono, Michigan e Ontario).
+- **F1 Históricas**: 8 temporadas âncora — **1950, 1960, 1970, 1980, 1990, 2000, 2010 e 2020** —
+  com grids, equipes, motores, Hall da Fama e calendários reais de cada época (de Farina na Alfa a
+  Hamilton na Mercedes) e **a pontuação daquele ano** (8-6-4-3-2 nos anos 50/60 → 25-18-15… moderna).
+  Escolha o ano no seletor 📅 da tela inicial.
+- **Pré-contrato** no mercado de pilotos: pague um **sinal de 3 corridas do salário** e feche o
+  acordo na hora — sem chance de recusa. Cancelar não devolve o sinal (e um piloto que se aposentar
+  antes da virada deixa o acordo no vazio, com aviso no feed).
 - **Tipografia padrão da F1** — família oficial **Formula1 Display** (títulos e marcas) + **Titillium Web**
   (texto), auto-hospedadas (`.streamlit/config.toml` + `static/fonts/`), com tema grafite + crimson.
   A fonte Formula1 e as marcas são propriedade da Formula 1, usadas neste projeto de fã não comercial;

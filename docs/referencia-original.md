@@ -54,15 +54,15 @@ O original: manager de F1 para Windows, lançado em **11/04/2014**, desenvolvido
 | Original ('14) | No remake | Onde |
 |---|---|---|
 | Novo jogo + equipe criada (nome/país/cor) | ✅ | `tela_inicial()` |
-| Temporadas 1950→atual | ⚠️ parcial — DBs fechadas (F1 2026, Academy, Legends, Indy, Indy Legends, Stock, DTM) | `dbs.py` |
+| Temporadas 1950→atual | ✅ — 8 temporadas históricas (1950·1960·1970·1980·1990·2000·2010·2020) + as DBs atuais | `dbs.db_f1_historica`, seletor em `tela_inicial()` |
 | Salvar/carregar arquivo, autosave | ✅ (salvo no navegador + download `.json`/zip) | `pagina_save()` |
 | Velocidade da corrida | ➖ n/a — a simulação é instantânea por etapa | — |
 | Notícias de contratos/aposentadoria | ✅ feed de notícias | `sim.noticia` |
 | Investimentos (6 eixos, falência) | ✅ aero/caixa/freio/elétrico/direção/confiabilidade + alerta de caixa | `pagina_carro()` |
 | Trocar motor + escolher motor do ano que vem | ✅ | `pagina_motores()` |
 | Mercado (papéis, salário/corrida, famosos, teste→titular) | ✅ (1º/2º/3º/4º/teste/livre, propostas, reputação no prestígio) | `pagina_pilotos()` |
-| Pré-contrato | ❌ não existe ainda | — |
-| Banco (empréstimo + juros semanais) | ❌ não existe ainda | — |
+| Pré-contrato | ✅ — sinal de 3 corridas do salário fecha o acordo na hora (não reembolsável) | `sim.pre_contratar_piloto`, `pagina_pilotos()` |
+| Banco (empréstimo + juros semanais) | ❌ fora de escopo nesta rodada (não priorizado) | — |
 | Patrocínios por nível | ✅ (fixo/corrida + bônus/ponto) | `pagina_financas()` |
 | Financeiro entradas/saídas | ✅ caixa, salários, bônus | `pagina_escritorio()`, `pagina_financas()` |
 | Pontuação F1 real (25/18/15) | ✅ (cada DB usa o sistema da sua categoria) | `dbs.py`/`simulacao.py` |
@@ -75,5 +75,13 @@ O original: manager de F1 para Windows, lançado em **11/04/2014**, desenvolvido
 ## Pendências sugeridas (a partir do vídeo)
 
 1. **Banco**: empréstimo com juros semanais na tela de finanças (risco real de falência, como no original).
-2. **Pré-contrato** no mercado de pilotos.
-3. **Temporadas históricas** (1950→…) como no original — fora do escopo atual das DBs.
+   — **não priorizado** nesta rodada.
+2. **Pré-contrato** no mercado de pilotos. — ✅ **implementado**: na aba *Negociar*, escolha entre proposta
+   comum (grátis, com chance de recusa) e **pré-contrato**, que cobra um sinal de 3 corridas do salário
+   (mín. US$ 300 mil) e fecha o acordo na hora. Cancelamento não devolve o sinal; se o piloto se aposentar
+   antes da virada, o acordo cai no vazio (com aviso no feed). Fonte: `sim.pre_contratar_piloto`.
+3. **Temporadas históricas** (1950→…) como no original. — ✅ **implementadas**: 8 temporadas âncora
+   (**1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020**) na DB "F1 Históricas", com grids, equipes,
+   motores, calendários reais da época e a pontuação daquele ano (8-6-4-3-2 nos anos 50/60 até os
+   25-18-15… modernos). Escolha o ano no seletor **📅 Temporada histórica** da tela inicial.
+   Fonte: `dbs.db_f1_historica` + `_hist_19XX`.

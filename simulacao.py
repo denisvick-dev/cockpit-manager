@@ -553,6 +553,36 @@ def negociar_piloto(game, piloto_id, papel, salario, anos):
     return False, rng.choice(motivos)
 
 
+def taxa_sinal(salario):
+    """Taxa de sinalização do pré-contrato: equivalente a 3 corridas do salário (mín. 300)."""
+    return max(300, int(salario) * 3)
+
+
+def pre_contratar_piloto(game, piloto_id, papel, salario, anos):
+    """Pré-contrato como no original: com o sinal pago, o acordo fecha na hora (sem
+    chance de recusa), vale para a próxima temporada e a taxa não é devolvida se o
+    contrato for cancelado. Retorna (bool, mensagem)."""
+    p = piloto(game, piloto_id)
+    eqj = equipe(game, game["equipe_jogador"])
+    if p["aposentado"]:
+        return False, f"{p['nome']} se aposentou — não há pré-contrato a assinar."
+    if piloto_id in game["contratos_proxima"]:
+        return False, f"Já existe um acordo com {p['nome']} para {game['ano'] + 1}."
+    taxa = taxa_sinal(salario)
+    if eqj["caixa"] < taxa / 1000.0:
+        return False, (f"Caixa insuficiente para o sinal de {fmt_dinheiro_k(taxa)} "
+                       f"(você tem {fmt_dinheiro_m(eqj['caixa'])}).")
+    lancar_financa(game, f"Sinal — pré-contrato de {p['nome']}", -taxa)
+    game["contratos_proxima"][piloto_id] = {"papel": papel, "salario": int(salario),
+                                            "anos": int(anos), "pre": True, "sinal": taxa}
+    _rot = {"P1": "1º piloto", "P2": "2º piloto", "P3": "3º piloto", "P4": "4º piloto"}.get(papel, "piloto de testes")
+    noticia(game, f"📝 **{p['nome']}** assinou pré-contrato com a {eqj['nome']} para {game['ano'] + 1} "
+                  f"(sinal de {fmt_dinheiro_k(taxa)} pagos; {_rot}, {fmt_dinheiro_k(salario)}/corrida).")
+    return True, (f"Pré-contrato fechado com {p['nome']}! Sinal de {fmt_dinheiro_k(taxa)} pago — sem chance de "
+                  f"recusa, ele veste seu macacão em {game['ano'] + 1} como {_rot} ({fmt_dinheiro_k(salario)}/corrida). "
+                  f"A taxa não é devolvida se você cancelar.")
+
+
 # -------------------------------------------------------------- conquistas
 def _desbloquear(game, cid):
     if cid not in game["conquistas"]:
@@ -690,6 +720,9 @@ def virar_temporada(game):
             p["salario_corrida"], p["contrato_anos"] = c["salario"], c["anos"]
             if eqj["id"] not in p["equipes_historico"]:
                 p["equipes_historico"].append(eqj["id"])
+        elif c.get("pre"):
+            noticia(game, f"📄 O pré-contrato com **{p['nome']}** caiu no vazio: ele se aposentou antes de assinar. "
+                          f"O sinal de {fmt_dinheiro_k(c.get('sinal', 0))} não foi devolvido.")
     game["contratos_proxima"] = {}
 
     # mercado da IA: preencher vagas, promover reservas, caçar jovens

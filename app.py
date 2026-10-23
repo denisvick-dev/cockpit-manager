@@ -256,7 +256,8 @@ def _slider_grid(sel_db, key_suffix=""):
     minimo = 22 if maximo >= 22 else max(4, len(sel_db["equipes"]))
     padrao = max(minimo, min(maximo, natural))
     return st.slider(
-        "👥 Pilotos no grid (titulares) — começa em 22", minimo, maximo, padrao,
+        "👥 Pilotos no grid (titulares)" + (" — começa em 22" if minimo == 22 else ""),
+        minimo, maximo, padrao,
         help=f"Grid natural desta DB: {natural}. Acima disso, as equipes inscrevem 3º e 4º carros "
              f"com reservas e jovens do mercado; abaixo, os carros excedentes sao cortados.",
         key=f"qtd_grid{key_suffix}")
@@ -275,6 +276,17 @@ def tela_inicial():
         "📚 Base de dados (DB)", list(disp.keys()),
         format_func=lambda k: f"{disp[k]['meta'].get('nome', k)} — {disp[k]['meta'].get('categoria', '')}")
     sel_db = disp[db_chave]
+    if sel_db["meta"].get("anos_historicos"):
+        _anos = [int(a) for a in sel_db["meta"]["anos_historicos"]]
+        ano_hist = st.selectbox(
+            "📅 Temporada histórica", _anos,
+            help="Como no original: escolha o ano — grids, equipes, motores, calendário e "
+                 "pontuação daquela temporada (décadas de 1950 a 2020).")
+        _norm_h, _erros_h, _ = dbsmod.validar_e_normalizar(dbsmod.db_f1_historica(ano_hist))
+        if _norm_h:
+            sel_db = _norm_h
+        elif _erros_h:
+            st.error(f"Temporada inválida: {'; '.join(_erros_h)}")
     meta = sel_db["meta"]
     ci1, ci2, ci3, ci4 = st.columns(4)
     ci1.metric("Categoria", meta.get("categoria", "—"))
@@ -728,14 +740,18 @@ def pagina_pilotos(game):
             for pid, c in list(game["contratos_proxima"].items()):
                 p = sim.piloto(game, pid)
                 col1, col2 = st.columns([5, 1])
-                col1.markdown(bnd.com_bandeira(p['bandeira'], f"**{p['nome']}** — {c['papel']} · {sim.fmt_dinheiro_k(c['salario'])}/corrida · {c['anos']} ano(s)"), unsafe_allow_html=True)
+                marca = " · 📝 pré (sinal pago)" if c.get("pre") else ""
+                col1.markdown(bnd.com_bandeira(p['bandeira'], f"**{p['nome']}** — {c['papel']} · {sim.fmt_dinheiro_k(c['salario'])}/corrida · {c['anos']} ano(s){marca}"), unsafe_allow_html=True)
                 if col2.button("Cancelar", key=f"canc_{pid}"):
                     del game["contratos_proxima"][pid]
+                    if c.get("pre"):
+                        flash("warning", f"Pré-contrato de {p['nome']} cancelado — a sinalização de "
+                                         f"{sim.fmt_dinheiro_k(c.get('sinal', 0))} **não** é devolvida.")
                     st.rerun()
 
     with tab2:
         st.caption("Como no original: você negocia **durante** a temporada, mas o piloto só veste seu macacão "
-                   "na **próxima**. Salários são por corrida.")
+                   "na **próxima**. Salários são por corrida — ou feche na hora com um **pré-contrato** (sinal pago).")
         ativos: list[dict] = [p for p in game["pilotos"] if not p["aposentado"]]
         ativos.sort(key=lambda p: -sim.overall(p))
         sel = st.selectbox("Piloto", ativos,
@@ -754,8 +770,23 @@ def pagina_pilotos(game):
             salario = st.number_input(f"Salário oferecido (US$ mil/corrida) — o mercado pagaria ±{sim.fmt_dinheiro_k(esperado)}",
                                       min_value=10, max_value=6000, value=int(esperado), step=10)
             anos = st.slider("Duração (anos)", 1, 4, 2)
-            if st.form_submit_button("✍️ Fazer proposta", type="primary", width="stretch"):
-                ok, msg = sim.negociar_piloto(game, sel["id"], papel, int(salario), anos)
+            tipo = st.radio("Tipo de acordo",
+                            ["✍️ Proposta comum — grátis, ele pode recusar",
+                             "📝 Pré-contrato — fecha na hora, com sinal"],
+                            key="tipo_acordo",
+                            help="Como no original: o pré-contrato paga uma taxa de sinalização de 3 corridas do "
+                                 "salário AGORA e fecha o acordo sem chance de recusa. A taxa não é devolvida se "
+                                 "você cancelar (e some se o piloto se aposentar antes da virada).")
+            taxa = sim.taxa_sinal(int(salario))
+            if tipo.startswith("📝"):
+                st.caption(f"💸 Sinal a pagar agora: **{sim.fmt_dinheiro_k(taxa)}** (3 corridas do salário) · "
+                           f"seu caixa: {sim.fmt_dinheiro_m(eqj['caixa'])}")
+            if st.form_submit_button("📝 Assinar pré-contrato" if tipo.startswith("📝") else "✍️ Fazer proposta",
+                                     type="primary", width="stretch"):
+                if tipo.startswith("📝"):
+                    ok, msg = sim.pre_contratar_piloto(game, sel["id"], papel, int(salario), anos)
+                else:
+                    ok, msg = sim.negociar_piloto(game, sel["id"], papel, int(salario), anos)
                 flash("success" if ok else "error", msg)
                 st.rerun()
 
