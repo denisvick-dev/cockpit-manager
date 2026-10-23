@@ -1,0 +1,231 @@
+# -*- coding: utf-8 -*-
+"""
+DB F1 2026 para o Cockpit Manager (edição Streamlit).
+
+Baseada na DB F1 2026 v1.0 by Jonathan Daniel (Cockpit Manager - Brasil):
+http://cockpitmanager.blogspot.com/2026/05/db-f1-2026-v10-by-jonathan-daniel.html
+
+- 11 equipes / 22 titulares + 1 piloto de testes (reserva) por equipe
+- Motores próprios: Audi, Ferrari, Mercedes e Red Bull (Red Bull Powertrains)
+- Ford como fornecedora independente e Chevrolet visando o motor próprio da Cadillac
+- Calendário original com 24 etapas (inclui Bahrein e Arábia Saudita, removíveis)
+- Jovens da F2/F3 para dar continuidade ao "circo" nas temporadas seguintes
+"""
+
+# ---------------------------------------------------------------- atributos
+# Atributos clássicos do Cockpit Manager '14 (escala 0-100)
+ATRIBUTOS = {
+    "velocidade": "Velocidade",
+    "chuva": "Chuva",
+    "concentracao": "Concentração",
+    "largada": "Largada",
+    "ultrapassagem": "Ultrapassagem",
+    "acerto": "Acerto de carro",
+    "fisico": "Físico",
+}
+
+PONTOS_CORRIDA = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]
+PONTOS_SPRINT = [8, 7, 6, 5, 4, 3, 2, 1]
+
+# Premiação de construtores ao fim da temporada (US$ milhões), P1..P12
+PREMIACAO_CONSTRUTORES = [150, 140, 130, 118, 106, 95, 85, 76, 68, 60, 52, 45]
+
+# ------------------------------------------------------------------- motores
+# preco = US$ milhões por temporada | potencia/confiabilidade 0-100
+MOTORES = [
+    {"id": "mercedes", "nome": "Mercedes", "potencia": 98, "confiabilidade": 92, "preco": 28.0, "proprio_de": "mercedes", "desc": "A referência da era híbrida. Caro, mas empurra qualquer chassi."},
+    {"id": "ferrari", "nome": "Ferrari", "potencia": 97, "confiabilidade": 90, "preco": 27.0, "proprio_de": "ferrari", "desc": "Potência bruta de Maranello, com o temperamento italiano de sempre."},
+    {"id": "rbpt_ford", "nome": "Red Bull Powertrains-Ford", "potencia": 96, "confiabilidade": 88, "preco": 24.0, "proprio_de": "redbull", "desc": "O projeto próprio da Red Bull com apoio da Ford. Novo, rápido e ainda provando confiabilidade."},
+    {"id": "honda", "nome": "Honda", "potencia": 95, "confiabilidade": 91, "preco": 23.0, "proprio_de": None, "desc": "O retorno oficial da Honda em 2026, parceira exclusiva da Aston Martin."},
+    {"id": "audi", "nome": "Audi", "potencia": 93, "confiabilidade": 87, "preco": 20.0, "proprio_de": "audi", "desc": "Estreia da Audi como equipe de fábrica. Projeto sério, ainda em curva de aprendizado."},
+    {"id": "ford", "nome": "Ford", "potencia": 90, "confiabilidade": 89, "preco": 14.0, "proprio_de": None, "desc": "Versão cliente/independente da Ford, sem o pacote completo da Red Bull."},
+    {"id": "chevrolet", "nome": "Chevrolet", "potencia": 89, "confiabilidade": 86, "preco": 12.0, "proprio_de": None, "desc": "O caminho da Cadillac rumo ao motor próprio (previsto para 2029)."},
+    {"id": "renault", "nome": "Renault", "potencia": 88, "confiabilidade": 85, "preco": 11.0, "proprio_de": None, "desc": "Estoque remanescente de Viry-Châtillon. Honesto, sem desenvolvimento futuro."},
+    {"id": "cosworth", "nome": "Cosworth", "potencia": 85, "confiabilidade": 84, "preco": 8.0, "proprio_de": None, "desc": "O clássico quebra-galho das equipes independentes desde os anos 60."},
+    {"id": "fia", "nome": "FIA (compulsório)", "potencia": 50, "confiabilidade": 95, "preco": 0.0, "proprio_de": None, "desc": "Sem dinheiro para motor? A FIA empresta um com 50% de potência. Vergonha garantida, ponto nem tanto."},
+]
+
+# ------------------------------------------------------------------- equipes
+# nivel_carro = chassi/aerodinâmica (0-100) | caixa em US$ milhões
+EQUIPES = [
+    {"id": "mclaren", "nome": "McLaren", "nome_completo": "McLaren Formula 1 Team", "pais": "Reino Unido", "bandeira": "🇬🇧", "cor": "#FF8000", "motor_id": "mercedes", "motor_proprio": False, "nivel_carro": 94, "confiabilidade": 91, "caixa": 150.0, "prestigio": 95, "investimento_corrida": 1800, "titulos_construtores": 10, "patrocinador": "TechNova"},
+    {"id": "mercedes", "nome": "Mercedes", "nome_completo": "Mercedes-AMG Petronas F1 Team", "pais": "Alemanha", "bandeira": "🇩🇪", "cor": "#27F4D2", "motor_id": "mercedes", "motor_proprio": True, "nivel_carro": 91, "confiabilidade": 92, "caixa": 165.0, "prestigio": 94, "investimento_corrida": 1900, "titulos_construtores": 8, "patrocinador": "PetroMax"},
+    {"id": "redbull", "nome": "Red Bull", "nome_completo": "Oracle Red Bull Racing", "pais": "Áustria", "bandeira": "🇦🇹", "cor": "#4781D7", "motor_id": "rbpt_ford", "motor_proprio": True, "nivel_carro": 90, "confiabilidade": 88, "caixa": 160.0, "prestigio": 93, "investimento_corrida": 1900, "titulos_construtores": 6, "patrocinador": "Energia Volts"},
+    {"id": "ferrari", "nome": "Ferrari", "nome_completo": "Scuderia Ferrari", "pais": "Itália", "bandeira": "🇮🇹", "cor": "#E8002D", "motor_id": "ferrari", "motor_proprio": True, "nivel_carro": 89, "confiabilidade": 90, "caixa": 170.0, "prestigio": 98, "investimento_corrida": 2000, "titulos_construtores": 16, "patrocinador": "Banco Vetor"},
+    {"id": "williams", "nome": "Williams", "nome_completo": "Atlassian Williams F1 Team", "pais": "Reino Unido", "bandeira": "🇬🇧", "cor": "#64C4FF", "motor_id": "mercedes", "motor_proprio": False, "nivel_carro": 84, "confiabilidade": 88, "caixa": 110.0, "prestigio": 80, "investimento_corrida": 1200, "titulos_construtores": 9, "patrocinador": "TechNova"},
+    {"id": "astonmartin", "nome": "Aston Martin", "nome_completo": "Aston Martin Aramco F1 Team", "pais": "Reino Unido", "bandeira": "🇬🇧", "cor": "#229971", "motor_id": "honda", "motor_proprio": False, "nivel_carro": 85, "confiabilidade": 87, "caixa": 140.0, "prestigio": 76, "investimento_corrida": 1600, "titulos_construtores": 0, "patrocinador": "PetroMax"},
+    {"id": "racingbulls", "nome": "Racing Bulls", "nome_completo": "Visa Cash App Racing Bulls", "pais": "Itália", "bandeira": "🇮🇹", "cor": "#6692FF", "motor_id": "rbpt_ford", "motor_proprio": False, "nivel_carro": 81, "confiabilidade": 87, "caixa": 95.0, "prestigio": 65, "investimento_corrida": 1000, "titulos_construtores": 0, "patrocinador": "Energia Volts"},
+    {"id": "haas", "nome": "Haas", "nome_completo": "MoneyGram Haas F1 Team", "pais": "Estados Unidos", "bandeira": "🇺🇸", "cor": "#B6BABD", "motor_id": "ferrari", "motor_proprio": False, "nivel_carro": 80, "confiabilidade": 86, "caixa": 85.0, "prestigio": 60, "investimento_corrida": 800, "titulos_construtores": 0, "patrocinador": "Seguros Prisma"},
+    {"id": "alpine", "nome": "Alpine", "nome_completo": "BWT Alpine F1 Team", "pais": "França", "bandeira": "🇫🇷", "cor": "#FF87BC", "motor_id": "mercedes", "motor_proprio": False, "nivel_carro": 78, "confiabilidade": 85, "caixa": 105.0, "prestigio": 72, "investimento_corrida": 1100, "titulos_construtores": 2, "patrocinador": "AeroLine"},
+    {"id": "audi", "nome": "Audi", "nome_completo": "Audi Revolut F1 Team", "pais": "Alemanha", "bandeira": "🇩🇪", "cor": "#F50537", "motor_id": "audi", "motor_proprio": True, "nivel_carro": 76, "confiabilidade": 84, "caixa": 130.0, "prestigio": 70, "investimento_corrida": 1400, "titulos_construtores": 0, "patrocinador": "Banco Vetor"},
+    {"id": "cadillac", "nome": "Cadillac", "nome_completo": "Cadillac Formula 1 Team", "pais": "Estados Unidos", "bandeira": "🇺🇸", "cor": "#C7A252", "motor_id": "ferrari", "motor_proprio": False, "nivel_carro": 68, "confiabilidade": 82, "caixa": 120.0, "prestigio": 62, "investimento_corrida": 1300, "titulos_construtores": 0, "patrocinador": "AeroLine"},
+]
+
+
+def _p(pid, nome, sigla, numero, pais, bandeira, idade, equipe, papel, salario, contrato,
+       vel, chuva, conc, larg, ultrap, acerto, fisico, auge_ini, auge_fim, potencial):
+    """Atalho para montar um piloto. salario = US$ mil por corrida."""
+    return {
+        "id": pid, "nome": nome, "sigla": sigla, "numero": numero, "pais": pais,
+        "bandeira": bandeira, "idade": idade, "equipe_id": equipe, "papel": papel,
+        "salario_corrida": salario, "contrato_anos": contrato,
+        "auge_inicio": auge_ini, "auge_fim": auge_fim, "potencial": potencial,
+        "atributos": {"velocidade": vel, "chuva": chuva, "concentracao": conc,
+                      "largada": larg, "ultrapassagem": ultrap, "acerto": acerto, "fisico": fisico},
+    }
+
+
+# papel: "P1" (1º piloto), "P2" (2º piloto), "teste" (reserva), "livre"
+PILOTOS = [
+    # --- McLaren
+    _p("norris", "Lando Norris", "NOR", 1, "Reino Unido", "🇬🇧", 26, "mclaren", "P1", 1700, 3, 96, 90, 90, 88, 93, 90, 92, 25, 32, 97),
+    _p("piastri", "Oscar Piastri", "PIA", 81, "Austrália", "🇦🇺", 24, "mclaren", "P2", 900, 3, 95, 88, 94, 90, 92, 91, 90, 24, 32, 97),
+    _p("oward", "Pato O'Ward", "OWA", 29, "México", "🇲🇽", 26, "mclaren", "teste", 120, 1, 84, 80, 81, 83, 87, 80, 88, 26, 32, 87),
+    # --- Mercedes
+    _p("Russell", "George Russell", "RUS", 63, "Reino Unido", "🇬🇧", 28, "mercedes", "P1", 1200, 2, 94, 92, 93, 90, 90, 93, 91, 26, 33, 95),
+    _p("Antonelli", "Andrea Kimi Antonelli", "ANT", 12, "Itália", "🇮🇹", 19, "mercedes", "P2", 300, 2, 92, 85, 82, 86, 88, 84, 90, 23, 31, 97),
+    _p("vesti", "Frederik Vesti", "VES", 42, "Dinamarca", "🇩🇰", 24, "mercedes", "teste", 80, 1, 82, 79, 84, 81, 82, 83, 86, 25, 31, 86),
+    # --- Red Bull
+    _p("verstappen", "Max Verstappen", "VER", 3, "Países Baixos", "🇳🇱", 28, "redbull", "P1", 2700, 3, 99, 97, 96, 94, 98, 92, 95, 24, 34, 99),
+    _p("Hadjar", "Isack Hadjar", "HAD", 6, "França", "🇫🇷", 21, "redbull", "P2", 250, 1, 89, 84, 80, 85, 87, 83, 88, 24, 31, 93),
+    _p("Tsunoda", "Yuki Tsunoda", "TSU", 22, "Japão", "🇯🇵", 25, "redbull", "teste", 150, 1, 85, 82, 79, 84, 86, 82, 87, 25, 31, 88),
+    # --- Ferrari
+    _p("Leclerc", "Charles Leclerc", "LEC", 16, "Mônaco", "🇲🇨", 28, "ferrari", "P1", 1900, 3, 97, 89, 86, 92, 90, 88, 90, 25, 33, 97),
+    _p("Hamilton", "Lewis Hamilton", "HAM", 44, "Reino Unido", "🇬🇧", 41, "ferrari", "P2", 2500, 1, 93, 96, 94, 91, 94, 95, 88, 25, 36, 93),
+    _p("Beganovic", "Dino Beganovic", "BEG", 38, "Suécia", "🇸🇪", 22, "ferrari", "teste", 70, 1, 81, 78, 82, 80, 81, 80, 85, 25, 31, 87),
+    # --- Williams
+    _p("sainz", "Carlos Sainz Jr", "SAI", 55, "Espanha", "🇪🇸", 31, "williams", "P1", 800, 2, 91, 88, 92, 89, 89, 94, 92, 26, 33, 92),
+    _p("Albon", "Alexander Albon", "ALB", 23, "Tailândia", "🇹🇭", 29, "williams", "P2", 350, 2, 88, 86, 89, 88, 87, 88, 89, 26, 32, 90),
+    _p("Browning", "Luke Browning", "BRO", 46, "Reino Unido", "🇬🇧", 24, "williams", "teste", 60, 1, 80, 77, 81, 79, 80, 79, 84, 25, 31, 85),
+    # --- Aston Martin
+    _p("Alonso", "Fernando Alonso", "ALO", 14, "Espanha", "🇪🇸", 44, "astonmartin", "P1", 1000, 1, 90, 94, 97, 95, 95, 97, 85, 24, 38, 91),
+    _p("Stroll", "Lance Stroll", "STR", 18, "Canadá", "🇨🇦", 27, "astonmartin", "P2", 300, 2, 81, 88, 76, 92, 80, 78, 87, 25, 30, 84),
+    _p("drugovich", "Felipe Drugovich", "DRU", 34, "Brasil", "🇧🇷", 25, "astonmartin", "teste", 90, 1, 83, 81, 88, 82, 83, 87, 86, 25, 32, 88),
+    # --- Racing Bulls
+    _p("Lawson", "Liam Lawson", "LAW", 30, "Nova Zelândia", "🇳🇿", 24, "racingbulls", "P1", 200, 1, 85, 82, 80, 84, 89, 82, 89, 25, 31, 89),
+    _p("Lindblad", "Arvid Lindblad", "LIN", 41, "Reino Unido", "🇬🇧", 18, "racingbulls", "P2", 100, 2, 85, 80, 79, 82, 85, 79, 87, 23, 31, 94),
+    _p("Iwasa", "Ayumu Iwasa", "IWA", 40, "Japão", "🇯🇵", 24, "racingbulls", "teste", 60, 1, 81, 79, 83, 80, 81, 81, 85, 25, 31, 86),
+    # --- Haas
+    _p("Bearman", "Oliver Bearman", "BEA", 87, "Reino Unido", "🇬🇧", 20, "haas", "P1", 150, 2, 87, 83, 81, 84, 88, 82, 89, 24, 31, 92),
+    _p("Ocon", "Esteban Ocon", "OCO", 31, "França", "🇫🇷", 29, "haas", "P2", 300, 2, 87, 84, 85, 88, 90, 85, 91, 25, 32, 89),
+    _p("Hirakawa", "Ryo Hirakawa", "HIR", 50, "Japão", "🇯🇵", 31, "haas", "teste", 70, 1, 80, 78, 87, 79, 78, 86, 88, 26, 32, 83),
+    # --- Alpine
+    _p("Gasly", "Pierre Gasly", "GAS", 10, "França", "🇫🇷", 30, "alpine", "P1", 450, 2, 89, 90, 88, 87, 88, 89, 89, 25, 32, 91),
+    _p("Colapinto", "Franco Colapinto", "COL", 43, "Argentina", "🇦🇷", 22, "alpine", "P2", 120, 1, 84, 81, 78, 84, 86, 80, 88, 24, 31, 90),
+    _p("Aron", "Paul Aron", "ARO", 45, "Estônia", "🇪🇪", 22, "alpine", "teste", 60, 1, 81, 78, 82, 80, 81, 80, 85, 25, 31, 87),
+    # --- Audi
+    _p("Hulkenberg", "Nico Hülkenberg", "HUL", 27, "Alemanha", "🇩🇪", 38, "audi", "P1", 350, 1, 87, 85, 91, 84, 84, 92, 86, 25, 34, 88),
+    _p("Bortoleto", "Gabriel Bortoleto", "BOR", 5, "Brasil", "🇧🇷", 21, "audi", "P2", 150, 2, 86, 84, 87, 83, 85, 86, 88, 24, 32, 93),
+    _p("Slater", "Freddie Slater", "SLA", 48, "Reino Unido", "🇬🇧", 17, "audi", "teste", 40, 2, 79, 76, 80, 78, 79, 77, 84, 23, 31, 90),
+    # --- Cadillac
+    _p("Perez", "Sergio Pérez", "PER", 11, "México", "🇲🇽", 36, "cadillac", "P1", 600, 2, 84, 83, 86, 82, 84, 87, 87, 25, 33, 86),
+    _p("Bottas", "Valtteri Bottas", "BOT", 77, "Finlândia", "🇫🇮", 36, "cadillac", "P2", 500, 2, 85, 84, 90, 85, 83, 89, 90, 25, 33, 87),
+    _p("Herta", "Colton Herta", "HER", 26, "Estados Unidos", "🇺🇸", 25, "cadillac", "teste", 80, 1, 82, 79, 80, 81, 84, 79, 87, 25, 31, 87),
+    # --- Livres / academia (mercado e futuro do grid)
+    _p("Doohan", "Jack Doohan", "DOO", 61, "Austrália", "🇦🇺", 23, None, "livre", 100, 0, 82, 79, 78, 81, 82, 80, 87, 24, 31, 87),
+    _p("Pourchaire", "Théo Pourchaire", "POU", 62, "França", "🇫🇷", 22, None, "livre", 80, 0, 83, 80, 83, 81, 82, 83, 86, 24, 31, 89),
+    _p("Fornaroli", "Leonardo Fornaroli", "FOR", 63, "Itália", "🇮🇹", 21, None, "livre", 60, 0, 82, 79, 86, 80, 80, 82, 85, 24, 31, 89),
+    _p("camara", "Rafael Câmara", "CAM", 64, "Brasil", "🇧🇷", 20, None, "livre", 50, 0, 83, 81, 82, 81, 82, 80, 86, 24, 31, 91),
+    _p("Crawford", "Jak Crawford", "CRA", 65, "Estados Unidos", "🇺🇸", 20, None, "livre", 50, 0, 81, 78, 81, 80, 81, 80, 85, 24, 31, 88),
+    _p("Verschoor", "Richard Verschoor", "VER2", 66, "Países Baixos", "🇳🇱", 25, None, "livre", 70, 0, 81, 79, 85, 80, 80, 84, 86, 25, 31, 85),
+    _p("Dürksen", "Joshua Dürksen", "DUR", 67, "Paraguai", "🇵🇾", 22, None, "livre", 50, 0, 80, 77, 80, 79, 81, 79, 85, 24, 31, 87),
+    _p("Martins", "Victor Martins", "MAR", 68, "França", "🇫🇷", 24, None, "livre", 60, 0, 82, 79, 80, 81, 81, 81, 85, 25, 31, 87),
+    _p("mschumacher", "Mick Schumacher", "MSC", 69, "Alemanha", "🇩🇪", 26, None, "livre", 120, 0, 81, 80, 82, 80, 79, 83, 87, 25, 31, 85),
+    _p("Giovinazzi", "Antonio Giovinazzi", "GIO", 99, "Itália", "🇮🇹", 32, None, "livre", 100, 0, 81, 79, 84, 80, 79, 85, 86, 25, 32, 83),
+    _p("Shwartzman", "Robert Shwartzman", "SHW", 70, "Israel", "🇮🇱", 26, None, "livre", 70, 0, 80, 78, 82, 79, 79, 82, 85, 25, 31, 85),
+    _p("Maloney", "Zane Maloney", "MAL", 71, "Barbados", "🇧🇧", 22, None, "livre", 40, 0, 80, 77, 79, 79, 80, 78, 85, 24, 31, 87),
+    _p("Wharton", "James Wharton", "WHA", 72, "Austrália", "🇦🇺", 19, None, "livre", 30, 0, 78, 75, 79, 77, 78, 76, 84, 23, 31, 88),
+    _p("Bedrin", "Nikita Bedrin", "BED", 73, "Itália", "🇮🇹", 20, None, "livre", 30, 0, 78, 76, 78, 77, 78, 77, 83, 23, 31, 87),
+    _p("van Hoepen", "Laurens van Hoepen", "VHO", 74, "Países Baixos", "🇳🇱", 20, None, "livre", 30, 0, 77, 75, 79, 76, 77, 76, 83, 23, 31, 86),
+    _p("Miyata", "Ritomo Miyata", "MIY", 75, "Japão", "🇯🇵", 26, None, "livre", 50, 0, 79, 78, 84, 78, 77, 83, 86, 25, 31, 84),
+]
+
+# -------------------------------------------------------------- patrocinadores
+# valores em US$ mil | prestigio_min = prestígio mínimo da equipe para assinar
+PATROCINADORES = [
+    {"nome": "PetroMax", "por_corrida": 2600, "bonus_ponto": 30, "bonus_podio": 700, "bonus_vitoria": 2000, "prestigio_min": 85, "desc": "Petroleira gigante. Paga como ninguém, cobra como ninguém."},
+    {"nome": "Banco Vetor", "por_corrida": 2100, "bonus_ponto": 25, "bonus_podio": 550, "bonus_vitoria": 1600, "prestigio_min": 75, "desc": "Banco de investimentos que adora um pódio para a foto."},
+    {"nome": "TechNova", "por_corrida": 1700, "bonus_ponto": 40, "bonus_podio": 450, "bonus_vitoria": 1200, "prestigio_min": 65, "desc": "Startup de nuvem/IA. Bônus generoso por cada pontinho."},
+    {"nome": "Energia Volts", "por_corrida": 1400, "bonus_ponto": 20, "bonus_podio": 600, "bonus_vitoria": 1800, "prestigio_min": 60, "desc": "Bebida energética. Pouco fixo, prêmios altos por resultado."},
+    {"nome": "AeroLine", "por_corrida": 1200, "bonus_ponto": 18, "bonus_podio": 350, "bonus_vitoria": 900, "prestigio_min": 50, "desc": "Companhia aérea parceira antiga do paddock."},
+    {"nome": "Seguros Prisma", "por_corrida": 900, "bonus_ponto": 15, "bonus_podio": 250, "bonus_vitoria": 700, "prestigio_min": 35, "desc": "Seguradora conservadora, ideal para quem está começando."},
+    {"nome": "Lanchonetes BigBurguer", "por_corrida": 550, "bonus_ponto": 10, "bonus_podio": 180, "bonus_vitoria": 500, "prestigio_min": 0, "desc": "Não é glamouroso, mas o cheque nunca atrasa."},
+]
+
+# ----------------------------------------------------------------- calendário
+# potencia = quanto o motor pesa (0-1) | ultrap = facilidade de ultrapassar (0-1)
+# desgaste 1-3 | chuva = probabilidade histórica (0-1)
+CALENDARIO_2026 = [
+    {"gp": "GP da Austrália", "circuito": "Albert Park, Melbourne", "pais": "Austrália", "bandeira": "🇦🇺", "voltas": 58, "data": "8 mar", "sprint": False, "potencia": 0.55, "ultrap": 0.55, "desgaste": 1.6, "chuva": 0.20},
+    {"gp": "GP da China", "circuito": "Xangai", "pais": "China", "bandeira": "🇨🇳", "voltas": 56, "data": "15 mar", "sprint": True, "potencia": 0.65, "ultrap": 0.70, "desgaste": 2.2, "chuva": 0.30},
+    {"gp": "GP do Japão", "circuito": "Suzuka", "pais": "Japão", "bandeira": "🇯🇵", "voltas": 53, "data": "29 mar", "sprint": False, "potencia": 0.45, "ultrap": 0.35, "desgaste": 2.4, "chuva": 0.35},
+    {"gp": "GP do Bahrein", "circuito": "Sakhir", "pais": "Bahrein", "bandeira": "🇧🇭", "voltas": 57, "data": "12 abr", "sprint": False, "potencia": 0.65, "ultrap": 0.75, "desgaste": 2.6, "chuva": 0.02, "cancelavel": True},
+    {"gp": "GP da Arábia Saudita", "circuito": "Jeddah Corniche", "pais": "Arábia Saudita", "bandeira": "🇸🇦", "voltas": 50, "data": "19 abr", "sprint": False, "potencia": 0.75, "ultrap": 0.55, "desgaste": 1.5, "chuva": 0.01, "cancelavel": True},
+    {"gp": "GP de Miami", "circuito": "Miami International Autodrome", "pais": "Estados Unidos", "bandeira": "🇺🇸", "voltas": 57, "data": "3 mai", "sprint": True, "potencia": 0.60, "ultrap": 0.60, "desgaste": 1.8, "chuva": 0.25},
+    {"gp": "GP do Canadá", "circuito": "Gilles Villeneuve", "pais": "Canadá", "bandeira": "🇨🇦", "voltas": 70, "data": "24 mai", "sprint": True, "potencia": 0.70, "ultrap": 0.65, "desgaste": 1.7, "chuva": 0.35},
+    {"gp": "GP de Mônaco", "circuito": "Circuito de Mônaco", "pais": "Mônaco", "bandeira": "🇲🇨", "voltas": 78, "data": "7 jun", "sprint": False, "potencia": 0.20, "ultrap": 0.05, "desgaste": 1.2, "chuva": 0.20},
+    {"gp": "GP de Barcelona-Catalunha", "circuito": "Barcelona-Catalunya", "pais": "Espanha", "bandeira": "🇪🇸", "voltas": 66, "data": "14 jun", "sprint": False, "potencia": 0.50, "ultrap": 0.45, "desgaste": 2.5, "chuva": 0.15},
+    {"gp": "GP da Áustria", "circuito": "Red Bull Ring", "pais": "Áustria", "bandeira": "🇦🇹", "voltas": 71, "data": "28 jun", "sprint": False, "potencia": 0.70, "ultrap": 0.75, "desgaste": 1.9, "chuva": 0.30},
+    {"gp": "GP da Grã-Bretanha", "circuito": "Silverstone", "pais": "Reino Unido", "bandeira": "🇬🇧", "voltas": 52, "data": "5 jul", "sprint": True, "potencia": 0.55, "ultrap": 0.65, "desgaste": 2.3, "chuva": 0.40},
+    {"gp": "GP da Bélgica", "circuito": "Spa-Francorchamps", "pais": "Bélgica", "bandeira": "🇧🇪", "voltas": 44, "data": "19 jul", "sprint": False, "potencia": 0.75, "ultrap": 0.70, "desgaste": 2.0, "chuva": 0.45},
+    {"gp": "GP da Hungria", "circuito": "Hungaroring", "pais": "Hungria", "bandeira": "🇭🇺", "voltas": 70, "data": "26 jul", "sprint": False, "potencia": 0.35, "ultrap": 0.30, "desgaste": 2.1, "chuva": 0.20},
+    {"gp": "GP dos Países Baixos", "circuito": "Zandvoort", "pais": "Países Baixos", "bandeira": "🇳🇱", "voltas": 72, "data": "23 ago", "sprint": True, "potencia": 0.40, "ultrap": 0.35, "desgaste": 2.0, "chuva": 0.35},
+    {"gp": "GP da Itália", "circuito": "Monza", "pais": "Itália", "bandeira": "🇮🇹", "voltas": 53, "data": "6 set", "sprint": False, "potencia": 0.90, "ultrap": 0.70, "desgaste": 1.4, "chuva": 0.20},
+    {"gp": "GP da Espanha (Madri)", "circuito": "Madring, Madri", "pais": "Espanha", "bandeira": "🇪🇸", "voltas": 57, "data": "13 set", "sprint": False, "potencia": 0.45, "ultrap": 0.40, "desgaste": 1.8, "chuva": 0.15},
+    {"gp": "GP do Azerbaijão", "circuito": "Baku City Circuit", "pais": "Azerbaijão", "bandeira": "🇦🇿", "voltas": 51, "data": "26 set", "sprint": False, "potencia": 0.80, "ultrap": 0.60, "desgaste": 1.5, "chuva": 0.10},
+    {"gp": "GP de Singapura", "circuito": "Marina Bay", "pais": "Singapura", "bandeira": "🇸🇬", "voltas": 62, "data": "11 out", "sprint": True, "potencia": 0.30, "ultrap": 0.25, "desgaste": 1.9, "chuva": 0.30},
+    {"gp": "GP dos Estados Unidos", "circuito": "COTA, Austin", "pais": "Estados Unidos", "bandeira": "🇺🇸", "voltas": 56, "data": "25 out", "sprint": False, "potencia": 0.55, "ultrap": 0.65, "desgaste": 2.2, "chuva": 0.20},
+    {"gp": "GP da Cidade do México", "circuito": "Hermanos Rodríguez", "pais": "México", "bandeira": "🇲🇽", "voltas": 71, "data": "1 nov", "sprint": False, "potencia": 0.65, "ultrap": 0.55, "desgaste": 1.7, "chuva": 0.20},
+    {"gp": "GP de São Paulo", "circuito": "Interlagos", "pais": "Brasil", "bandeira": "🇧🇷", "voltas": 71, "data": "8 nov", "sprint": False, "potencia": 0.55, "ultrap": 0.70, "desgaste": 2.0, "chuva": 0.40},
+    {"gp": "GP de Las Vegas", "circuito": "Las Vegas Strip", "pais": "Estados Unidos", "bandeira": "🇺🇸", "voltas": 50, "data": "21 nov", "sprint": False, "potencia": 0.85, "ultrap": 0.75, "desgaste": 1.6, "chuva": 0.05},
+    {"gp": "GP do Catar", "circuito": "Lusail", "pais": "Catar", "bandeira": "🇶🇦", "voltas": 57, "data": "29 nov", "sprint": False, "potencia": 0.55, "ultrap": 0.50, "desgaste": 2.7, "chuva": 0.02},
+    {"gp": "GP de Abu Dhabi", "circuito": "Yas Marina", "pais": "Emirados Árabes", "bandeira": "🇦🇪", "voltas": 58, "data": "6 dez", "sprint": False, "potencia": 0.60, "ultrap": 0.55, "desgaste": 1.8, "chuva": 0.03},
+]
+
+# ---------------------------------------------------------------- hall da fama
+HALL_DA_FAMA_INICIAL = [
+    {"nome": "Ayrton Senna", "pais": "Brasil", "bandeira": "🇧🇷", "titulos": 3, "vitorias": 41, "anos": "1984-1994"},
+    {"nome": "Michael Schumacher", "pais": "Alemanha", "bandeira": "🇩🇪", "titulos": 7, "vitorias": 91, "anos": "1991-2012"},
+    {"nome": "Juan Manuel Fangio", "pais": "Argentina", "bandeira": "🇦🇷", "titulos": 5, "vitorias": 24, "anos": "1950-1958"},
+    {"nome": "Alain Prost", "pais": "França", "bandeira": "🇫🇷", "titulos": 4, "vitorias": 51, "anos": "1980-1993"},
+    {"nome": "Niki Lauda", "pais": "Áustria", "bandeira": "🇦🇹", "titulos": 3, "vitorias": 25, "anos": "1971-1985"},
+    {"nome": "Jim Clark", "pais": "Reino Unido", "bandeira": "🇬🇧", "titulos": 2, "vitorias": 25, "anos": "1960-1968"},
+    {"nome": "Jackie Stewart", "pais": "Reino Unido", "bandeira": "🇬🇧", "titulos": 3, "vitorias": 27, "anos": "1965-1973"},
+    {"nome": "Nelson Piquet", "pais": "Brasil", "bandeira": "🇧🇷", "titulos": 3, "vitorias": 23, "anos": "1978-1991"},
+    {"nome": "James Hunt", "pais": "Reino Unido", "bandeira": "🇬🇧", "titulos": 1, "vitorias": 10, "anos": "1973-1979"},
+    {"nome": "Emerson Fittipaldi", "pais": "Brasil", "bandeira": "🇧🇷", "titulos": 2, "vitorias": 14, "anos": "1970-1980"},
+    {"nome": "Lewis Hamilton* (em atividade)", "pais": "Reino Unido", "bandeira": "🇬🇧", "titulos": 7, "vitorias": 105, "anos": "2007-"},
+    {"nome": "Sebastian Vettel", "pais": "Alemanha", "bandeira": "🇩🇪", "titulos": 4, "vitorias": 53, "anos": "2007-2022"},
+]
+
+# Critério de indução (ao se aposentar): >= 2 títulos OU >= 30 vitórias na carreira do save
+HOF_MIN_TITULOS = 2
+HOF_MIN_VITORIAS = 30
+
+# ------------------------------------------------------------------ conquistas
+CONQUISTAS = [
+    {"id": "primeira_vitoria", "icone": "🥇", "nome": "Primeira vitória", "desc": "Vença um GP com a sua equipe."},
+    {"id": "campeao_pilotos", "icone": "🏆", "nome": "Campeão de Pilotos", "desc": "Um piloto seu conquista o Mundial de Pilotos."},
+    {"id": "campeao_construtores", "icone": "🏭", "nome": "Campeão de Construtores", "desc": "Sua equipe conquista o Mundial de Construtores."},
+    {"id": "dobradinha", "icone": "👑", "nome": "Dobradinha", "desc": "Pilotos + Construtores na mesma temporada."},
+    {"id": "magnata", "icone": "💰", "nome": "Magnata do paddock", "desc": "Acumule mais de US$ 250 milhões em caixa."},
+    {"id": "hall_da_fama", "icone": "🌟", "nome": "Imortal", "desc": "Tenha um piloto (atual ou ex) induzido ao Hall da Fama."},
+    {"id": "zebra", "icone": "🦓", "nome": "Zebra histórica", "desc": "Vença um GP com desempenho de carro abaixo de 75."},
+    {"id": "cinquenta_vitorias", "icone": "🎯", "nome": "50 vitórias", "desc": "Sua equipe soma 50 vitórias na carreira."},
+    {"id": "decada", "icone": "🕰️", "nome": "Uma década no comando", "desc": "Complete 10 temporadas."},
+    {"id": "sobrevivente", "icone": "🔥", "nome": "Das cinzas", "desc": "Termine uma temporada no top 3 de Construtores após ter usado o motor FIA."},
+]
+
+# ------------------------------------------- nomes para jovens gerados (regens)
+REGEN_NOMES = [
+    ("Enzo", "Fittipaldi Neto", "Brasil", "🇧🇷"), ("Theo", "Barrichello", "Brasil", "🇧🇷"),
+    ("Lucas", "di Grassi Jr.", "Brasil", "🇧🇷"), ("Kai", "Tanaka", "Japão", "🇯🇵"),
+    ("Finn", "O'Connor", "Irlanda", "🇮🇪"), ("Luka", "Novak", "Croácia", "🇭🇷"),
+    ("Matias", "Lindqvist", "Finlândia", "🇫🇮"), ("Diego", "Fuentes", "México", "🇲🇽"),
+    ("Oliver", "Hartley", "Reino Unido", "🇬🇧"), ("Noah", "Fischer", "Alemanha", "🇩🇪"),
+    ("Elias", "Moreau", "França", "🇫🇷"), ("Santiago", "Rojas", "Colômbia", "🇨🇴"),
+    ("Aleksander", "Kowalski", "Polônia", "🇵🇱"), ("Marco", "Rinaldi", "Itália", "🇮🇹"),
+    ("Jasper", "de Vries", "Países Baixos", "🇳🇱"), ("Emil", "Hagen", "Noruega", "🇳🇴"),
+    ("Ryan", "Callahan", "Estados Unidos", "🇺🇸"), ("Lachlan", "Murphy", "Austrália", "🇦🇺"),
+    ("Tomas", "Svoboda", "Tchéquia", "🇨🇿"), ("Andrei", "Popescu", "Romênia", "🇷🇴"),
+]
