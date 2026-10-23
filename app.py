@@ -38,7 +38,9 @@ st.markdown("""
   .block-container{max-width:1480px; padding:2rem 2.4rem 3.2rem;}
   @media (max-width:760px){ .block-container{padding:1.1rem .9rem 2rem;} }
   h1,h2{letter-spacing:-.02em; color:#F8FAFC; font-weight:700;}
-  h3{letter-spacing:.045em; color:#E2E8F0; font-weight:600;}
+  h3{letter-spacing:.03em; color:#E2E8F0; font-weight:400;}
+  /* marcas/kickers com a tipografia oficial da F1 (Formula1 Display) */
+  .kicker,.logo-mark,.logo-mini,.side-brand .b1,.side-brand .b2,.chip.hot{font-family:"Formula1","Titillium Web",sans-serif;}
   a{color:#E4636F !important;}
   footer{visibility:hidden;} .stDeployButton{display:none;}
 
@@ -254,7 +256,8 @@ def _slider_grid(sel_db, key_suffix=""):
     minimo = 22 if maximo >= 22 else max(4, len(sel_db["equipes"]))
     padrao = max(minimo, min(maximo, natural))
     return st.slider(
-        "👥 Pilotos no grid (titulares) — começa em 22", minimo, maximo, padrao,
+        "👥 Pilotos no grid (titulares)" + (" — começa em 22" if minimo == 22 else ""),
+        minimo, maximo, padrao,
         help=f"Grid natural desta DB: {natural}. Acima disso, as equipes inscrevem 3º e 4º carros "
              f"com reservas e jovens do mercado; abaixo, os carros excedentes sao cortados.",
         key=f"qtd_grid{key_suffix}")
@@ -273,6 +276,17 @@ def tela_inicial():
         "📚 Base de dados (DB)", list(disp.keys()),
         format_func=lambda k: f"{disp[k]['meta'].get('nome', k)} — {disp[k]['meta'].get('categoria', '')}")
     sel_db = disp[db_chave]
+    if sel_db["meta"].get("anos_historicos"):
+        _anos = [int(a) for a in sel_db["meta"]["anos_historicos"]]
+        ano_hist = st.selectbox(
+            "📅 Temporada histórica", _anos,
+            help="Como no original: escolha o ano — grids, equipes, motores, calendário e "
+                 "pontuação daquela temporada (décadas de 1950 a 2020).")
+        _norm_h, _erros_h, _ = dbsmod.validar_e_normalizar(dbsmod.db_f1_historica(ano_hist))
+        if _norm_h:
+            sel_db = _norm_h
+        elif _erros_h:
+            st.error(f"Temporada inválida: {'; '.join(_erros_h)}")
     meta = sel_db["meta"]
     ci1, ci2, ci3, ci4 = st.columns(4)
     ci1.metric("Categoria", meta.get("categoria", "—"))
@@ -331,9 +345,10 @@ def tela_inicial():
         nome_custom = c1.text_input("Nome da equipe", "Minha Equipe")
         pais_custom = c2.text_input("País sede", "Brasil")
         cor_custom = c1.color_picker("Cor do carro", "#009C3B")
-        fornecedores_disp = [m for m in sel_db["motores"] if not m.get("proprio_de") and m["id"] != "fia"]
+        fornecedores_disp: list[dict] = [m for m in sel_db["motores"] if not m.get("proprio_de") and m["id"] != "fia"]
         mot_custom = c2.selectbox(f"{meta.get('rotulo_fornecedor', 'Motor')}", fornecedores_disp,
                                   format_func=lambda m: f"{m['nome']} — desempenho {m['potencia']} · US$ {m['preco']:.0f} mi/ano")
+        assert mot_custom is not None  # selectbox com lista não vazia sempre escolhe um valor
         perfil = st.radio("Perfil do projeto", ["🥾 Estreante pé-rapado", "💼 Investidor sério", "🏭 Projeto de montadora"],
                           horizontal=True)
         perfil_map = {"🥾 Estreante pé-rapado": (70.0, 55, 35), "💼 Investidor sério": (140.0, 62, 50),
@@ -725,19 +740,24 @@ def pagina_pilotos(game):
             for pid, c in list(game["contratos_proxima"].items()):
                 p = sim.piloto(game, pid)
                 col1, col2 = st.columns([5, 1])
-                col1.markdown(bnd.com_bandeira(p['bandeira'], f"**{p['nome']}** — {c['papel']} · {sim.fmt_dinheiro_k(c['salario'])}/corrida · {c['anos']} ano(s)"), unsafe_allow_html=True)
+                marca = " · 📝 pré (sinal pago)" if c.get("pre") else ""
+                col1.markdown(bnd.com_bandeira(p['bandeira'], f"**{p['nome']}** — {c['papel']} · {sim.fmt_dinheiro_k(c['salario'])}/corrida · {c['anos']} ano(s){marca}"), unsafe_allow_html=True)
                 if col2.button("Cancelar", key=f"canc_{pid}"):
                     del game["contratos_proxima"][pid]
+                    if c.get("pre"):
+                        flash("warning", f"Pré-contrato de {p['nome']} cancelado — a sinalização de "
+                                         f"{sim.fmt_dinheiro_k(c.get('sinal', 0))} **não** é devolvida.")
                     st.rerun()
 
     with tab2:
         st.caption("Como no original: você negocia **durante** a temporada, mas o piloto só veste seu macacão "
-                   "na **próxima**. Salários são por corrida.")
-        ativos = [p for p in game["pilotos"] if not p["aposentado"]]
+                   "na **próxima**. Salários são por corrida — ou feche na hora com um **pré-contrato** (sinal pago).")
+        ativos: list[dict] = [p for p in game["pilotos"] if not p["aposentado"]]
         ativos.sort(key=lambda p: -sim.overall(p))
         sel = st.selectbox("Piloto", ativos,
                            format_func=lambda p: f"[{bnd.codigo_texto(p['bandeira'])}] {p['nome']} — ovr {sim.overall(p)} · {p['idade']} anos · "
                                                  f"{(sim.equipe(game, p['equipe_id'])['nome'] if p['equipe_id'] else 'LIVRE')} ({p['papel']})")
+        assert sel is not None  # selectbox com lista não vazia sempre escolhe um valor
         a = sel["atributos"]
         st.bar_chart(pd.Series({db.ATRIBUTOS[k]: v for k, v in a.items()}))
         st.caption(f"Auge: {sel['auge_inicio']}–{sel['auge_fim']} anos (platô) · Potencial: {sel['potencial']} · "
@@ -750,8 +770,23 @@ def pagina_pilotos(game):
             salario = st.number_input(f"Salário oferecido (US$ mil/corrida) — o mercado pagaria ±{sim.fmt_dinheiro_k(esperado)}",
                                       min_value=10, max_value=6000, value=int(esperado), step=10)
             anos = st.slider("Duração (anos)", 1, 4, 2)
-            if st.form_submit_button("✍️ Fazer proposta", type="primary", width="stretch"):
-                ok, msg = sim.negociar_piloto(game, sel["id"], papel, int(salario), anos)
+            tipo = st.radio("Tipo de acordo",
+                            ["✍️ Proposta comum — grátis, ele pode recusar",
+                             "📝 Pré-contrato — fecha na hora, com sinal"],
+                            key="tipo_acordo",
+                            help="Como no original: o pré-contrato paga uma taxa de sinalização de 3 corridas do "
+                                 "salário AGORA e fecha o acordo sem chance de recusa. A taxa não é devolvida se "
+                                 "você cancelar (e some se o piloto se aposentar antes da virada).")
+            taxa = sim.taxa_sinal(int(salario))
+            if tipo.startswith("📝"):
+                st.caption(f"💸 Sinal a pagar agora: **{sim.fmt_dinheiro_k(taxa)}** (3 corridas do salário) · "
+                           f"seu caixa: {sim.fmt_dinheiro_m(eqj['caixa'])}")
+            if st.form_submit_button("📝 Assinar pré-contrato" if tipo.startswith("📝") else "✍️ Fazer proposta",
+                                     type="primary", width="stretch"):
+                if tipo.startswith("📝"):
+                    ok, msg = sim.pre_contratar_piloto(game, sel["id"], papel, int(salario), anos)
+                else:
+                    ok, msg = sim.negociar_piloto(game, sel["id"], papel, int(salario), anos)
                 flash("success" if ok else "error", msg)
                 st.rerun()
 
@@ -793,9 +828,10 @@ def pagina_motores(game):
                 "Seu motor evolui um pouco a cada temporada junto com o investimento da fábrica.")
     else:
         st.subheader(f"🔁 Contrato para {game['ano'] + 1}")
-        disponiveis = [m for m in game["motores"] if not m["proprio_de"] and m["id"] != "fia"]
+        disponiveis: list[dict] = [m for m in game["motores"] if not m["proprio_de"] and m["id"] != "fia"]
         escolhido = st.selectbox("Próximo motor", disponiveis,
                                  format_func=lambda m: f"{m['nome']} — pot {m['potencia']} · US$ {m['preco']:.0f} mi/ano")
+        assert escolhido is not None  # selectbox com lista não vazia sempre escolhe um valor
         if game["motor_proxima"]:
             st.success(f"Acordo fechado: motor **{sim.motor(game, game['motor_proxima'])['nome']}** em {game['ano'] + 1} "
                        f"(o valor é debitado na virada da temporada).")

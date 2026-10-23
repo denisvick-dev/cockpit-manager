@@ -25,3 +25,6 @@ cockpit_save_*.json
 .idea/
 .DS_Store
 Thumbs.db
+
+# Scratch de buscas de imagem
+image-search/
