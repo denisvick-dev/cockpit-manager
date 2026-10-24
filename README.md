@@ -60,16 +60,21 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
   tudo negociado **para a temporada seguinte** — inclusive **pré-contrato com sinal** (fecha na
   hora, sem chance de recusa, como no original)
 - **Estratégia de corrida**: paradas e ritmo escolhidos **antes** da corrida + **Paddock** fiel ao
-  original (pneus com durabilidade exata, posição no grid, **Pit automático** e **Confirmar** para
-  liberar a largada) — e **durante a prova** o ritmo ao vivo e o **Pit stop!** em diálogo (Novos pneus,
-  volta atual, Cancelar/Confirmar), com clima (seco/molhado)
+  original (pneus com durabilidade exata, posição no grid, **Perguntar em cada pit stop** e
+  **Confirmar** para liberar a largada) — e **durante a prova** o ritmo ao vivo e o **Pit stop!** em
+  diálogo (Novos pneus, volta atual, Cancelar/Confirmar), com clima (seco/molhado)
+- **Janela de Pit Stop a cada parada**: na volta planejada (ou a qualquer momento pelo **Pit stop!**)
+  abre a janela do muro — *"trocar de pneu?"* com os **novos pneus** (durabilidade de cada composto)
+  e o **ritmo do próximo stint** (Conservar/Normal/Atacar). A prova **congela** enquanto a janela está
+  aberta: **Trocar pneu e voltar ✓** cumpre o box naquela volta e **Continuar na pista ✕** dispensa a
+  parada (o piloto segue com o pneu velho). Se o chefe deixar a janela passar, ela é dada como perdida
 - **Tela de treino classificatório** (como no original): relógio de 60 min com barra, clima, tabela
   de Pos./Nome/Equipe/**Melhor tempo** se enchendo aos poucos e o grid final fiel ao motor;
   botões **Iniciar treino** e **Ir para corrida!**
 - **Tela de corrida ao vivo**: título do GP com "Etapa X de N", contador de **Voltas k / N**,
   tabela posição a posição (últ. volta, dif. ant., dif 1º), painel dos seus dois pilotos com
-  paradas, pneu, **barra de vida** e **Pit stop!** manual (ou parada automática na volta
-  planejada), feed de quebras/boxes e botão **Dar largada!** — o resultado final continua
+  paradas, pneu, **barra de vida**, **próxima parada** e **Pit stop!** manual (ou a janela de box
+  na volta planejada), feed de quebras/boxes e botão **Dar largada!** — o resultado final continua
   sendo o do motor
 - **Patrocinadores** com bônus por ponto/pódio/vitória e premiação de construtores
 - **Hall da Fama** (Senna, Schumacher, Lauda, Hunt…) com indução dos seus pilotos
