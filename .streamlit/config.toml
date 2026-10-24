@@ -1,9 +1,12 @@
 # ------------------------------------------------------------------
 # Cockpit Manager — tema corporativo
-# Formula1 Display (títulos, marcas e indicadores de corrida) e Manrope
-# (interface, tabelas e telemetria) são auto-hospedadas em static/fonts/ e
-# servidas pelo Streamlit. Inter/Orbitron/Roboto continuam registradas como
-# fallback de glifos; blocos de código usam IBM Plex Mono.
+# Três fontes auto-hospedadas em static/fonts/ (servidas pelo Streamlit):
+#   Formula1 Display -> títulos, marcas e indicadores de corrida
+#   Manrope          -> interface (botões, campos, abas, sidebar), tabelas ao vivo
+#   Inter            -> leitura (parágrafos, manuais, dataframes)
+# IBM Plex Mono fica nos blocos de código. Orbitron/Roboto seguem registradas
+# apenas como fallback de glifos. Os detalhes por componente estão no <style>
+# do app.py (tokens --cm-font-*).
 # ------------------------------------------------------------------
 [theme]
 base = "dark"

@@ -28,6 +28,11 @@ st.markdown("""
   :root{
     --cm-red:#C8102E; --cm-red2:#E02444; --cm-bg:#0B0F14; --cm-panel:#151C25;
     --cm-border:rgba(148,163,184,.16); --cm-text:#F4F7FB; --cm-muted:#94A3B8;
+    /* sistema tipográfico do jogo (todas auto-hospedadas em static/fonts) */
+    --cm-font-brand:"Formula1","Titillium Web",sans-serif;   /* títulos, marcas, indicadores */
+    --cm-font-ui:"Manrope","Inter",system-ui,sans-serif;     /* interface, tabelas HTML, números */
+    --cm-font-text:"Inter","Manrope",system-ui,sans-serif;   /* texto corrido, manuais, dataframes */
+    --cm-font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,monospace;
   }
   .stApp{
     background:
@@ -35,15 +40,62 @@ st.markdown("""
       radial-gradient(900px 480px at -10% 0%, rgba(31,78,121,.16), transparent 55%),
       linear-gradient(180deg,#0B0F14 0%, #0D111A 100%);
     color:var(--cm-text);
-    /* Manrope: interface, tabelas e telemetria (auto-hospedada em static/fonts) */
-    font-family:"Manrope","Inter",system-ui,sans-serif;
+    font-family:var(--cm-font-ui);
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    text-rendering:optimizeLegibility;
   }
   .block-container{max-width:1480px; padding:2rem 2.4rem 3.2rem;}
   @media (max-width:760px){ .block-container{padding:1.1rem .9rem 2rem;} }
-  h1,h2{letter-spacing:-.01em; color:#F8FAFC; font-weight:700; font-family:"Formula1","Orbitron",sans-serif;}
-  h3{letter-spacing:.04em; color:#E2E8F0; font-weight:400; font-family:"Formula1","Orbitron",sans-serif;}
-  /* Formula1 Display: títulos, marcas e indicadores. Manrope: texto e tabelas. */
-  .kicker,.logo-mark,.logo-mini,.side-brand .b1,.side-brand .b2,.chip.hot{font-family:"Formula1","Titillium Web",sans-serif;}
+  /* ---------- tipografia: Formula1 Display (títulos) ---------- */
+  h1,h2{letter-spacing:-.01em; color:#F8FAFC; font-weight:700; font-family:var(--cm-font-brand);
+    text-wrap:balance;}
+  h3{letter-spacing:.04em; color:#E2E8F0; font-weight:400; font-family:var(--cm-font-brand);
+    text-wrap:balance;}
+  h4,h5,h6,[data-testid="stHeading"]{font-family:var(--cm-font-brand); letter-spacing:.04em;
+    text-wrap:balance;}
+  /* Formula1 Display: títulos, marcas e indicadores. Manrope: interface. Inter: texto. */
+  .kicker,.logo-mark,.logo-mini,.side-brand .b1,.side-brand .b2,.chip.hot{font-family:var(--cm-font-brand);}
+
+  /* ---------- tipografia: Manrope (interface inteira) ---------- */
+  button,[data-testid="stBaseButton"],[data-testid^="stBaseButton"],[data-testid="stDownloadButton"],
+  [data-testid="stFormSubmitButton"] button,
+  input,textarea,select,[data-baseweb="select"] *,[data-baseweb="input"] *,[data-baseweb="textarea"] *,
+  [data-testid="stWidgetLabel"],[data-testid="stWidgetLabel"] *,
+  [data-baseweb="tab"], [data-testid="stTabs"] button,
+  [data-testid="stExpander"] summary,[data-testid="stFileUploader"] *,
+  [data-testid="stMetricLabel"],[data-testid="stMetricDelta"],
+  [data-testid="stTooltipContent"] *,[data-testid="stToast"] *,
+  section[data-testid="stSidebar"] div[role="radiogroup"] label,
+  section[data-testid="stSidebar"] [data-testid="stSidebarNav"] *{
+    font-family:var(--cm-font-ui);
+  }
+  button,[data-testid^="stBaseButton"]{font-weight:600; letter-spacing:.012em;}
+  [data-testid="stWidgetLabel"] p{font-weight:600; letter-spacing:.01em;}
+  [data-testid="stMetricLabel"]{letter-spacing:.06em; text-transform:uppercase; font-weight:700;}
+
+  /* ---------- tipografia: Inter (texto corrido + dataframes) ---------- */
+  [data-testid="stMarkdownContainer"] p,[data-testid="stMarkdownContainer"] li,
+  [data-testid="stMarkdownContainer"] blockquote,[data-testid="stMarkdownContainer"] table,
+  [data-testid="stMarkdownContainer"] td,[data-testid="stMarkdownContainer"] th,
+  [data-testid="stCaptionContainer"],[data-testid="stCaptionContainer"] p,
+  [data-testid="stAlertContent"],[data-testid="stExpanderDetails"] p,
+  [data-testid="stExpanderDetails"] li,[data-testid="stTable"],
+  [data-testid="stDataFrame"]{
+    font-family:var(--cm-font-text);
+  }
+  [data-testid="stMarkdownContainer"] p{text-wrap:pretty; line-height:1.62;}
+  [data-testid="stMarkdownContainer"] li{line-height:1.58;}
+
+  /* ---------- tipografia: números tabulares e código ---------- */
+  [data-testid="stMetricValue"],[data-testid="stMetricDelta"],.tbl-viva td,.tbl-viva th,
+  .voltas-box .n,.plinha b,.side-stat .val,.race-sub,.feed-race{
+    font-variant-numeric:tabular-nums lining-nums;
+  }
+  code,pre,kbd,[data-testid="stCode"],[data-testid="stCodeBlock"]{font-family:var(--cm-font-mono);}
+  [data-testid="stIconMaterial"],[data-testid="stIconMaterial"] *,.material-symbols-rounded{
+    font-family:"Material Symbols Rounded","Material Icons" !important;
+  }
+  ::selection{background:rgba(200,16,46,.45); color:#fff;}
   a{color:#E4636F !important;}
   footer{visibility:hidden;} .stDeployButton{display:none;}
 
@@ -151,8 +203,8 @@ st.markdown("""
   .sessao-linha{display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;
     margin:.35rem 0 .7rem; font-size:.9rem; color:#CBD5E1;}
   .tbl-viva{width:100%; border-collapse:collapse; font-size:.86rem;}
-  .tbl-viva,.eq-chip,.voltas-box,.feed-race,.banner-circuito{font-family:"Manrope","Roboto",sans-serif;}
-  .voltas-box .n,.race-titulo,.sessao-titulo,.side-stat .val{font-family:"Formula1","Orbitron",sans-serif;}
+  .tbl-viva,.eq-chip,.voltas-box,.feed-race,.banner-circuito{font-family:var(--cm-font-ui);}
+  .voltas-box .n,.race-titulo,.sessao-titulo,.side-stat .val{font-family:var(--cm-font-brand);}
   .tbl-viva th{font-size:.66rem; text-transform:uppercase; letter-spacing:.11em; color:var(--cm-muted);
     padding:7px 8px; border-bottom:1px solid var(--cm-border); text-align:left; background:#10151E;}
   .tbl-viva td{padding:5.5px 8px; border-bottom:1px solid rgba(255,255,255,.055); color:#E7ECF3;
@@ -184,9 +236,9 @@ st.markdown("""
     padding:12px 16px 13px; margin:2px 0 12px;
     background:linear-gradient(135deg, rgba(200,16,46,.16), rgba(13,17,26,.6) 65%);}
   .paddock-kick{font-size:.64rem; letter-spacing:.3em; text-transform:uppercase; color:#F3B9BF; font-weight:800;}
-  .paddock-gp{font-family:"Formula1","Orbitron",sans-serif; font-weight:700; font-size:1.12rem; margin-top:4px;
+  .paddock-gp{font-family:var(--cm-font-brand); font-weight:700; font-size:1.12rem; margin-top:4px;
     display:flex; align-items:center; justify-content:center; gap:9px;}
-  .pit-titulo{text-align:center; font-family:"Formula1","Orbitron",sans-serif; font-weight:800; font-size:1.2rem;
+  .pit-titulo{text-align:center; font-family:var(--cm-font-brand); font-weight:800; font-size:1.2rem;
     text-decoration:underline; text-underline-offset:5px; margin-bottom:8px;}
   .radio-box{border:1px solid rgba(224,36,68,.6); border-radius:11px; padding:9px 11px 10px;
     margin:0 0 10px; font-size:.86rem; line-height:1.45; color:#F6DDE0;
@@ -216,7 +268,7 @@ st.markdown("""
   /* ---------- polimento final ---------- */
   [data-testid="stAppDeployButton"], .stDeployButton{display:none !important}
   div[data-testid="stMetricValue"]{font-size:1.5rem !important; line-height:1.15 !important;
-    font-family:"Formula1","Orbitron",sans-serif; letter-spacing:.01em}
+    font-family:var(--cm-font-brand); letter-spacing:.01em}
   div[data-testid="stMetricValue"] > div{white-space:normal !important; overflow:visible !important}
   .stTabs [data-baseweb="tab-list"]{padding-left:4px}
   div[role="radiogroup"] > label{width:100%; box-sizing:border-box}
