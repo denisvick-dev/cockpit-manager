@@ -13,9 +13,10 @@ de pneus e paradas e jogue **temporadas sem limite**: pilotos envelhecem, evolue
 jovens sobem da base e lendas entram para o Hall da Fama. Você ainda pode **criar e compartilhar
 suas próprias DBs** e escolher **quantos pilotos terá o grid (a partir de 22)**.
 
-Visual **com a tipografia da F1**: família oficial **Formula1 Display** nos títulos e marcas + **Titillium Web**
-no texto — o par usado pelo site da F1 — auto-hospedadas em `static/fonts/`, com tema grafite + crimson no
-`.streamlit/config.toml` (blocos de código em IBM Plex Mono, licença OFL).
+Visual com fontes locais: **Inter** na interface, **Orbitron** nos títulos e indicadores de corrida e
+**Roboto** em tabelas e telemetria. **Formula1 Display** permanece nas marcas e **IBM Plex Mono** nos
+blocos de código. Os arquivos e licenças OFL das três novas fontes ficam em `static/fonts/`; o tema é
+configurado em `.streamlit/config.toml`.
 
 ## ▶️ Como rodar
 
@@ -98,10 +99,9 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 - **Pré-contrato** no mercado de pilotos: pague um **sinal de 3 corridas do salário** e feche o
   acordo na hora — sem chance de recusa. Cancelar não devolve o sinal (e um piloto que se aposentar
   antes da virada deixa o acordo no vazio, com aviso no feed).
-- **Tipografia padrão da F1** — família oficial **Formula1 Display** (títulos e marcas) + **Titillium Web**
-  (texto), auto-hospedadas (`.streamlit/config.toml` + `static/fonts/`), com tema grafite + crimson.
-  A fonte Formula1 e as marcas são propriedade da Formula 1, usadas neste projeto de fã não comercial;
-  Titillium Web sob licença OFL.
+- **Tipografia da interface** — Inter (texto), Orbitron (títulos e indicadores) e Roboto (tabelas e
+  telemetria), auto-hospedadas em `static/fonts/` e configuradas em `.streamlit/config.toml`.
+  As fontes novas estão sob licença OFL; Formula1 Display permanece nas marcas do projeto.
 - **Tamanho do grid configurável**: slider na criação do jogo, **a partir de 22 pilotos** — equipes
   podem inscrever 3º e 4º carros (grid da F1 vai até 44!), e o mercado mantém o grid cheio
   virada após virada.

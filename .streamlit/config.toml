@@ -1,9 +1,8 @@
 # ------------------------------------------------------------------
 # Cockpit Manager — tema corporativo
-# Tipografia padrão da F1: família oficial Formula1 Display (títulos/marcas)
-# + Titillium Web (texto, OFL) — como no site da F1 — auto-hospedadas em
-# static/fonts/ e servidas pelo próprio Streamlit (server.enableStaticServing).
-# Blocos de código: IBM Plex Mono (OFL).
+# Inter (interface), Orbitron (títulos/indicadores) e Roboto (tabelas/telemetria)
+# são auto-hospedadas em static/fonts/ e servidas pelo Streamlit.
+# Formula1 Display fica nas marcas; blocos de código usam IBM Plex Mono.
 # ------------------------------------------------------------------
 [theme]
 base = "dark"
@@ -13,8 +12,8 @@ secondaryBackgroundColor = "#151C25"     # painéis
 textColor = "#E9EDF2"
 borderColor = "#28313D"
 linkColor = "#E4636F"
-font = "Titillium Web"
-headingFont = "Formula1"
+font = "Inter"
+headingFont = "Orbitron"
 codeFont = "IBM Plex Mono"
 baseFontSize = 16
 headingFontWeights = [700, 700, 400, 400, 400, 400]
@@ -122,6 +121,21 @@ family = "IBM Plex Mono"
 url = "app/static/fonts/ibm-plex-mono-latin-ext-600-normal.woff2"
 weight = "600"
 unicodeRange = "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+
+[[theme.fontFaces]]
+family = "Inter"
+url = "app/static/fonts/Inter-latin-variable.woff2"
+weight = "100 900"
+
+[[theme.fontFaces]]
+family = "Roboto"
+url = "app/static/fonts/Roboto-latin-variable.woff2"
+weight = "100 900"
+
+[[theme.fontFaces]]
+family = "Orbitron"
+url = "app/static/fonts/Orbitron-latin-variable.woff2"
+weight = "400 900"
 
 [server]
 headless = true

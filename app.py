@@ -38,9 +38,9 @@ st.markdown("""
   }
   .block-container{max-width:1480px; padding:2rem 2.4rem 3.2rem;}
   @media (max-width:760px){ .block-container{padding:1.1rem .9rem 2rem;} }
-  h1,h2{letter-spacing:-.02em; color:#F8FAFC; font-weight:700;}
-  h3{letter-spacing:.03em; color:#E2E8F0; font-weight:400;}
-  /* marcas/kickers com a tipografia oficial da F1 (Formula1 Display) */
+  h1,h2{letter-spacing:-.02em; color:#F8FAFC; font-weight:700; font-family:"Orbitron",sans-serif;}
+  h3{letter-spacing:.03em; color:#E2E8F0; font-weight:400; font-family:"Orbitron",sans-serif;}
+  /* Formula1 Display permanece nas marcas; Orbitron destaca títulos e indicadores. */
   .kicker,.logo-mark,.logo-mini,.side-brand .b1,.side-brand .b2,.chip.hot{font-family:"Formula1","Titillium Web",sans-serif;}
   a{color:#E4636F !important;}
   footer{visibility:hidden;} .stDeployButton{display:none;}
@@ -149,6 +149,8 @@ st.markdown("""
   .sessao-linha{display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;
     margin:.35rem 0 .7rem; font-size:.9rem; color:#CBD5E1;}
   .tbl-viva{width:100%; border-collapse:collapse; font-size:.86rem;}
+  .tbl-viva,.eq-chip,.voltas-box,.feed-race,.banner-circuito{font-family:"Roboto",sans-serif;}
+  .voltas-box .n,.race-titulo,.sessao-titulo,.side-stat .val{font-family:"Orbitron",sans-serif;}
   .tbl-viva th{font-size:.66rem; text-transform:uppercase; letter-spacing:.11em; color:var(--cm-muted);
     padding:7px 8px; border-bottom:1px solid var(--cm-border); text-align:left; background:#10151E;}
   .tbl-viva td{padding:5.5px 8px; border-bottom:1px solid rgba(255,255,255,.055); color:#E7ECF3;
