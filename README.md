@@ -40,8 +40,9 @@ ruff check .      # lint (config em pyproject.toml)
 python -m pytest  # 30 testes: motor, replay/pits e smoke test das telas
 ```
 
-O **GitHub Actions** (`.github/workflows/ci.yml`) roda ruff + pytest em Python 3.11/3.12
-e um job de *smoke* que sobe o Streamlit e checa `/_stcore/health`.
+O **GitHub Actions** (`.github/workflows/ci.yml`) roda ruff + pytest em Python 3.12/3.13
+e um job de *smoke* que sobe o Streamlit e checa `/_stcore/health` (as dependências fixadas
+pedem **Python 3.12+**).
 
 ## 📁 Estrutura
 
