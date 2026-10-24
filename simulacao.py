@@ -426,17 +426,47 @@ def linhas_replay(rep, lap, pits_feitas, pneus_manual=None, ritmos=None):
     return saida
 
 
-def auto_pits(rep, lap, pits_feitas, pit_auto=None):
+def auto_pits(rep, lap, pits_feitas, pit_auto=None, recusadas=None):
     """Executa automaticamente as paradas planejadas cuja volta já passou
     (datadas na volta planejada — renders pulados não perdem paradas).
-    `pit_auto` = {pid: bool} do Paddock: False = boxes manuais (não executa)."""
+    `pit_auto` = {pid: bool} do Paddock: False = parada perguntada ao chefe
+    (não executa sozinho); `recusadas` = {pid: [voltas]} de paradas que o
+    chefe já mandou o piloto ficar na pista (nunca são executadas)."""
     for pid, d in rep["info"].items():
-        if pit_auto is not None and not pit_auto.get(pid, True):
+        if d.get("dnf"):
+            continue
+        if pit_auto is not None and not pit_auto.get(pid, False):
+            continue
+        rec = set((recusadas or {}).get(pid) or [])
+        feitas = pits_feitas.get(pid)
+        novos = [x for x in d["pits_plano"]
+                 if x not in rec and (x not in (feitas or [])) and lap >= x]
+        if not novos:
             continue
         feitas = pits_feitas.setdefault(pid, [])
-        plano = d["pits_plano"]
-        while len(feitas) < len(plano) and lap >= plano[len(feitas)]:
-            feitas.append(plano[len(feitas)])
+        feitas.extend(novos)
+        feitas.sort()
+
+
+def pits_pendentes(rep, lap, pits_feitas, recusadas=None, perguntar=None, apenas=None):
+    """Paradas planejadas que venceram e ainda não foram resolvidas — cada uma
+    vira a janela de Pit Stop (trocar o pneu? qual ritmo?). `perguntar` =
+    {pid: bool} do Paddock: True (padrão) = consulta o chefe antes de parar;
+    `apenas` = ids dos pilotos do jogador (só eles recebem a janela).
+    Devolve [(pid, volta_planejada)] em ordem de volta."""
+    pend = []
+    for pid, d in rep["info"].items():
+        if d["dnf"] or (apenas is not None and pid not in apenas):
+            continue
+        if perguntar is not None and not perguntar.get(pid, True):
+            continue
+        resolvidas = set(pits_feitas.get(pid) or []) | set((recusadas or {}).get(pid) or [])
+        for x in d["pits_plano"]:
+            if lap >= x and x not in resolvidas:
+                pend.append((pid, x))
+                break
+    pend.sort(key=lambda t: t[1])
+    return pend
 
 
 def vida_pneu(etapa, pneu, laps_no_pneu, ritmo=None):
