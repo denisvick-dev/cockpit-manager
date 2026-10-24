@@ -56,7 +56,7 @@ O original: manager de F1 para Windows, lançado em **11/04/2014**, desenvolvido
 | Novo jogo + equipe criada (nome/país/cor) | ✅ | `tela_inicial()` |
 | Temporadas 1950→atual | ✅ — 8 temporadas históricas (1950·1960·1970·1980·1990·2000·2010·2020) + as DBs atuais | `dbs.db_f1_historica`, seletor em `tela_inicial()` |
 | Salvar/carregar arquivo, autosave | ✅ (salvo no navegador + download `.json`/zip) | `pagina_save()` |
-| Velocidade da corrida | ➖ n/a — a simulação é instantânea por etapa | — |
+| Velocidade da corrida | ✅ corrida ao vivo em replay volta a volta (~24 s por prova): posições, diferenças, boxes e feed de eventos — com largada, pneus e ritmo definidos antes, e o resultado final fiel ao motor | `pagina_corrida()`, `sim.montar_replay`, `sim.linhas_replay` |
 | Notícias de contratos/aposentadoria | ✅ feed de notícias | `sim.noticia` |
 | Investimentos (6 eixos, falência) | ✅ aero/caixa/freio/elétrico/direção/confiabilidade + alerta de caixa | `pagina_carro()` |
 | Trocar motor + escolher motor do ano que vem | ✅ | `pagina_motores()` |
@@ -66,8 +66,8 @@ O original: manager de F1 para Windows, lançado em **11/04/2014**, desenvolvido
 | Patrocínios por nível | ✅ (fixo/corrida + bônus/ponto) | `pagina_financas()` |
 | Financeiro entradas/saídas | ✅ caixa, salários, bônus | `pagina_escritorio()`, `pagina_financas()` |
 | Pontuação F1 real (25/18/15) | ✅ (cada DB usa o sistema da sua categoria) | `dbs.py`/`simulacao.py` |
-| Treino → grid | ✅ classificação (e sprint quando a DB define) | `pagina_corrida()` |
-| 3 pneus com durabilidade + paradas auto/manual | ✅ macio/médio/duro, paradas e ritmo | `pagina_corrida()` |
+| Treino → grid | ✅ tela de treino classificatório: relógio de 60 min, clima, tempos progressivos por piloto e grid final fiel ao motor (sprint quando a DB define) | `pagina_corrida()`, `sim.sessao_treino` |
+| 3 pneus com durabilidade + paradas auto/manual | ✅ macio/médio/duro, paradas e ritmo antes da corrida + botão **Pit stop!** ao vivo no replay (ou parada automática na volta planejada), com barra de vida do pneu | `pagina_corrida()`, `sim.vida_pneu` |
 | Pneus dos adversários, pit stops, quebras, timeline de voltas | ✅ eventos ao vivo + resumo | `simular_corrida`, `pagina_corrida()` |
 | Honras: campeões, Hall da Fama, Conquistas | ✅ | `pagina_hall()` |
 | Hall da Fama da própria categoria | ✅ por DB | `dbs.py` |
