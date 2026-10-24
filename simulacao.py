@@ -426,10 +426,13 @@ def linhas_replay(rep, lap, pits_feitas, pneus_manual=None, ritmos=None):
     return saida
 
 
-def auto_pits(rep, lap, pits_feitas):
+def auto_pits(rep, lap, pits_feitas, pit_auto=None):
     """Executa automaticamente as paradas planejadas cuja volta já passou
-    (datadas na volta planejada — renders pulados não perdem paradas)."""
+    (datadas na volta planejada — renders pulados não perdem paradas).
+    `pit_auto` = {pid: bool} do Paddock: False = boxes manuais (não executa)."""
     for pid, d in rep["info"].items():
+        if pit_auto is not None and not pit_auto.get(pid, True):
+            continue
         feitas = pits_feitas.setdefault(pid, [])
         plano = d["pits_plano"]
         while len(feitas) < len(plano) and lap >= plano[len(feitas)]:
