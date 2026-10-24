@@ -32,6 +32,17 @@ streamlit run app.py
 Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 [Streamlit Community Cloud](https://streamlit.io/cloud) apontando para `app.py`.
 
+### 🧪 Testes e lint
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+ruff check .      # lint (config em pyproject.toml)
+python -m pytest  # 30 testes: motor, replay/pits e smoke test das telas
+```
+
+O **GitHub Actions** (`.github/workflows/ci.yml`) roda ruff + pytest em Python 3.11/3.12
+e um job de *smoke* que sobe o Streamlit e checa `/_stcore/health`.
+
 ## 📁 Estrutura
 
 | Arquivo | Função |
@@ -45,7 +56,10 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 | `tools/padronizar_bandeiras.py` | Regenera/atualiza as bandeiras: baixa do flagcdn e encaixa todas no mesmo tamanho, sem distorcer (`python tools/padronizar_bandeiras.py`) |
 | `minhas_dbs/` | (criada ao salvar) Suas DBs personalizadas em `.json` viram opções permanentes na lista de DBs |
 | `.streamlit/config.toml` | Tema escuro profissional (design system do jogo) |
-| `requirements.txt` | `streamlit` + `pandas` |
+| `tests/` | Suíte **pytest**: determinismo e pontuação do motor, replay/pits (janela, automático, recusa, clima) e smoke test das 10 telas com `AppTest` |
+| `requirements.txt` / `requirements-dev.txt` | `streamlit` + `pandas` / `pytest` + `ruff` |
+| `pyproject.toml` | Configuração do **ruff** (lint) e do **pytest** |
+| `.github/workflows/ci.yml` | CI: lint + testes (3.11/3.12) + smoke do servidor Streamlit |
 
 ## 🎮 O que foi recriado do original
 
@@ -73,6 +87,12 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 - **Tela de treino classificatório** (como no original): relógio de 60 min com barra, clima, tabela
   de Pos./Nome/Equipe/**Melhor tempo** se enchendo aos poucos e o grid final fiel ao motor;
   botões **Iniciar treino** e **Ir para corrida!**
+- **Clima ao vivo com previsão**: cada GP sorteia um **plano de clima** (largada seca/molhada e, às vezes,
+  virada no meio da prova). A previsão aparece antes da largada ("a chuva chega por volta de X"), o chip de
+  **pista** durante a corrida acompanha a condição real, o feed avisa quando o tempo vira e o composto errado
+  é destacado no painel do piloto — e o diálogo do Pit Stop já abre com os pneus certos para aquela volta.
+- **Transmissão controlável**: **Pausar/Retomar** (congela a prova), **1× / 2× / 4×** de velocidade e
+  **atalhos de teclado** (espaço, 1/2/4, P/O para o box dos dois pilotos) via `static/atalhos.html`.
 - **Tela de corrida ao vivo**: título do GP com "Etapa X de N", contador de **Voltas k / N**,
   tabela posição a posição (últ. volta, dif. ant., dif 1º), painel dos seus dois pilotos com
   paradas, pneu, **barra de vida**, **próxima parada** e **Pit stop!** manual (ou a janela de box

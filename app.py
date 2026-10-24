@@ -8,6 +8,7 @@ e na DB F1 2026 v1.0 by Jonathan Daniel (blog Cockpit Manager - Brasil).
 Rode com:  streamlit run app.py
 """
 import json
+import os
 import re
 import time
 
@@ -247,6 +248,18 @@ st.markdown("""
   .banner-circuito b{color:#fff;}
   .race-titulo{text-align:center; margin:.2rem 0 .1rem; font-size:1.35rem; font-weight:800;}
   .race-sub{text-align:center; font-style:italic; color:#CBD5E1; font-size:.98rem;}
+  .previsao-tempo{border:1px solid rgba(56,189,248,.34); border-radius:12px; padding:8px 12px;
+    margin:6px 0 4px; font-size:.86rem; color:#DDE7F3;
+    background:linear-gradient(120deg, rgba(56,189,248,.14), rgba(16,21,30,.86));}
+  .previsao-tempo b{color:#BAE6FD; letter-spacing:.08em; text-transform:uppercase; font-size:.7rem;}
+  .pista-chip{display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:3px 10px;
+    font-size:.74rem; font-weight:700; border:1px solid rgba(255,255,255,.16); margin-bottom:6px;}
+  .pista-chip.seco{background:rgba(250,204,21,.16); color:#FDE68A;}
+  .pista-chip.molhado{background:rgba(56,189,248,.18); color:#BAE6FD;}
+  .box-piloto .alerta{font-size:.76rem; margin-top:4px; color:#FCA5A5; font-weight:700;}
+  .pausa-chip{border:1px solid rgba(250,204,21,.5); border-radius:10px; padding:5px 10px;
+    margin:0 0 6px; font-size:.76rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+    color:#FDE68A; background:rgba(250,204,21,.13); text-align:center;}
 
   /* ---------- escritório: painéis do original ---------- */
   .office-head{text-align:center; margin:.3rem 0 1rem;}
@@ -754,7 +767,9 @@ def pagina_escritorio(game):
 def obter_fds(game, etapa):
     chave = f"{game['ano']}-{game['rodada']}"
     if not st.session_state.fds or st.session_state.fds.get("chave") != chave:
-        st.session_state.fds = {"chave": chave, "molhado": sim.sortear_clima(game, etapa),
+        molhado = sim.sortear_clima(game, etapa)
+        st.session_state.fds = {"chave": chave, "molhado": molhado,
+                                "clima": sim.plano_clima(game, etapa, molhado),
                                 "grid": None, "sprint": None, "resultado": None, "resumo": None,
                                 "eventos": [], "treino": None, "treino_ok": False, "replay": None,
                                 "paddock_ok": False}
@@ -952,6 +967,38 @@ def _pit_dismiss():
     stt["pit_aberto"] = None
 
 
+ATALHOS_HTML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "atalhos.html")
+
+
+def _atalhos_corrida():
+    """Atalhos de teclado da corrida (espaço pausa, 1/2/4 velocidade, P/O box).
+
+    O script vive em `static/atalhos.html` e clica nos botões da própria página.
+    Degrada em silêncio: sem o arquivo ou com o iframe bloqueado, os botões
+    continuam funcionando normalmente."""
+    try:
+        if os.path.isfile(ATALHOS_HTML):
+            st.iframe(ATALHOS_HTML, height=0)
+    except Exception:       # noqa: BLE001 — atalhos são acessório, nunca derrubam a tela
+        pass
+
+
+def _chip_pista(plano, lap):
+    """Chip com a condição da pista na volta atual + aviso de virada próxima."""
+    cond = sim.condicao_pista(plano, lap)
+    icone = "🌧️ Pista molhada" if cond == "molhado" else "☀️ Pista seca"
+    extra = ""
+    v = (plano or {}).get("virada_volta")
+    if v:
+        destino = (plano or {}).get("virada_para")
+        alvo = "chuva" if destino == "molhado" else "pista secando"
+        if lap < v:
+            extra = f" · {alvo} por volta de {v}"
+        elif lap < v + 4:
+            extra = f" · {alvo} agora!"
+    return f'<span class="pista-chip {cond}">{icone} · volta {lap}{extra}</span>'
+
+
 def _pit_pedido(stt):
     """Normaliza o pedido de box aberto: {pid, volta, planejada} ou None."""
     ped = stt.get("pit_aberto")
@@ -992,13 +1039,17 @@ def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
     exec_pits = [x for x in stt["pits"].get(pid, []) if x <= lap]
     seq = stt["rep"]["info"][pid]["pneus"]
     prox = seq[min(len(exec_pits) + 1, len(seq) - 1)]
-    opcoes = sim.PNEUS_MOLHADO + sim.PNEUS_SECO if molhado else sim.PNEUS_SECO
+    plano_clima = fds.get("clima")
+    cond = sim.condicao_pista(plano_clima, volta_pit or lap)
+    molhado_agora = cond == "molhado"
+    opcoes = sim.PNEUS_MOLHADO + sim.PNEUS_SECO if molhado_agora else sim.PNEUS_SECO
     pneu = st.selectbox("Novos pneus", opcoes, format_func=_rot_pneu,
                         index=opcoes.index(prox) if prox in opcoes else 0,
                         key=f"dlg_pneu_{pid}_{fds['chave']}")
-    if molhado and pneu in sim.PNEUS_SECO:
+    st.markdown(_chip_pista(plano_clima, volta_pit or lap), unsafe_allow_html=True)
+    if molhado_agora and pneu in sim.PNEUS_SECO:
         st.error("⚠️ Slick na chuva — vai perder muito tempo na volta de saída.")
-    if not molhado and pneu in sim.PNEUS_MOLHADO:
+    if not molhado_agora and pneu in sim.PNEUS_MOLHADO:
         st.error("⚠️ Pneu de chuva no seco derrete em poucas voltas.")
     ritmo_atual = (stt.get("ritmos") or {}).get(pid, "Normal")
     ritmo = st.radio("Ritmo do próximo stint", sim.RITMOS,
@@ -1009,7 +1060,7 @@ def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
                      key=f"dlg_ritmo_{pid}_{fds['chave']}")
     st.caption(f"Volta atual: **{lap} / {voltas}** · pneu no carro: **{prox}** · "
                f"ritmo atual: **{ritmo_atual}**")
-    if st.button(f"Trocar pneu e voltar ✓", type="primary", width="stretch",
+    if st.button("Trocar pneu e voltar ✓", type="primary", width="stretch",
                  key=f"dlg_confirma_{pid}_{fds['chave']}"):
         feitas = stt["pits"].setdefault(pid, [])
         if volta_pit not in feitas:
@@ -1050,18 +1101,20 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
     rep = stt["rep"]
     voltas = int(rep["voltas"])
     agora = time.time()
-    if _pit_pedido(stt) is not None and not stt.get("pulou"):
-        # corrida congelada enquanto a janela do box espera a resposta
+    pausado = bool(stt.get("pausado"))
+    if (_pit_pedido(stt) is not None or pausado) and not stt.get("pulou"):
+        # corrida congelada: janela do box aberta ou pausa pedida pelo chefe
         pausa = float(stt.setdefault("pausa_t0", agora))
         stt["t0"] = float(stt["t0"]) + max(0.0, agora - pausa)
         stt["pausa_t0"] = agora
     else:
         stt.pop("pausa_t0", None)
+    velocidade = int(stt.get("velocidade") or 1)
     if stt.get("pulou"):
         lap = voltas
     else:
         s_por_volta = max(0.2, min(0.55, 24.0 / max(1, voltas)))
-        lap = min(voltas, int((time.time() - float(stt["t0"])) / s_por_volta))
+        lap = min(voltas, int((agora - float(stt["t0"])) / s_por_volta * velocidade))
     lap = max(1, lap)
     stt["lap"] = lap
     feed = stt.setdefault("feed", [])
@@ -1073,7 +1126,7 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
     auto = {pid: True if pid not in meus_ids else not perguntar.get(pid, True)
             for pid in rep["info"]}
     sim.auto_pits(rep, lap, stt["pits"], auto, recusadas)
-    if _pit_pedido(stt) is None and lap < voltas:
+    if _pit_pedido(stt) is None and lap < voltas and not pausado:
         pend = sim.pits_pendentes(rep, lap, stt["pits"], recusadas,
                                   {pid: perguntar.get(pid, True) for pid in meus_ids},
                                   apenas=meus_ids)
@@ -1108,12 +1161,35 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
                                        for l in (fds.get("resultado") or [])})
     pneus_man = stt.setdefault("pneus_manual", {})
     linhas = sim.linhas_replay(rep, lap, stt["pits"], pneus_man, ritmos)
+    plano_clima = stt.get("clima") or fds.get("clima")
+    cond = sim.condicao_pista(plano_clima, lap)
+    cond_ant = stt.get("clima_visto")
+    if cond_ant is not None and cond != cond_ant:
+        feed.append("🌧️ **A pista está molhando!** Pneu de chuva agora, chefe."
+                    if cond == "molhado" else
+                    "☀️ **A pista está secando!** Hora de voltar para o slick.")
+    stt["clima_visto"] = cond
     c1, c2 = st.columns([2.3, 1], gap="medium")
     with c1:
         st.markdown(_html_tabela_viva(game, linhas, mostrar, meus_ids), unsafe_allow_html=True)
     with c2:
         st.markdown(f'<div class="voltas-box"><div class="lab">Voltas</div>'
                     f'<div class="n">{lap} / {voltas}</div></div>', unsafe_allow_html=True)
+        st.markdown(_chip_pista(plano_clima, lap), unsafe_allow_html=True)
+        if pausado:
+            st.markdown('<div class="pausa-chip">⏸ Corrida pausada</div>', unsafe_allow_html=True)
+        cc = st.columns([1.15, 1, 1, 1])
+        if cc[0].button("▶ Retomar" if pausado else "⏸ Pausar", key="pausar_corrida",
+                        help="Congela a prova para pensar com calma (atalho: espaço)."):
+            stt["pausado"] = not pausado
+            st.rerun()
+        for col, opcao in zip(cc[1:], (1, 2, 4)):
+            if col.button(f"{opcao}×", key=f"vel_{opcao}",
+                          type="primary" if velocidade == opcao else "secondary",
+                          help=f"Correr em {opcao}× (atalho: {opcao})."):
+                stt["velocidade"] = opcao
+                st.rerun()
+        st.caption("⌨️ espaço pausa · 1/2/4 velocidade · P/O box do 1º/2º piloto")
         for p in meus:
             ln = next((x for x in linhas if x["pid"] == p["id"]), None)
             exec_pits = [x for x in stt["pits"].get(p["id"], []) if x <= lap]
@@ -1123,6 +1199,11 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
             ritmo = ritmos.get(p["id"], "Normal")
             vida = sim.vida_pneu(etapa, pneu, lap - ultimo, ritmo)
             papel = ROTULOS_PAPEL.get(p["papel"], p["papel"])
+            alerta = ""
+            if cond == "molhado" and pneu in sim.PNEUS_SECO:
+                alerta = '<div class="alerta">⚠️ Slick na chuva — chame o box!</div>'
+            elif cond == "seco" and pneu in sim.PNEUS_MOLHADO:
+                alerta = '<div class="alerta">⚠️ Pneu de chuva no seco — troque já!</div>'
             pergunta_ok = perguntar.get(p["id"], True)
             rec_p = recusadas.get(p["id"]) or []
             proxima = next((x for x in rep["info"][p["id"]]["pits_plano"]
@@ -1140,7 +1221,7 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
                 f'Pit: {"pergunta" if pergunta_ok else "automático"}</div>'
                 f'{_barra_html(vida)}'
                 f'<div class="mini">Vida do pneu: {vida * 100:.0f}%</div>'
-                f'<div class="mini">{prox_txt}</div></div>',
+                f'<div class="mini">{prox_txt}</div>{alerta}</div>',
                 unsafe_allow_html=True)
             # ---- estratégia ao vivo: ritmo e chamada de box ----
             rk = f"ritmo_vivo_{p['id']}_{fds['chave']}"
@@ -1197,6 +1278,9 @@ def pagina_corrida(game):
     st.caption(f"Características: peso do motor {etapa['potencia'] * 100:.0f}% · facilidade de ultrapassar "
                f"{etapa['ultrap'] * 100:.0f}% · desgaste {etapa['desgaste']:.1f}/3 → estratégia típica: "
                f"**{sim.paradas_ideais(etapa)} parada(s)**")
+    previsao = sim.previsao_texto(fds.get("clima"))
+    st.markdown(f'<div class="previsao-tempo"><b>Previsão do tempo</b> · {previsao}</div>',
+                unsafe_allow_html=True)
 
     # ---------------- estratégia dos seus dois pilotos (antes da corrida)
     estrategias = {}
@@ -1295,6 +1379,7 @@ def pagina_corrida(game):
     _cabecalho_corrida(game, etapa, molhado,
                        com_checkbox=bool(rep_state) and not rep_state.get("concluido"))
     if rep_state is not None and not rep_state.get("concluido"):
+        _atalhos_corrida()
         _frag_corrida(game, etapa, molhado, fds, meus)
     elif rep_state is None:
         # ---- pré-largada: grid + Paddock (pneus/grid/pit) + Dar largada! ----
@@ -1365,7 +1450,8 @@ def pagina_corrida(game):
                 "balloons_ok": False,
                 "ritmos": {pid: e.get("ritmo", "Normal") for pid, e in estrategias.items()},
                 "pneus_manual": {}, "pit_perguntar": pit_auto, "pit_aberto": None,
-                "pits_recusados": {}}
+                "pits_recusados": {}, "clima": fds.get("clima"),
+                "clima_visto": None, "pausado": False, "velocidade": 1}
             st.rerun()
         if bloqueado:
             st.caption(f"🏁 Simule o {rot_corrida2(game)} primeiro.")
@@ -1751,6 +1837,13 @@ Comande uma equipe de F1 temporada após temporada, **sem limite de anos** — e
 - **Paddock (antes da largada)**: por piloto, **Pneus** com a durabilidade exata ("Duro (33 voltas)"),
   a posição no **Grid** e o **Perguntar em cada pit stop** — desmarque para o box executar as paradas
   planejadas sozinho, sem janela. O **Confirmar** do Paddock libera a **largada**.
+- **Clima ao vivo**: a tela mostra a **previsão do tempo** da prova — largada seca ou molhada e, às vezes,
+  *"a chuva chega por volta de X"* ou *"a pista deve secar por volta de X"*. Durante a corrida, o chip de
+  **pista** acompanha a condição real, avisa no feed quando vira e destaca no painel do piloto quando o
+  composto está errado para a pista (slick na chuva, chuva no seco). O resultado final continua sendo o do motor.
+- **Controle da transmissão**: **⏸ Pausar / ▶ Retomar** congela a prova para pensar e **1× / 2× / 4×**
+  acelera a transmissão. Atalhos de teclado: **espaço** pausa/retoma, **1/2/4** mudam a velocidade e
+  **P / O** abrem o Pit Stop do 1º e do 2º piloto.
 - Em pistas sem ultrapassagem (Mônaco!), **classificação é a corrida**.
 
 ### 💸 Dinheiro (não seja a próxima Caterham)

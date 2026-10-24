@@ -244,6 +244,49 @@ def sortear_clima(game, etapa):
     return rng.random() < etapa["chuva"]  # True = molhado
 
 
+# ------------------------------------------------------- clima ao vivo
+def plano_clima(game, etapa, molhado):
+    """Previsão do fim de semana: condição de largada + eventual virada no meio
+    da prova. Determinística por etapa (semente própria — não consome o
+    contador do save) e usada só pela tela: não altera o resultado do motor."""
+    rng = random.Random(int(game.get("semente", 0)) * 7919
+                        + int(game.get("ano", 0)) * 131
+                        + int(game.get("rodada", 0)) * 17)
+    plano = {"inicio": "molhado" if molhado else "seco",
+             "virada_volta": None, "virada_para": None}
+    chance = 0.38 if molhado else 0.26
+    chance *= 0.55 + float(etapa.get("chuva", 0.2))
+    if rng.random() < chance:
+        voltas = max(8, int(etapa["voltas"]))
+        plano["virada_volta"] = max(3, int(voltas * rng.uniform(0.22, 0.82)))
+        plano["virada_para"] = "seco" if molhado else "molhado"
+    return plano
+
+
+def condicao_pista(plano, lap):
+    """Condição da pista ("seco"/"molhado") na volta `lap`, dado o plano."""
+    if not plano:
+        return "seco"
+    v = plano.get("virada_volta")
+    if v and int(lap) >= int(v):
+        return plano.get("virada_para") or plano.get("inicio", "seco")
+    return plano.get("inicio", "seco")
+
+
+def previsao_texto(plano):
+    """Frase de previsão do tempo para o paddock/estratégia."""
+    if not plano:
+        return "☀️ Sem previsão de mudança para a corrida."
+    inicio = plano.get("inicio", "seco")
+    v, destino = plano.get("virada_volta"), plano.get("virada_para")
+    largada = "🌧️ Largada com pista molhada" if inicio == "molhado" else "☀️ Largada com pista seca"
+    if not v:
+        return f"{largada} e sem previsão de mudança."
+    if destino == "molhado":
+        return f"{largada}, mas a **chuva chega por volta de {v}** — prepare o pneu de chuva."
+    return f"{largada}, mas a **pista deve secar por volta de {v}** — cuidado ao apostar no pneu errado."
+
+
 def simular_classificacao(game, etapa, molhado):
     rng = _rng(game)
     imp = game["importancia_carro"]
@@ -710,7 +753,7 @@ def aplicar_resultado(game, etapa, grid, resultado, molhado, sprint=False, event
         vits = sum(1 for l in resultado if l["equipe_id"] == eqj["id"] and l["pos"] == 1 and not l["dnf"])
         pts_bonus = round(pts_eq * float((game.get("meta") or {}).get("fator_pontos_bonus", 1.0)))
         rec = spon["por_corrida"] + pts_bonus * spon["bonus_ponto"] + podios * spon["bonus_podio"] + vits * spon["bonus_vitoria"]
-        lancar_financa(game, f"Patrocínio {spon['nome']} + bônus ({etapa['gp']})", rec); resumo.append((f"Patrocínio e bônus", rec))
+        lancar_financa(game, f"Patrocínio {spon['nome']} + bônus ({etapa['gp']})", rec); resumo.append(("Patrocínio e bônus", rec))
         salarios = sum(p["salario_corrida"] for p in game["pilotos"] if p["equipe_id"] == eqj["id"] and not p["aposentado"])
         lancar_financa(game, "Salários dos pilotos", -salarios); resumo.append(("Salários", -salarios))
         inv = eqj["investimento_corrida"]
