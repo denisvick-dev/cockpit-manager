@@ -268,6 +268,10 @@ def simular_classificacao(game, etapa, molhado):
 PNEUS_SECO = ["Macio", "Médio", "Duro"]
 PNEUS_MOLHADO = ["Intermediário", "Chuva extrema"]
 RITMOS = ["Conservar", "Normal", "Atacar"]
+# efeito do ritmo NA TELA (corrida ao vivo) — nunca altera o resultado do motor
+RITMO_TEMPO = {"Conservar": 0.55, "Normal": 0.0, "Atacar": -0.45}    # s por volta
+RITMO_POSICAO = {"Conservar": 0.30, "Normal": 0.0, "Atacar": -0.35}  # posições (some na chegada)
+RITMO_DESGASTE = {"Conservar": 0.8, "Normal": 1.0, "Atacar": 1.3}    # x a vida do pneu
 
 
 def paradas_ideais(etapa):
@@ -372,20 +376,29 @@ def montar_replay(game, etapa, grid, resultado, molhado, eventos=None, sprint=Fa
             "sc_lap": int(voltas * 0.55) if "Safety Car" in texto_ev else None}
 
 
-def linhas_replay(rep, lap, pits_feitas):
+def linhas_replay(rep, lap, pits_feitas, pneus_manual=None, ritmos=None):
     """Estado do replay na volta `lap` (1-based). `pits_feitas` = {pid: [voltas]}
-    das paradas já executadas (manuais via 'Pit stop!' ou automáticas)."""
+    das paradas já executadas (manuais via 'Pit stop!' ou automáticas);
+    `pneus_manual` = {pid: {nº da parada: pneu}} escolhidos na tela e
+    `ritmos` = {pid: ritmo} ajustado ao vivo — ambos só mudam a exibição,
+    o resultado final continua sendo o do motor."""
     lap = max(1, min(int(lap), rep["voltas"]))
     w = lap / rep["voltas"]
+    fase = 4.0 * w * (1.0 - w)  # efeito do ritmo cresce no meio e zera na chegada
     campos, fora = [], []
     for pid, d in rep["info"].items():
         executadas = [x for x in sorted(pits_feitas.get(pid) or []) if x <= lap]
         n_pit = len(executadas)
         box_hoje = lap in executadas
+        ritmo = (ritmos or {}).get(pid, "Normal")
         s = (w * d["final_pos"] + (1 - w) * d["grid"]
-             + d["ruido"][lap] * (1 - w) ** 0.75 + (3.4 if box_hoje else 0.0))
+             + d["ruido"][lap] * (1 - w) ** 0.75 + (3.4 if box_hoje else 0.0)
+             + RITMO_POSICAO.get(ritmo, 0.0) * fase)
+        pneu = d["pneus"][min(n_pit, len(d["pneus"]) - 1)]
+        if pneus_manual:
+            pneu = pneus_manual.get(pid, {}).get(n_pit, pneu)
         linha = {"pid": pid, "s": s, "box": box_hoje, "equipe_id": d["equipe_id"],
-                 "pneu": d["pneus"][min(n_pit, len(d["pneus"]) - 1)],
+                 "pneu": pneu,
                  "pits": n_pit, "paradas": d["paradas"]}
         if d["dnf"] and lap >= d["volta_dnf"]:
             linha["fora"] = d["motivo"]
@@ -400,7 +413,8 @@ def linhas_replay(rep, lap, pits_feitas):
         sint = max(0.0, (ln["s"] - lider_s) * 0.9)
         dif1 = sint * (1 - w) + d["gap_final"] * w
         dif_ant = None if dif_lider is None else max(0.0, dif1 - dif_lider)
-        tempo = d["tempos"][lap] + (21.5 if ln["box"] else 0.0)
+        ritmo = (ritmos or {}).get(ln["pid"], "Normal")
+        tempo = d["tempos"][lap] + RITMO_TEMPO.get(ritmo, 0.0) + (21.5 if ln["box"] else 0.0)
         saida.append({**ln, "pos": i + 1, "dif1": round(dif1, 1),
                       "dif_ant": None if dif_ant is None else round(dif_ant, 1),
                       "tempo": round(tempo, 3)})
@@ -422,11 +436,12 @@ def auto_pits(rep, lap, pits_feitas):
             feitas.append(plano[len(feitas)])
 
 
-def vida_pneu(etapa, pneu, laps_no_pneu):
-    """Fração de vida restante do composto (0..1) para a barra da tela."""
+def vida_pneu(etapa, pneu, laps_no_pneu, ritmo=None):
+    """Fração de vida restante do composto (0..1) para a barra da tela.
+    `ritmo` projeta o desgaste: Atacar consome mais, Conservar menos."""
     base = PNEUS_DURACAO.get(pneu, 24.0)
     fator = max(0.5, min(1.35, 1.55 - float(etapa.get("desgaste", 2.0)) * 0.32))
-    dur = max(3.0, base * fator)
+    dur = max(3.0, base * fator) / RITMO_DESGASTE.get(ritmo or "Normal", 1.0)
     return max(0.0, min(1.0, 1.0 - laps_no_pneu / dur))
 
 
