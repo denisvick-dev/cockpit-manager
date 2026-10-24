@@ -82,6 +82,15 @@ def lancar_financa(game, descricao, valor_k):
         "descricao": descricao, "valor": round(valor_k, 1),
     })
     game["extrato"] = game["extrato"][:200]
+    # acumuladores do ano (painel Finanças do Escritório, como no original)
+    fa = game.get("financas_ano") or {}
+    if int(fa.get("ano", -1)) != int(game["ano"]):
+        fa = {"ano": int(game["ano"]), "receitas": 0.0, "despesas": 0.0}
+    if valor_k >= 0:
+        fa["receitas"] = round(fa["receitas"] + float(valor_k), 1)
+    else:
+        fa["despesas"] = round(fa["despesas"] - float(valor_k), 1)
+    game["financas_ano"] = fa
 
 
 # --------------------------------------------------------------- novo jogo
@@ -542,6 +551,51 @@ def _patrocinador(nome, game=None):
     return next((s for s in lista if s["nome"] == nome), lista[-1])
 
 
+# ------------------------------------------------- eixos do carro (CM14)
+EIXOS_CARRO = ("aerodinamica", "cambio", "freio", "eletrico", "direcao")
+
+
+def eixos_carro(eq):
+    """Eixos do painel Carro no estilo CM14 (aerodinâmica, câmbio, freio,
+    sistema elétrico, direção): derivados do nível real do chassi + mix
+    determinístico por equipe (média zero → a média dos eixos bate com o
+    chassi) que responde ao foco de desenvolvimento. Confiabilidade é o
+    campo real da equipe. Não altera cálculo de corrida."""
+    mix = eq.get("eixos_mix")
+    if not mix:
+        base_txt = f"{eq.get('id', '')}{eq.get('nome', '')}"
+        rnd = random.Random(sum(ord(c) for c in base_txt) * 31 + 7)
+        cru = [rnd.uniform(-4.5, 4.5) for _ in EIXOS_CARRO]
+        media = sum(cru) / len(cru)
+        mix = {k: round(v - media, 3) for k, v in zip(EIXOS_CARRO, cru)}
+        eq["eixos_mix"] = mix
+    base = float(eq.get("nivel_carro", 80))
+    saida = {k: int(round(max(35.0, min(99.0, base + float(mix.get(k, 0.0))))))
+             for k in EIXOS_CARRO}
+    saida["confiabilidade"] = int(round(float(eq.get("confiabilidade", 85))))
+    return saida
+
+
+def evoluir_eixos(eq):
+    """Desloca o mix dos eixos conforme o foco de desenvolvimento,
+    preservando a média (o nível do chassi é quem manda na corrida)."""
+    eixos_carro(eq)  # garante o mix
+    mix = eq["eixos_mix"]
+    foco = eq.get("foco") or "equilibrado"
+    if foco == "chassi":
+        mix["aerodinamica"] = round(mix.get("aerodinamica", 0.0) + 0.55, 3)
+        mix["direcao"] = round(mix.get("direcao", 0.0) + 0.30, 3)
+        for k in ("cambio", "freio", "eletrico"):
+            mix[k] = round(mix.get(k, 0.0) - 0.283, 3)
+    elif foco == "equilibrado":
+        for k in EIXOS_CARRO:
+            mix[k] = round(mix.get(k, 0.0) * 0.90, 3)
+    # foco == 'confiabilidade': mix intocado (o eixo real é eq['confiabilidade'])
+    media = sum(mix.get(k, 0.0) for k in EIXOS_CARRO) / len(EIXOS_CARRO)
+    for k in EIXOS_CARRO:
+        mix[k] = round(mix.get(k, 0.0) - media, 3)
+
+
 def desenvolver_carros(game, etapa):
     """Desenvolvimento entre corridas: investimento + feedback (Acerto) dos pilotos."""
     rng = _rng(game)
@@ -569,6 +623,7 @@ def desenvolver_carros(game, etapa):
             eq["confiabilidade"] = round(min(98.0, eq["confiabilidade"] + investimento / 1000.0 * 0.35), 2)
         # desgaste natural da confiabilidade
         eq["confiabilidade"] = round(max(70.0, eq["confiabilidade"] - rng.uniform(0, 0.25)), 2)
+        evoluir_eixos(eq)
         if eq["id"] != game["equipe_jogador"]:
             receita = _patrocinador(eq["patrocinador"], game)["por_corrida"] / 1000.0 + eq["pontos"] * 0.004
             custos = investimento / 1000.0 + sum(t["salario_corrida"] for t in titulares_eq) / 1000.0

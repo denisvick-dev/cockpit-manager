@@ -53,7 +53,8 @@ O original: manager de F1 para Windows, lançado em **11/04/2014**, desenvolvido
 
 | Original ('14) | No remake | Onde |
 |---|---|---|
-| Novo jogo + equipe criada (nome/país/cor) | ✅ | `tela_inicial()` |
+| Novo jogo + equipe criada (nome/país/cor) | ✅ (mais o **nome do gerente**, como "Vick 1999, 2ª etapa") | `tela_inicial()` |
+| Tela-resumo do Escritório em painéis (Carro com os 6 eixos %, Pilotos, Notícias, Próxima corrida, Finanças do ano, Contratos/motor, Continuar) | ✅ layout fiel ao original | `pagina_escritorio()` |
 | Temporadas 1950→atual | ✅ — 8 temporadas históricas (1950·1960·1970·1980·1990·2000·2010·2020) + as DBs atuais | `dbs.db_f1_historica`, seletor em `tela_inicial()` |
 | Salvar/carregar arquivo, autosave | ✅ (salvo no navegador + download `.json`/zip) | `pagina_save()` |
 | Velocidade da corrida | ✅ corrida ao vivo em replay volta a volta (~24 s por prova): posições, diferenças, boxes e feed de eventos — com largada, pneus e ritmo definidos antes, e o resultado final fiel ao motor | `pagina_corrida()`, `sim.montar_replay`, `sim.linhas_replay` |
