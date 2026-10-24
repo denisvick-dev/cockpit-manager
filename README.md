@@ -58,7 +58,9 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
   Acerto de carro, Físico), salários por corrida, contratos de 1º/2º piloto e piloto de testes,
   tudo negociado **para a temporada seguinte** — inclusive **pré-contrato com sinal** (fecha na
   hora, sem chance de recusa, como no original)
-- **Estratégia de corrida**: pneu de largada, número de paradas e ritmo, com clima (seco/molhado)
+- **Estratégia de corrida**: pneu de largada, número de paradas e ritmo escolhidos **antes** da corrida —
+  e **durante a prova** dá para ajustar o ritmo ao vivo, escolher o pneu do próximo box e forçar uma
+  parada extra com o botão **Pit stop!**, com clima (seco/molhado)
 - **Tela de treino classificatório** (como no original): relógio de 60 min com barra, clima, tabela
   de Pos./Nome/Equipe/**Melhor tempo** se enchendo aos poucos e o grid final fiel ao motor;
   botões **Iniciar treino** e **Ir para corrida!**
