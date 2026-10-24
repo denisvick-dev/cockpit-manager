@@ -1,8 +1,9 @@
 # ------------------------------------------------------------------
 # Cockpit Manager — tema corporativo
-# Inter (interface), Orbitron (títulos/indicadores) e Roboto (tabelas/telemetria)
-# são auto-hospedadas em static/fonts/ e servidas pelo Streamlit.
-# Formula1 Display fica nas marcas; blocos de código usam IBM Plex Mono.
+# Formula1 Display (títulos, marcas e indicadores de corrida) e Manrope
+# (interface, tabelas e telemetria) são auto-hospedadas em static/fonts/ e
+# servidas pelo Streamlit. Inter/Orbitron/Roboto continuam registradas como
+# fallback de glifos; blocos de código usam IBM Plex Mono.
 # ------------------------------------------------------------------
 [theme]
 base = "dark"
@@ -12,8 +13,8 @@ secondaryBackgroundColor = "#151C25"     # painéis
 textColor = "#E9EDF2"
 borderColor = "#28313D"
 linkColor = "#E4636F"
-font = "Inter"
-headingFont = "Orbitron"
+font = "Manrope"
+headingFont = "Formula1"
 codeFont = "IBM Plex Mono"
 baseFontSize = 16
 headingFontWeights = [700, 700, 400, 400, 400, 400]
@@ -136,6 +137,22 @@ weight = "100 900"
 family = "Orbitron"
 url = "app/static/fonts/Orbitron-latin-variable.woff2"
 weight = "400 900"
+
+# ---- Manrope (interface, tabelas e telemetria) — OFL, ver Manrope-OFL.txt ----
+[[theme.fontFaces]]
+family = "Manrope"
+url = "app/static/fonts/manrope-latin-variable.woff2"
+weight = "200 800"
+unicodeRange = "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+
+[[theme.fontFaces]]
+family = "Manrope"
+url = "app/static/fonts/manrope-latin-ext-variable.woff2"
+weight = "200 800"
+unicodeRange = "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF"
+
+# ---- Formula1 Display (títulos, marcas e indicadores) ----
+# Os pesos Regular/Bold/Black/Italic já estão registrados acima como "Formula1".
 
 [server]
 headless = true

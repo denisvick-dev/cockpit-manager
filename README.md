@@ -13,10 +13,11 @@ de pneus e paradas e jogue **temporadas sem limite**: pilotos envelhecem, evolue
 jovens sobem da base e lendas entram para o Hall da Fama. Você ainda pode **criar e compartilhar
 suas próprias DBs** e escolher **quantos pilotos terá o grid (a partir de 22)**.
 
-Visual com fontes locais: **Inter** na interface, **Orbitron** nos títulos e indicadores de corrida e
-**Roboto** em tabelas e telemetria. **Formula1 Display** permanece nas marcas e **IBM Plex Mono** nos
-blocos de código. Os arquivos e licenças OFL das três novas fontes ficam em `static/fonts/`; o tema é
-configurado em `.streamlit/config.toml`.
+Visual com fontes locais: **Formula1 Display** (a fonte da F1) nos títulos, marcas e indicadores de
+corrida e **Manrope** na interface, nas tabelas e na telemetria. **IBM Plex Mono** fica nos blocos de
+código, e **Inter/Orbitron/Roboto** seguem registradas como fallback de glifos. Os arquivos e as
+licenças OFL ficam em `static/fonts/` (incluindo `Manrope-OFL.txt`); o tema é configurado em
+`.streamlit/config.toml`.
 
 ## ▶️ Como rodar
 
@@ -107,9 +108,9 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 - **Pré-contrato** no mercado de pilotos: pague um **sinal de 3 corridas do salário** e feche o
   acordo na hora — sem chance de recusa. Cancelar não devolve o sinal (e um piloto que se aposentar
   antes da virada deixa o acordo no vazio, com aviso no feed).
-- **Tipografia da interface** — Inter (texto), Orbitron (títulos e indicadores) e Roboto (tabelas e
-  telemetria), auto-hospedadas em `static/fonts/` e configuradas em `.streamlit/config.toml`.
-  As fontes novas estão sob licença OFL; Formula1 Display permanece nas marcas do projeto.
+- **Tipografia da interface** — Formula1 Display (a fonte da F1: títulos, marcas, placar de voltas e
+  valores de destaque) e Manrope (texto, tabelas e telemetria), auto-hospedadas em `static/fonts/` e
+  configuradas em `.streamlit/config.toml`. Manrope está sob licença OFL (`static/fonts/Manrope-OFL.txt`).
 - **Tamanho do grid configurável**: slider na criação do jogo, **a partir de 22 pilotos** — equipes
   podem inscrever 3º e 4º carros (grid da F1 vai até 44!), e o mercado mantém o grid cheio
   virada após virada.
