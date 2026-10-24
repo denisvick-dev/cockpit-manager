@@ -178,6 +178,14 @@ st.markdown("""
   .banner-circuito{background:linear-gradient(120deg, rgba(200,16,46,.16), rgba(16,21,30,.92));
     border:1px solid var(--cm-border); border-radius:13px; padding:11px 14px; text-align:center;
     margin-top:14px; font-size:.92rem; color:#E7ECF3;}
+  .paddock-head{border:1px solid rgba(224,36,68,.55); border-radius:14px; text-align:center;
+    padding:12px 16px 13px; margin:2px 0 12px;
+    background:linear-gradient(135deg, rgba(200,16,46,.16), rgba(13,17,26,.6) 65%);}
+  .paddock-kick{font-size:.64rem; letter-spacing:.3em; text-transform:uppercase; color:#F3B9BF; font-weight:800;}
+  .paddock-gp{font-family:"Orbitron",sans-serif; font-weight:700; font-size:1.12rem; margin-top:4px;
+    display:flex; align-items:center; justify-content:center; gap:9px;}
+  .pit-titulo{text-align:center; font-family:"Orbitron",sans-serif; font-weight:800; font-size:1.2rem;
+    text-decoration:underline; text-underline-offset:5px; margin-bottom:8px;}
   .banner-circuito b{color:#fff;}
   .race-titulo{text-align:center; margin:.2rem 0 .1rem; font-size:1.35rem; font-weight:800;}
   .race-sub{text-align:center; font-style:italic; color:#CBD5E1; font-size:.98rem;}
@@ -689,7 +697,8 @@ def obter_fds(game, etapa):
     if not st.session_state.fds or st.session_state.fds.get("chave") != chave:
         st.session_state.fds = {"chave": chave, "molhado": sim.sortear_clima(game, etapa),
                                 "grid": None, "sprint": None, "resultado": None, "resumo": None,
-                                "eventos": [], "treino": None, "treino_ok": False, "replay": None}
+                                "eventos": [], "treino": None, "treino_ok": False, "replay": None,
+                                "paddock_ok": False}
     return st.session_state.fds
 
 
@@ -852,6 +861,55 @@ def _frag_treino(game, etapa, molhado, fds):
         st.rerun()
 
 
+def _rot_pneu(p):
+    """Rótulo de composto com durabilidade base, como no original: 'Duro (33 voltas)'."""
+    return f"{p} ({int(sim.PNEUS_DURACAO.get(p, 24))} voltas)"
+
+
+def _pit_dismiss():
+    """X/ESC no Pit Stop: fecha sem executar a parada."""
+    fds = st.session_state.get("fds")
+    if isinstance(fds, dict) and fds.get("replay"):
+        fds["replay"]["pit_aberto"] = None
+
+
+@st.dialog("Pit Stop", width="small", on_dismiss=_pit_dismiss)
+def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
+    """Diálogo de box fiel ao original: piloto, novos pneus, volta atual,
+    Cancelar ordem e Confirmar. Só executa a parada em Confirmar."""
+    stt = fds["replay"]
+    pid = stt.get("pit_aberto")
+    p = next((x for x in meus if x["id"] == pid), None)
+    if p is None or stt.get("concluido"):
+        stt["pit_aberto"] = None
+        return
+    st.markdown('<div class="pit-titulo">Pit Stop</div>', unsafe_allow_html=True)
+    st.markdown(f"**Piloto:** {bnd.img_bandeira(p['bandeira'], 18)} {p['nome']}",
+                unsafe_allow_html=True)
+    exec_pits = [x for x in stt["pits"].get(pid, []) if x <= lap]
+    seq = stt["rep"]["info"][pid]["pneus"]
+    prox = seq[min(len(exec_pits) + 1, len(seq) - 1)]
+    opcoes = sim.PNEUS_MOLHADO + sim.PNEUS_SECO if molhado else sim.PNEUS_SECO
+    pneu = st.selectbox("Novos pneus", opcoes, format_func=_rot_pneu,
+                        index=opcoes.index(prox),
+                        key=f"dlg_pneu_{pid}_{fds['chave']}")
+    st.markdown(f"**Volta atual:** {lap} / {voltas}")
+    if st.button("Cancelar ordem ✕", width="stretch", key=f"dlg_cancela_{fds['chave']}"):
+        stt["pit_aberto"] = None
+        st.rerun()
+    if st.button("Confirmar ✓", type="primary", width="stretch",
+                 key=f"dlg_confirma_{fds['chave']}"):
+        if lap not in stt["pits"].get(pid, []):
+            stt["pits"].setdefault(pid, []).append(lap)
+            n = len(stt["pits"][pid])
+            stt.setdefault("pneus_manual", {}).setdefault(pid, {})[n] = pneu
+            stt.setdefault("feed", []).append(
+                f"🛠️ Box para **{p['nome']}** na volta {lap} → pneu **{pneu}** "
+                f"(ordem do comando).")
+        stt["pit_aberto"] = None
+        st.rerun()
+
+
 @st.fragment(run_every=0.4)
 def _frag_corrida(game, etapa, molhado, fds, meus):
     """Corrida ao vivo: volta a volta (replay fiel ao resultado do motor),
@@ -868,7 +926,7 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
         lap = min(voltas, int((time.time() - float(stt["t0"])) / s_por_volta))
     lap = max(1, lap)
     stt["lap"] = lap
-    sim.auto_pits(rep, lap, stt["pits"])
+    sim.auto_pits(rep, lap, stt["pits"], stt.get("pit_auto"))
     feed = stt.setdefault("feed", [])
     marcados = stt.setdefault("feed_dnf", [])
     for pid, d in rep["info"].items():
@@ -903,14 +961,16 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
             ritmo = ritmos.get(p["id"], "Normal")
             vida = sim.vida_pneu(etapa, pneu, lap - ultimo, ritmo)
             papel = ROTULOS_PAPEL.get(p["papel"], p["papel"])
+            auto_ok = stt.get("pit_auto", {}).get(p["id"], True)
             st.markdown(
                 f'<div class="box-piloto"><div class="papel">{papel}</div>'
                 f'<div class="nome">{bnd.img_bandeira(p["bandeira"], 18)} {p["nome"]}</div>'
-                f'<div class="mini">Paradas: {len(exec_pits)}/{plano} · Pneus: <b>{pneu}</b></div>'
+                f'<div class="mini">Paradas: {len(exec_pits)}/{plano} · Pneus: <b>{pneu}</b> · '
+                f'Pit: {"automático" if auto_ok else "manual"}</div>'
                 f'{_barra_html(vida)}'
                 f'<div class="mini">Vida do pneu: {vida * 100:.0f}%</div></div>',
                 unsafe_allow_html=True)
-            # ---- estratégia ao vivo: ritmo e pneu do próximo box ----
+            # ---- estratégia ao vivo: ritmo e chamada de box ----
             rk = f"ritmo_vivo_{p['id']}_{fds['chave']}"
             if rk not in st.session_state:
                 st.session_state[rk] = ritmo
@@ -920,30 +980,21 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
             if novo_ritmo != ritmo:
                 ritmos[p["id"]] = novo_ritmo
                 feed.append(f"🎯 **{p['nome']}** mudou para ritmo **{novo_ritmo}** na volta {lap}.")
-            opcoes_box = sim.PNEUS_MOLHADO + sim.PNEUS_SECO if molhado else sim.PNEUS_SECO
-            seq = rep["info"][p["id"]]["pneus"]
-            prox = seq[min(len(exec_pits) + 1, len(seq) - 1)]
-            pneu_box = st.selectbox("Pneu do próximo box", opcoes_box,
-                                    index=opcoes_box.index(prox),
-                                    key=f"pneu_box_{p['id']}_{fds['chave']}")
             restam = plano + 1 - len(exec_pits)  # dá pra forçar UMA parada extra
             if st.button("Pit stop!", key=f"pit_{p['id']}_{fds['chave']}",
                          disabled=(restam <= 0 or lap >= voltas),
-                         help="Ordem de parada nos boxes AGORA com o pneu escolhido acima — "
-                              "antecipa a parada planejada ou faz uma extra."):
-                if lap not in stt["pits"].get(p["id"], []):
-                    stt["pits"].setdefault(p["id"], []).append(lap)
-                    n = len(stt["pits"][p["id"]])
-                    pneus_man.setdefault(p["id"], {})[n] = pneu_box
-                    feed.append(f"🛠️ Box para **{p['nome']}** na volta {lap} → pneu "
-                                f"**{pneu_box}** (ordem do comando).")
-                st.rerun()
+                         help="Abrir o Pit Stop: escolha os novos pneus e confirme a parada."):
+                stt["pit_aberto"] = p["id"]
+                st.session_state.pop(f"dlg_pneu_{p['id']}_{fds['chave']}", None)
         if feed:
             st.markdown('<div class="feed-race">' + "<br>".join(feed[-4:]) + "</div>",
                         unsafe_allow_html=True)
         if st.button("⏭️ Concluir corrida agora", key="concluir_corrida"):
+            stt["pit_aberto"] = None
             stt["pulou"] = True
             st.rerun()
+    if stt.get("pit_aberto"):
+        _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas)
 
 
 def pagina_corrida(game):
@@ -957,6 +1008,7 @@ def pagina_corrida(game):
     molhado = fds["molhado"]
     eqj = sim.equipe(game, game["equipe_jogador"])
     meus = sim.titulares(game, eqj["id"])
+    opcoes_pneu = sim.PNEUS_MOLHADO + sim.PNEUS_SECO if molhado else sim.PNEUS_SECO
 
     st.markdown(
         f'<div class="race-hero"><div class="kicker">Etapa {game["rodada"] + 1} · {game["ano"]}</div>'
@@ -975,14 +1027,11 @@ def pagina_corrida(game):
     # ---------------- estratégia dos seus dois pilotos (antes da corrida)
     estrategias = {}
     if rep_state is None:
-        st.subheader("🎯 Sua estratégia (pneu, paradas e ritmo — o coração do Cockpit Manager)")
+        st.subheader("🎯 Sua estratégia (paradas e ritmo — pneus e grid no Paddock abaixo)")
         cols = st.columns(len(meus))
-        opcoes_pneu = sim.PNEUS_MOLHADO + sim.PNEUS_SECO if molhado else sim.PNEUS_SECO
         for col, p in zip(cols, meus):
             with col, st.container(border=True):
                 st.markdown(bnd.com_bandeira(p['bandeira'], f"**#{p['numero']} {p['nome']}** ({ROTULOS_PAPEL.get(p['papel'], p['papel'])})"), unsafe_allow_html=True)
-                pneu = st.selectbox("Pneu de largada", opcoes_pneu, index=0 if molhado else 1,
-                                    key=f"pneu_{p['id']}_{fds['chave']}")
                 paradas = st.radio("Paradas nos boxes", [1, 2, 3],
                                    index=[1, 2, 3].index(sim.paradas_ideais(etapa)),
                                    horizontal=True, key=f"par_{p['id']}_{fds['chave']}")
@@ -990,20 +1039,27 @@ def pagina_corrida(game):
                                  help="Atacar = mais rápido, desgasta pneu e aumenta risco de batida/quebra. "
                                       "Conservar = protege carro e pneus. Depois da largada dá pra ajustar ao vivo.",
                                  key=f"rit_{p['id']}_{fds['chave']}")
-                estrategias[p["id"]] = {"pneu": pneu, "paradas": paradas, "ritmo": ritmo}
-                if molhado and pneu in sim.PNEUS_SECO:
-                    st.error("⚠️ Pneu slick na chuva?! Isso vai doer...")
-                if not molhado and pneu in sim.PNEUS_MOLHADO:
-                    st.error("⚠️ Pneu de chuva no seco derrete em 3 voltas!")
+                estrategias[p["id"]] = {"paradas": paradas, "ritmo": ritmo}
 
     # ---------------- sprint
     if etapa["sprint"]:
         st.divider()
         st.subheader(f"⚡ {rot_corrida2(game)} (primeira corrida do fim de semana)")
         if fds["sprint"] is None:
+            est_s = {}
+            colss = st.columns(len(meus))
+            for col, p in zip(colss, meus):
+                with col, st.container(border=True):
+                    st.markdown(bnd.com_bandeira(p['bandeira'], f"**#{p['numero']} {p['nome']}**"), unsafe_allow_html=True)
+                    pneu_s = st.selectbox("Pneu de largada", opcoes_pneu,
+                                          index=0 if molhado else 1,
+                                          format_func=_rot_pneu,
+                                          key=f"pneu_s_{p['id']}_{fds['chave']}")
+                    est_s[p["id"]] = {"pneu": pneu_s,
+                                      "paradas": sim.paradas_ideais(etapa),
+                                      "ritmo": estrategias.get(p["id"], {}).get("ritmo", "Normal")}
             if st.button(f"▶️ Simular {rot_corrida2(game)}", width="stretch"):
                 grid_s = sim.simular_classificacao(game, etapa, molhado)
-                est_s = {pid: {**e, "paradas": sim.paradas_ideais(etapa)} for pid, e in estrategias.items()}
                 res_s, ev_s = sim.simular_corrida(game, etapa, grid_s, est_s, molhado, sprint=True)
                 sim.aplicar_resultado(game, etapa, grid_s, res_s, molhado, sprint=True, eventos=ev_s)
                 fds["sprint"] = res_s
@@ -1067,7 +1123,7 @@ def pagina_corrida(game):
     if rep_state is not None and not rep_state.get("concluido"):
         _frag_corrida(game, etapa, molhado, fds, meus)
     elif rep_state is None:
-        # ---- pré-largada: grid + painel dos pilotos + Dar largada!
+        # ---- pré-largada: grid + Paddock (pneus/grid/pit) + Dar largada! ----
         treino_ok = bool(fds.get("treino_ok"))
         c1, c2 = st.columns([2.3, 1], gap="medium")
         with c1:
@@ -1082,36 +1138,65 @@ def pagina_corrida(game):
         with c2:
             st.markdown(f'<div class="voltas-box"><div class="lab">Voltas</div>'
                         f'<div class="n">0 / {etapa["voltas"]}</div></div>', unsafe_allow_html=True)
-            for p in meus:
-                est = estrategias.get(p["id"], {})
-                papel = ROTULOS_PAPEL.get(p["papel"], p["papel"])
-                st.markdown(
-                    f'<div class="box-piloto"><div class="papel">{papel}</div>'
-                    f'<div class="nome">{bnd.img_bandeira(p["bandeira"], 18)} {p["nome"]}</div>'
-                    f'<div class="mini">Pneu de largada: <b>{est.get("pneu", "—")}</b> · '
-                    f'Paradas planejadas: {est.get("paradas", "—")} · Ritmo: <b>{est.get("ritmo", "—")}</b></div></div>',
-                    unsafe_allow_html=True)
-            pode_largar = treino_ok and bool(fds.get("grid")) and not bloqueado
-            if st.button("🚦 Dar largada!", type="primary", width="stretch",
-                         key="dar_largada", disabled=not pode_largar):
-                res, ev = sim.simular_corrida(game, etapa, fds["grid"], estrategias, molhado)
-                fds["resumo"] = sim.aplicar_resultado(game, etapa, fds["grid"], res, molhado,
-                                                      eventos=ev)
-                fds["resultado"], fds["eventos"] = res, ev
-                venceu = any(l["equipe_id"] == eqj["id"] and l["pos"] == 1 and not l["dnf"]
-                             for l in res)
-                fds["replay"] = {
-                    "rep": sim.montar_replay(game, etapa, fds["grid"], res, molhado, eventos=ev),
-                    "t0": time.time(), "pits": {}, "feed": [], "feed_dnf": [], "sc_ok": False,
-                    "lap": 0, "pulou": False, "concluido": False, "venceu": venceu,
-                    "balloons_ok": False,
-                    "ritmos": {pid: e.get("ritmo", "Normal") for pid, e in estrategias.items()},
-                    "pneus_manual": {}}
-                st.rerun()
-            if bloqueado:
-                st.caption(f"🏁 Simule o {rot_corrida2(game)} primeiro.")
-            elif not treino_ok:
-                st.caption("⏱️ Complete o treino para liberar a largada.")
+        # ---- Paddock (fiel ao original): pneus com durabilidade, grid e pit automático
+        st.markdown(
+            f'<div class="paddock-head"><div class="paddock-kick">Paddock</div>'
+            f'<div class="paddock-gp">{etapa["gp"]} — {etapa["voltas"]} voltas '
+            f'{bnd.img_bandeira(etapa["bandeira"], 20)}</div></div>', unsafe_allow_html=True)
+        pit_auto = {}
+        grid_pos = {g["piloto_id"]: g["pos"] for g in (fds.get("grid") or [])}
+        colsp = st.columns(len(meus))
+        for col, p in zip(colsp, meus):
+            with col, st.container(border=True):
+                st.markdown(bnd.com_bandeira(p['bandeira'], f"**#{p['numero']} {p['nome']}** ({ROTULOS_PAPEL.get(p['papel'], p['papel'])})"), unsafe_allow_html=True)
+                pneu_pad = st.selectbox("Pneus", opcoes_pneu, index=0 if molhado else 1,
+                                        format_func=_rot_pneu,
+                                        key=f"pad_pneu_{p['id']}_{fds['chave']}")
+                if molhado and pneu_pad in sim.PNEUS_SECO:
+                    st.error("⚠️ Pneu slick na chuva?! Isso vai doer...")
+                if not molhado and pneu_pad in sim.PNEUS_MOLHADO:
+                    st.error("⚠️ Pneu de chuva no seco derrete em 3 voltas!")
+                estrategias.setdefault(p["id"],
+                                       {"paradas": sim.paradas_ideais(etapa), "ritmo": "Normal"})
+                estrategias[p["id"]]["pneu"] = pneu_pad
+                pos = grid_pos.get(p["id"])
+                st.markdown(f"**Grid:** {f'{pos}º lugar' if pos else '—'}")
+                pit_auto[p["id"]] = st.checkbox(
+                    "Pit automático", value=True,
+                    help="As paradas planejadas acontecem sozinhas na volta certa. "
+                         "Desmarque para conduzir os boxes só pelo Pit stop!.",
+                    key=f"pad_auto_{p['id']}_{fds['chave']}")
+        if st.button("✅ Confirmar", type="primary", width="stretch", key="paddock_confirmar"):
+            fds["paddock_ok"] = True
+            flash("success", "Paddock confirmado — pneus e pit automático valendo. "
+                             "Agora é só dar a largada!")
+            st.rerun()
+        if fds.get("paddock_ok"):
+            st.caption("✅ Paddock confirmado — estratégia valendo para a largada.")
+        paddock_ok = bool(fds.get("paddock_ok"))
+        pode_largar = treino_ok and bool(fds.get("grid")) and not bloqueado and paddock_ok
+        if st.button("🚦 Dar largada!", type="primary", width="stretch",
+                     key="dar_largada", disabled=not pode_largar):
+            res, ev = sim.simular_corrida(game, etapa, fds["grid"], estrategias, molhado)
+            fds["resumo"] = sim.aplicar_resultado(game, etapa, fds["grid"], res, molhado,
+                                                  eventos=ev)
+            fds["resultado"], fds["eventos"] = res, ev
+            venceu = any(l["equipe_id"] == eqj["id"] and l["pos"] == 1 and not l["dnf"]
+                         for l in res)
+            fds["replay"] = {
+                "rep": sim.montar_replay(game, etapa, fds["grid"], res, molhado, eventos=ev),
+                "t0": time.time(), "pits": {}, "feed": [], "feed_dnf": [], "sc_ok": False,
+                "lap": 0, "pulou": False, "concluido": False, "venceu": venceu,
+                "balloons_ok": False,
+                "ritmos": {pid: e.get("ritmo", "Normal") for pid, e in estrategias.items()},
+                "pneus_manual": {}, "pit_auto": pit_auto, "pit_aberto": None}
+            st.rerun()
+        if bloqueado:
+            st.caption(f"🏁 Simule o {rot_corrida2(game)} primeiro.")
+        elif not treino_ok:
+            st.caption("⏱️ Complete o treino para liberar a largada.")
+        elif not paddock_ok:
+            st.caption("✅ Confirme o Paddock para liberar a largada.")
     else:
         # ---- pós-corrida: classificação final, eventos e finanças
         if rep_state.get("venceu") and not rep_state.get("balloons_ok"):
@@ -1450,9 +1535,10 @@ Comande uma equipe de F1 temporada após temporada, **sem limite de anos** — e
 
 ### 🔁 O ciclo do jogo
 1. **Escritório** — confira caixa, carro, pilotos, notícias e a próxima corrida. Clique em **Continuar**.
-2. **Corrida** — veja o clima, monte a **estratégia de cada piloto** (pneu de largada, nº de paradas, ritmo)
-   **antes** da largada, dispute a Sprint (se houver), a classificação — e **durante a corrida** ajuste o
-   ritmo ao vivo, escolha o pneu do próximo box e ordene paradas com o **Pit stop!**.
+2. **Corrida** — monte a **estratégia de cada piloto** (paradas e ritmo), dispute a Sprint (se houver —
+   com o próprio **pneu de largada**) e a classificação; depois confirme o **Paddock** (pneus, grid e
+   **Pit automático**) e **durante a corrida** ajuste o ritmo ao vivo e abra o **Pit stop!** para ordenar
+   as paradas.
 3. **Entre corridas** — o carro evolui sozinho conforme seu **investimento por corrida** e o **Acerto**
    (feedback) dos pilotos. Ajuste em *Carro & Investimentos*.
 4. **Durante o ano inteiro** — negocie em *Pilotos & Contratos*, *Motores* e *Patrocinadores* pensando
@@ -1478,8 +1564,12 @@ Comande uma equipe de F1 temporada após temporada, **sem limite de anos** — e
 - **Paradas**: desgaste alto pede 2; pista travada (Mônaco, Hungaroring) premia parar menos (posição de pista!).
 - **Ritmo "Atacar"**: ganha tempo, mas aumenta abandono e desgaste. **"Conservar"** protege carros frágeis.
 - **Durante a corrida**: mude o **ritmo** no rádio ao vivo (afeta o tempo de volta projetado e a vida do
-  pneu), escolha o **pneu do próximo box** e clique **Pit stop!** para forçar a parada — dá para uma
-  parada extra além das planejadas. O resultado final continua sendo o do motor.
+  pneu) e clique **Pit stop!** para abrir o diálogo **Pit Stop** — piloto, **Novos pneus** com a
+  durabilidade, volta atual e **Confirmar ✓** / **Cancelar ordem ✕**; dá para uma parada extra além das
+  planejadas. O resultado final continua sendo o do motor.
+- **Paddock (antes da largada)**: por piloto, **Pneus** com a durabilidade exata ("Duro (33 voltas)"),
+  a posição no **Grid** e o **Pit automático** — desmarque para conduzir os boxes só pelo Pit stop!.
+  O **Confirmar** do Paddock libera a **largada**.
 - Em pistas sem ultrapassagem (Mônaco!), **classificação é a corrida**.
 
 ### 💸 Dinheiro (não seja a próxima Caterham)
