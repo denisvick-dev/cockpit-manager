@@ -82,6 +82,15 @@ def lancar_financa(game, descricao, valor_k):
         "descricao": descricao, "valor": round(valor_k, 1),
     })
     game["extrato"] = game["extrato"][:200]
+    # acumuladores do ano (painel Finanças do Escritório, como no original)
+    fa = game.get("financas_ano") or {}
+    if int(fa.get("ano", -1)) != int(game["ano"]):
+        fa = {"ano": int(game["ano"]), "receitas": 0.0, "despesas": 0.0}
+    if valor_k >= 0:
+        fa["receitas"] = round(fa["receitas"] + float(valor_k), 1)
+    else:
+        fa["despesas"] = round(fa["despesas"] - float(valor_k), 1)
+    game["financas_ano"] = fa
 
 
 # --------------------------------------------------------------- novo jogo
@@ -269,6 +278,158 @@ def paradas_ideais(etapa):
     return 2
 
 
+# ------------------------------------------------- tela de treino (sessão)
+def sessao_treino(game, etapa, molhado, grid):
+    """Sessão de treino progressiva para a tela: cada piloto tem seus
+    momentos de 'melhor tempo' no fim de semana e, ao fim dos 60 minutos,
+    a tabela converge EXATAMENTE ao grid real do motor (`grid`)."""
+    rng = _rng(game)
+    pilotos = {}
+    for g in grid:
+        t0 = rng.randint(4, 30)                      # primeira volta lançada
+        t1 = rng.randint(34, 54) if rng.random() < 0.8 else None
+        pilotos[g["piloto_id"]] = {"final": g["tempo"], "t0": t0, "t1": t1,
+                                   "d0": round(rng.uniform(1.2, 4.5), 3),
+                                   "d1": round(rng.uniform(0.12, 0.85), 3)}
+    return {"duracao": 60, "t0": None, "grid": grid, "pilotos": pilotos}
+
+
+def melhor_tempo_treino(sessao, pid, minuto):
+    """Melhor tempo do piloto no minuto X da sessão (None = ainda sem volta)."""
+    m = sessao["pilotos"].get(pid)
+    if m is None or minuto < m["t0"]:
+        return None
+    if minuto >= sessao["duracao"]:
+        return m["final"]
+    if m["t1"] is not None and minuto >= m["t1"]:
+        return round(m["final"] + m["d1"], 3)
+    return round(m["final"] + m["d0"], 3)
+
+
+# ------------------------------------------------- replay da corrida (tela)
+PNEUS_DURACAO = {"Macio": 16.0, "Médio": 24.0, "Duro": 33.0,
+                 "Intermediário": 22.0, "Chuva extrema": 26.0}
+
+
+def _sequencia_pneus(inicial, paradas, molhado):
+    if molhado:
+        p = inicial if inicial in PNEUS_MOLHADO else "Intermediário"
+        return [inicial] + [p] * paradas
+    rota = ["Médio", "Macio", "Duro"]
+    i = rota.index(inicial) if inicial in rota else 0
+    return [inicial] + [rota[(i + k) % 3] for k in range(1, paradas + 1)]
+
+
+def _pits_planejadas(etapa, paradas, rng):
+    """Voltas das paradas planejadas: exatas, únicas, dentro da prova e
+    espalhadas por piloto (janela de ±voltas//6) para não encher um box só."""
+    voltas = etapa["voltas"]
+    k = max(0, min(int(paradas or 0), max(0, (voltas - 6) // 6)))
+    desloc = rng.randint(-max(2, voltas // 6), max(2, voltas // 6))
+    usadas, laps = set(), []
+    for i in range(k):
+        base = round(voltas * (i + 1) / (k + 1)) + desloc
+        jitter = rng.randint(-2, 2)
+        x = int(max(2, min(voltas - 1, base + jitter)))
+        while x in usadas and x < voltas - 1:
+            x += 1
+        while x in usadas and x > 2:
+            x -= 1
+        usadas.add(x)
+        laps.append(x)
+    return sorted(laps)
+
+
+def montar_replay(game, etapa, grid, resultado, molhado, eventos=None, sprint=False):
+    """Replay volta a volta derivado do resultado REAL do motor (mesmo RNG
+    determinístico do save): posições interpolam largada→chegada com ruído
+    que desaparece na linha de chegada, paradas planejadas, quebras na
+    volta certa e tempos de volta plausíveis. Nada aqui muda o resultado."""
+    rng = _rng(game)
+    voltas = etapa["voltas"]
+    grides = {g["piloto_id"]: g["pos"] for g in grid}
+    media = 58.0 + voltas * 0.48
+    info = {}
+    for l in resultado:
+        pid = l["piloto_id"]
+        est = l["estrategia"]
+        pits = _pits_planejadas(etapa, int(est.get("paradas", 1) or 0), rng)
+        info[pid] = {
+            "equipe_id": str(l["equipe_id"]),
+            "grid": int(grides.get(pid, l.get("grid", l["pos"]))),
+            "final_pos": int(l["pos"]), "dnf": bool(l["dnf"]),
+            "volta_dnf": int(l["volta_dnf"]), "motivo": str(l.get("motivo", "")),
+            "gap_final": float(l.get("gap_seg") or 0.0),
+            "pneus": _sequencia_pneus(est.get("pneu", "Médio"), len(pits), molhado),
+            "paradas": len(pits), "pits_plano": pits,
+            "ruido": [rng.gauss(0, 1.0) for _ in range(voltas + 2)],
+            "tempos": [round(media + rng.uniform(-0.6, 0.6) - i * 0.04
+                             - (int(l["pos"]) - 1) * 0.05, 3)
+                       for i in range(voltas + 2)],
+        }
+    texto_ev = " ".join(eventos or [])
+    return {"voltas": voltas, "info": info,
+            "sc_lap": int(voltas * 0.55) if "Safety Car" in texto_ev else None}
+
+
+def linhas_replay(rep, lap, pits_feitas):
+    """Estado do replay na volta `lap` (1-based). `pits_feitas` = {pid: [voltas]}
+    das paradas já executadas (manuais via 'Pit stop!' ou automáticas)."""
+    lap = max(1, min(int(lap), rep["voltas"]))
+    w = lap / rep["voltas"]
+    campos, fora = [], []
+    for pid, d in rep["info"].items():
+        executadas = [x for x in sorted(pits_feitas.get(pid) or []) if x <= lap]
+        n_pit = len(executadas)
+        box_hoje = lap in executadas
+        s = (w * d["final_pos"] + (1 - w) * d["grid"]
+             + d["ruido"][lap] * (1 - w) ** 0.75 + (3.4 if box_hoje else 0.0))
+        linha = {"pid": pid, "s": s, "box": box_hoje, "equipe_id": d["equipe_id"],
+                 "pneu": d["pneus"][min(n_pit, len(d["pneus"]) - 1)],
+                 "pits": n_pit, "paradas": d["paradas"]}
+        if d["dnf"] and lap >= d["volta_dnf"]:
+            linha["fora"] = d["motivo"]
+            fora.append(linha)
+        else:
+            campos.append(linha)
+    campos.sort(key=lambda x: x["s"])
+    lider_s = campos[0]["s"] if campos else 0.0
+    saida, dif_lider = [], None
+    for i, ln in enumerate(campos):
+        d = rep["info"][ln["pid"]]
+        sint = max(0.0, (ln["s"] - lider_s) * 0.9)
+        dif1 = sint * (1 - w) + d["gap_final"] * w
+        dif_ant = None if dif_lider is None else max(0.0, dif1 - dif_lider)
+        tempo = d["tempos"][lap] + (21.5 if ln["box"] else 0.0)
+        saida.append({**ln, "pos": i + 1, "dif1": round(dif1, 1),
+                      "dif_ant": None if dif_ant is None else round(dif_ant, 1),
+                      "tempo": round(tempo, 3)})
+        dif_lider = dif1
+    fora.sort(key=lambda x: rep["info"][x["pid"]]["final_pos"])
+    for ln in fora:
+        saida.append({**ln, "pos": len(saida) + 1, "dif1": None, "dif_ant": None,
+                      "tempo": None})
+    return saida
+
+
+def auto_pits(rep, lap, pits_feitas):
+    """Executa automaticamente as paradas planejadas cuja volta já passou
+    (datadas na volta planejada — renders pulados não perdem paradas)."""
+    for pid, d in rep["info"].items():
+        feitas = pits_feitas.setdefault(pid, [])
+        plano = d["pits_plano"]
+        while len(feitas) < len(plano) and lap >= plano[len(feitas)]:
+            feitas.append(plano[len(feitas)])
+
+
+def vida_pneu(etapa, pneu, laps_no_pneu):
+    """Fração de vida restante do composto (0..1) para a barra da tela."""
+    base = PNEUS_DURACAO.get(pneu, 24.0)
+    fator = max(0.5, min(1.35, 1.55 - float(etapa.get("desgaste", 2.0)) * 0.32))
+    dur = max(3.0, base * fator)
+    return max(0.0, min(1.0, 1.0 - laps_no_pneu / dur))
+
+
 def estrategia_ia(game, p, etapa, molhado, rng):
     if molhado:
         return {"pneu": "Intermediário" if rng.random() < 0.8 else "Chuva extrema",
@@ -390,6 +551,51 @@ def _patrocinador(nome, game=None):
     return next((s for s in lista if s["nome"] == nome), lista[-1])
 
 
+# ------------------------------------------------- eixos do carro (CM14)
+EIXOS_CARRO = ("aerodinamica", "cambio", "freio", "eletrico", "direcao")
+
+
+def eixos_carro(eq):
+    """Eixos do painel Carro no estilo CM14 (aerodinâmica, câmbio, freio,
+    sistema elétrico, direção): derivados do nível real do chassi + mix
+    determinístico por equipe (média zero → a média dos eixos bate com o
+    chassi) que responde ao foco de desenvolvimento. Confiabilidade é o
+    campo real da equipe. Não altera cálculo de corrida."""
+    mix = eq.get("eixos_mix")
+    if not mix:
+        base_txt = f"{eq.get('id', '')}{eq.get('nome', '')}"
+        rnd = random.Random(sum(ord(c) for c in base_txt) * 31 + 7)
+        cru = [rnd.uniform(-4.5, 4.5) for _ in EIXOS_CARRO]
+        media = sum(cru) / len(cru)
+        mix = {k: round(v - media, 3) for k, v in zip(EIXOS_CARRO, cru)}
+        eq["eixos_mix"] = mix
+    base = float(eq.get("nivel_carro", 80))
+    saida = {k: int(round(max(35.0, min(99.0, base + float(mix.get(k, 0.0))))))
+             for k in EIXOS_CARRO}
+    saida["confiabilidade"] = int(round(float(eq.get("confiabilidade", 85))))
+    return saida
+
+
+def evoluir_eixos(eq):
+    """Desloca o mix dos eixos conforme o foco de desenvolvimento,
+    preservando a média (o nível do chassi é quem manda na corrida)."""
+    eixos_carro(eq)  # garante o mix
+    mix = eq["eixos_mix"]
+    foco = eq.get("foco") or "equilibrado"
+    if foco == "chassi":
+        mix["aerodinamica"] = round(mix.get("aerodinamica", 0.0) + 0.55, 3)
+        mix["direcao"] = round(mix.get("direcao", 0.0) + 0.30, 3)
+        for k in ("cambio", "freio", "eletrico"):
+            mix[k] = round(mix.get(k, 0.0) - 0.283, 3)
+    elif foco == "equilibrado":
+        for k in EIXOS_CARRO:
+            mix[k] = round(mix.get(k, 0.0) * 0.90, 3)
+    # foco == 'confiabilidade': mix intocado (o eixo real é eq['confiabilidade'])
+    media = sum(mix.get(k, 0.0) for k in EIXOS_CARRO) / len(EIXOS_CARRO)
+    for k in EIXOS_CARRO:
+        mix[k] = round(mix.get(k, 0.0) - media, 3)
+
+
 def desenvolver_carros(game, etapa):
     """Desenvolvimento entre corridas: investimento + feedback (Acerto) dos pilotos."""
     rng = _rng(game)
@@ -417,6 +623,7 @@ def desenvolver_carros(game, etapa):
             eq["confiabilidade"] = round(min(98.0, eq["confiabilidade"] + investimento / 1000.0 * 0.35), 2)
         # desgaste natural da confiabilidade
         eq["confiabilidade"] = round(max(70.0, eq["confiabilidade"] - rng.uniform(0, 0.25)), 2)
+        evoluir_eixos(eq)
         if eq["id"] != game["equipe_jogador"]:
             receita = _patrocinador(eq["patrocinador"], game)["por_corrida"] / 1000.0 + eq["pontos"] * 0.004
             custos = investimento / 1000.0 + sum(t["salario_corrida"] for t in titulares_eq) / 1000.0
@@ -489,7 +696,8 @@ def aplicar_resultado(game, etapa, grid, resultado, molhado, sprint=False, event
             noticia(game, "🔴 **ALERTA FINANCEIRO:** o caixa está negativo! Sem dinheiro na virada da "
                           "temporada, a organização pode impor o fornecedor compulsório de 50% de desempenho.")
         verificar_conquistas(game, resultado, etapa)
-        game["rodada"] += 1
+        # a virada de etapa (rodada + 1) acontece no botão "Continuar" da tela de
+        # corrida — assim o replay/resultados continuam na mesma etapa até o fim
     return resumo
 
 

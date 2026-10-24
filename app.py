@@ -9,6 +9,7 @@ Rode com:  streamlit run app.py
 """
 import json
 import re
+import time
 
 import pandas as pd
 import streamlit as st
@@ -135,6 +136,66 @@ st.markdown("""
     background:linear-gradient(115deg, rgba(200,16,46,.22), rgba(21,28,37,.92) 48%, rgba(10,14,23,.98));}
   .race-hero h1{font-size:1.85rem; margin:.1rem 0;}
   ::-webkit-scrollbar{width:10px;height:10px} ::-webkit-scrollbar-thumb{background:#26324A;border-radius:99px}
+
+  /* ---------- telas de treino e corrida (fidelidade ao original) ---------- */
+  .sessao-card{border:1px solid var(--cm-border); border-radius:16px;
+    background:linear-gradient(165deg, rgba(255,255,255,.045), rgba(255,255,255,.015));
+    padding:16px 18px 14px; margin-bottom:10px; box-shadow:0 14px 30px rgba(0,0,0,.18);}
+  .sessao-titulo{text-align:center; font-size:1.5rem; font-weight:800; letter-spacing:.02em;
+    text-decoration:underline; text-underline-offset:6px; margin:0 0 .25rem;}
+  .sessao-circuito{text-align:center; font-style:italic; color:#CBD5E1; font-size:1.04rem;}
+  .sessao-gp{text-align:center; font-weight:700; margin:.18rem 0 .35rem; font-size:1.15rem;
+    display:flex; align-items:center; justify-content:center; gap:8px;}
+  .sessao-linha{display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;
+    margin:.35rem 0 .7rem; font-size:.9rem; color:#CBD5E1;}
+  .tbl-viva{width:100%; border-collapse:collapse; font-size:.86rem;}
+  .tbl-viva th{font-size:.66rem; text-transform:uppercase; letter-spacing:.11em; color:var(--cm-muted);
+    padding:7px 8px; border-bottom:1px solid var(--cm-border); text-align:left; background:#10151E;}
+  .tbl-viva td{padding:5.5px 8px; border-bottom:1px solid rgba(255,255,255,.055); color:#E7ECF3;
+    white-space:nowrap;}
+  .tbl-viva tr.meu td{background:rgba(200,16,46,.14);}
+  .tbl-viva tr.fora td{color:#7B8798;}
+  .tbl-viva td.pos{font-weight:800; width:38px;}
+  .tbl-viva td.p1{color:#FFD966;} .tbl-viva td.p2{color:#D7DEE9;} .tbl-viva td.p3{color:#E0A96D;}
+  .eq-chip{display:inline-block; min-width:82px; text-align:center; border-radius:6px;
+    padding:2.5px 9px; font-weight:700; font-size:.79rem; text-shadow:0 1px 2px rgba(0,0,0,.4);}
+  .voltas-box{border:1px solid rgba(224,36,68,.75); border-radius:14px; text-align:center;
+    padding:9px 8px 11px; background:linear-gradient(160deg, rgba(200,16,46,.20), rgba(200,16,46,.07));}
+  .voltas-box .lab{font-size:.64rem; letter-spacing:.22em; color:#F3B9BF; text-transform:uppercase; font-weight:700;}
+  .voltas-box .n{font-size:1.75rem; font-weight:800; line-height:1.1;}
+  .box-piloto{border:1px solid var(--cm-border); border-radius:13px; padding:10px 12px 11px;
+    margin-bottom:9px; background:linear-gradient(150deg, rgba(255,255,255,.05), rgba(255,255,255,.015));}
+  .box-piloto .papel{font-size:.64rem; letter-spacing:.16em; text-transform:uppercase; color:var(--cm-muted); font-weight:700;}
+  .box-piloto .nome{font-weight:700; display:flex; gap:7px; align-items:center; font-size:.98rem; margin-top:1px;}
+  .box-piloto .mini{font-size:.78rem; color:#CBD5E1; margin-top:3px;}
+  .barra{height:9px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden;
+    margin-top:7px; border:1px solid rgba(255,255,255,.07);}
+  .barra i{display:block; height:100%; border-radius:999px; transition:width .3s ease;}
+  .feed-race{font-size:.78rem; color:#CBD5E1; border-left:3px solid var(--cm-red);
+    padding:2px 0 2px 9px; margin-top:8px; line-height:1.5;}
+  .banner-circuito{background:linear-gradient(120deg, rgba(200,16,46,.16), rgba(16,21,30,.92));
+    border:1px solid var(--cm-border); border-radius:13px; padding:11px 14px; text-align:center;
+    margin-top:14px; font-size:.92rem; color:#E7ECF3;}
+  .banner-circuito b{color:#fff;}
+  .race-titulo{text-align:center; margin:.2rem 0 .1rem; font-size:1.35rem; font-weight:800;}
+  .race-sub{text-align:center; font-style:italic; color:#CBD5E1; font-size:.98rem;}
+
+  /* ---------- escritório: painéis do original ---------- */
+  .office-head{text-align:center; margin:.3rem 0 1rem;}
+  .office-head .quem{font-size:.95rem; color:#CBD5E1; letter-spacing:.05em;}
+  .office-head .time{font-size:2.05rem; font-weight:800; font-style:italic; line-height:1.15; margin-top:.08rem;}
+  .painel{border:1px solid var(--cm-border); border-radius:14px; overflow:hidden;
+    background:linear-gradient(165deg, rgba(255,255,255,.05), rgba(255,255,255,.015));
+    margin-bottom:12px; box-shadow:0 12px 26px rgba(0,0,0,.18);}
+  .painel h4{margin:0; padding:7px 10px; font-size:.74rem; letter-spacing:.16em; text-transform:uppercase;
+    text-align:center; background:linear-gradient(120deg, rgba(200,16,46,.40), rgba(200,16,46,.14));
+    border-bottom:1px solid var(--cm-border); color:#FFE7EA;}
+  .painel .corpo{padding:10px 14px 12px;}
+  .plinha{display:flex; justify-content:space-between; align-items:center; gap:10px;
+    font-size:.9rem; padding:4px 0; color:#E7ECF3; border-bottom:1px dashed rgba(255,255,255,.07);}
+  .plinha:last-child{border-bottom:none;}
+  .plinha .k{color:#B8C2D2;}
+  .plinha b{font-variant-numeric:tabular-nums;}
 
   /* ---------- polimento final ---------- */
   [data-testid="stAppDeployButton"], .stDeployButton{display:none !important}
@@ -296,6 +357,9 @@ def tela_inicial():
     if meta.get("descricao"):
         st.info(meta["descricao"])
     tem_cancelavel = any(e.get("cancelavel") for e in sel_db["calendario"])
+    st.text_input("👤 Seu nome (gerente)", value="", key="gerente", placeholder="ex.: Vick",
+                  help="Como no original: seu nome aparece no topo do Escritório "
+                       "(\"Vick 1999, 2ª etapa\").")
 
     tab_equipe, tab_criar, tab_editor, tab_load = st.tabs(
         ["🏁 Escolher uma equipe", "🆕 Criar minha equipe", "🛠️ Criar / editar DB", "💾 Carregar save"])
@@ -332,6 +396,7 @@ def tela_inicial():
         if st.button("🚥 Iniciar carreira", type="primary", width="stretch"):
             st.session_state.game = sim.criar_novo_jogo(eq_id, int(semente), incluir, imp,
                                                         db_dados=sel_db, qtd_pilotos=qtd_grid)
+            st.session_state.game["gerente"] = str(st.session_state.get("gerente", "") or "").strip()
             st.session_state.fds = None
             st.session_state.menu = MENUS[0]
             flash("success", f"Bem-vindo ao comando da {eq['nome']}! Primeira parada: "
@@ -380,6 +445,7 @@ def tela_inicial():
                                                             float(meta.get("importancia_carro_sugerida", 0.6)),
                                                             equipe_custom=eq_c, pilotos_custom=contr,
                                                             db_dados=sel_db)
+                st.session_state.game["gerente"] = str(st.session_state.get("gerente", "") or "").strip()
                 st.session_state.fds = None
                 st.session_state.menu = MENUS[0]
                 flash("success", f"A {nome_custom} nasceu na {meta.get('categoria')}! Boa sorte, chefe!")
@@ -450,6 +516,32 @@ def barra_equipe(eq):
         unsafe_allow_html=True)
 
 
+def _fmt_k_bruto(valor_k):
+    """US$ mil no estilo do original: 'US$ 14.266'."""
+    return f"US$ {valor_k:,.0f}".replace(",", ".")
+
+
+def _plinha(k, v, v_cor=None):
+    """Linha de painel: rótulo à esquerda, valor à direita (estilo CM14)."""
+    cor = f' style="color:{v_cor}"' if v_cor else ""
+    return f'<div class="plinha"><span class="k">{k}</span><b{cor}>{v}</b></div>'
+
+
+def _painel(titulo, corpo):
+    """Painel fechado (título + linhas) do Escritório."""
+    st.markdown(f'<div class="painel"><h4>{titulo}</h4><div class="corpo">{corpo}</div></div>',
+                unsafe_allow_html=True)
+
+
+def _painel_ini(titulo):
+    """Abre um painel que conterá widgets Streamlit (notícias, Continuar)."""
+    st.markdown(f'<div class="painel"><h4>{titulo}</h4><div class="corpo">', unsafe_allow_html=True)
+
+
+def _painel_fim():
+    st.markdown('</div></div>', unsafe_allow_html=True)
+
+
 def painel_fim_temporada(game):
     tab_p, tab_c = sim.tabela_pilotos(game), sim.tabela_construtores(game)
     st.success(f"🏁 **Fim da temporada {game['ano']}!**")
@@ -480,56 +572,103 @@ def painel_fim_temporada(game):
 #  ESCRITÓRIO (tela principal, como o "resumo" do CM14)
 # ======================================================================
 def pagina_escritorio(game):
+    """Escritório fiel ao CM14: cabeçalho (gerente · ano · etapa / equipe) e
+    painéis Carro, Contratos, Pilotos, Finanças, Notícias e Próxima corrida."""
     eqj = sim.equipe(game, game["equipe_jogador"])
-    barra_equipe(eqj)
     fim = game["rodada"] >= len(game["calendario"])
     mot = sim.motor(game, eqj["motor_id"])
+    gerente = str(game.get("gerente", "") or "").strip()
+    etapa_n = min(game["rodada"] + 1, len(game["calendario"]))
+    quem = f"{gerente} " if gerente else ""
+    st.markdown(
+        f'<div class="office-head"><div class="quem">{quem}{game["ano"]}, {etapa_n}ª etapa</div>'
+        f'<div class="time">{eqj["nome"]}</div>'
+        f'<div class="fl">{bnd.img_bandeira(eqj["bandeira"], 30)}</div></div>',
+        unsafe_allow_html=True)
+    if fim:
+        painel_fim_temporada(game)
+        return
 
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("Temporada", game["ano"])
-    c2.metric("Etapa", "Fim!" if fim else f"{game['rodada'] + 1}/{len(game['calendario'])}")
-    c3.metric("Caixa", sim.fmt_dinheiro_m(eqj["caixa"]))
-    c4.metric("Construtores", f"{sim.posicao_equipe(game, eqj['id'])}º · {eqj['pontos']} pts")
-    c5.metric("Vitórias (carreira)", eqj["vitorias_carreira"])
+    col1, col2, col3 = st.columns([1.05, 1.0, 1.0], gap="medium")
 
-    col_carro, col_prox = st.columns([1, 1])
-    with col_carro:
-        st.subheader("🔧 Seu carro")
-        barra_stat("Chassi / aerodinâmica", eqj["nivel_carro"], cor=eqj["cor"])
-        barra_stat(f"{rot_fornecedor(game)} — {mot['nome']} {'(próprio)' if eqj.get('motor_proprio') else '(cliente)'}",
-                   mot["potencia"], cor="#F59E0B")
-        barra_stat("Desempenho combinado", sim.desempenho_carro(game, eqj))
-        barra_stat("Confiabilidade", eqj["confiabilidade"], cor="#22C55E")
-        st.write(f"Investimento por corrida: **{sim.fmt_dinheiro_k(eqj['investimento_corrida'])}** "
-                 f"· Foco: **{eqj['foco']}** · Patrocinador: **{eqj['patrocinador']}**")
-        ranking = sorted(game["equipes"], key=lambda e: -sim.desempenho_carro(game, e))
-        st.caption(f"Seu carro é o {ranking.index(eqj) + 1}º mais rápido do grid hoje "
-                   f"(melhor: {ranking[0]['nome']}, {sim.desempenho_carro(game, ranking[0]):.1f}).")
-    with col_prox:
-        if fim:
-            painel_fim_temporada(game)
-        else:
-            etapa = game["calendario"][game["rodada"]]
-            st.markdown(f"### 📅 Próxima corrida: {bnd.img_bandeira(etapa['bandeira'], 22)} {etapa['gp']}", unsafe_allow_html=True)
-            st.write(f"**{etapa['circuito']}** — {etapa['pais']} · {etapa['voltas']} voltas · {etapa['data']}"
-                     + (f" · ⚡ **fim de semana com {rot_corrida2(game)} + corrida principal**" if etapa["sprint"] else ""))
-            st.write(f"🌧️ Chance histórica de chuva: **{etapa['chuva'] * 100:.0f}%** · "
-                     f"Desgaste de pneus: **{etapa['desgaste']:.1f}/3** · "
-                     f"Ultrapassagem: **{etapa['ultrap'] * 100:.0f}%**")
-            st.button("▶️ CONTINUAR — ir para a corrida", type="primary", width="stretch",
-                      on_click=ir_para, args=("🏁 Corrida",))
+    with col1:
+        ex = sim.eixos_carro(eqj)
+        conf = ex["confiabilidade"]
+        conf_cor = "#4ADE80" if conf >= 85 else ("#FACC15" if conf >= 75 else "#F87171")
+        _painel("Carro", "".join([
+            _plinha("Aerodinâmica", f'{ex["aerodinamica"]}%'),
+            _plinha("Caixa de câmbio", f'{ex["cambio"]}%'),
+            _plinha("Freio", f'{ex["freio"]}%'),
+            _plinha("Sistema elétrico", f'{ex["eletrico"]}%'),
+            _plinha("Direção", f'{ex["direcao"]}%'),
+            _plinha("Confiabilidade", f'{conf}%', conf_cor),
+        ]))
+        _painel("Contratos",
+                _plinha(rot_fornecedor(game),
+                        f'{bnd.img_bandeira(eqj["bandeira"], 16)} {mot["nome"]}'
+                        + (" (próprio)" if eqj.get("motor_proprio") else "")))
 
-    st.subheader("👨‍✈️ Seus pilotos")
-    st.dataframe(df_pilotos_equipe(game, eqj["id"]), hide_index=True, width="stretch",
-                 column_config={**CFG_BANDEIRA,
-                                **{c: st.column_config.ProgressColumn(c, min_value=0, max_value=100, format="%d")
-                                   for c in ["Velocidade", "Chuva", "Concentração", "Largada", "Ultrapassagem", "Acerto", "Físico", "Forma"]}})
+    with col2:
+        rot_p = {"P1": "1º Piloto", "P2": "2º Piloto", "P3": "3º Piloto", "P4": "4º Piloto"}
+        tits = sorted([p for p in game["pilotos"]
+                       if p["equipe_id"] == eqj["id"] and not p["aposentado"]
+                       and p["papel"] in rot_p],
+                      key=lambda p: list(rot_p).index(p["papel"]))
+        corpo_p = "".join(
+            _plinha(rot_p[p["papel"]], f'{bnd.img_bandeira(p["bandeira"], 16)} {p["nome"]}')
+            for p in tits)
+        teste = sim.piloto_teste(game, eqj["id"])
+        if teste:
+            corpo_p += _plinha("P. Testes", f'{bnd.img_bandeira(teste["bandeira"], 16)} {teste["nome"]}')
+        _painel("Pilotos", corpo_p or '<span class="k">Sem pilotos registrados.</span>')
 
-    st.subheader("📰 Notícias do paddock")
-    for n in game["noticias"][:8]:
-        _txt = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", bnd.substituir_emojis(n["texto"]))
-        st.markdown(f'<div class="news-card"><span class="small">{n["ano"]} · etapa {n["rodada"]}</span><br>{_txt}</div>',
-                    unsafe_allow_html=True)
+        fa = game.get("financas_ano") or {}
+        if int(fa.get("ano", -1)) != int(game["ano"]):
+            fa = {"ano": int(game["ano"]), "receitas": 0.0, "despesas": 0.0}
+        bal = round(float(fa["receitas"]) - float(fa["despesas"]), 1)
+        bal_cor = "#4ADE80" if bal >= 0 else "#F87171"
+        _painel("Finanças", "".join([
+            _plinha("Receitas", _fmt_k_bruto(float(fa["receitas"]))),
+            _plinha("Despesas", _fmt_k_bruto(float(fa["despesas"]))),
+            _plinha(f"Balanço {game['ano']}", _fmt_k_bruto(bal), bal_cor),
+            _plinha("Caixa", _fmt_k_bruto(round(float(eqj["caixa"]) * 1000.0, 1))),
+        ]))
+
+    with col3:
+        novas = max(0, len(game["noticias"]) - int(game.get("noticias_lidas", 0)))
+        aberto = bool(st.session_state.get("ver_noticias", False))
+        _painel_ini("Notícias")
+        uma = novas == 1
+        rot_novo = (f"📰 Você tem {novas} nova{'s' if not uma else ''} "
+                    f"notíci{'as' if not uma else 'a'}") if novas > 0 else "📰 Ver notícias"
+        if st.button(rot_novo, key="btn_noticias", width="stretch"):
+            st.session_state.ver_noticias = not aberto
+            if not aberto:
+                game["noticias_lidas"] = len(game["noticias"])
+            st.rerun()
+        if aberto:
+            if not game["noticias"]:
+                st.caption("Sem notícias no paddock.")
+            for n in game["noticias"][:8]:
+                _txt = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>",
+                              bnd.substituir_emojis(n["texto"]))
+                st.markdown(f'<div class="news-card"><span class="small">{n["ano"]} · '
+                            f'etapa {n["rodada"]}</span><br>{_txt}</div>', unsafe_allow_html=True)
+        _painel_fim()
+
+        etapa = game["calendario"][game["rodada"]]
+        _painel_ini("Próxima corrida")
+        st.markdown(
+            _plinha("Circuito", etapa["circuito"])
+            + _plinha("Grande Prêmio", f'{bnd.img_bandeira(etapa["bandeira"], 16)} {etapa["gp"]}')
+            + _plinha("Data", etapa["data"])
+            + _plinha("Voltas", str(etapa["voltas"]))
+            + (_plinha("Formato", f"⚡ {rot_corrida2(game)} + principal") if etapa["sprint"] else ""),
+            unsafe_allow_html=True)
+        st.button("▶️ CONTINUAR", type="primary", width="stretch",
+                  on_click=ir_para, args=("🏁 Corrida",),
+                  help=f"{etapa['gp']} — {etapa['circuito']} · {etapa['pais']}")
+        _painel_fim()
 
 
 # ======================================================================
@@ -539,7 +678,8 @@ def obter_fds(game, etapa):
     chave = f"{game['ano']}-{game['rodada']}"
     if not st.session_state.fds or st.session_state.fds.get("chave") != chave:
         st.session_state.fds = {"chave": chave, "molhado": sim.sortear_clima(game, etapa),
-                                "grid": None, "sprint": None, "resultado": None, "resumo": None, "eventos": []}
+                                "grid": None, "sprint": None, "resultado": None, "resumo": None,
+                                "eventos": [], "treino": None, "treino_ok": False, "replay": None}
     return st.session_state.fds
 
 
@@ -567,7 +707,213 @@ def df_resultado(game, resultado):
     return pd.DataFrame(linhas)
 
 
+# ------------------------------------------------------------------ telas
+def _cor_texto(hex_cor):
+    """Texto legível (preto/branco) para o fundo colorido da equipe."""
+    try:
+        c = str(hex_cor).lstrip("#")
+        r, g, b = int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16)
+        return "#0B0E14" if (0.299 * r + 0.587 * g + 0.114 * b) > 150 else "#FFFFFF"
+    except Exception:
+        return "#FFFFFF"
+
+
+def _chip_equipe(eq):
+    return (f'<span class="eq-chip" style="background:{eq["cor"]};'
+            f'color:{_cor_texto(eq["cor"])}">{eq["nome"]}</span>')
+
+
+def _barra_html(pct):
+    cor = "#22C55E" if pct > 0.5 else ("#EAB308" if pct > 0.25 else "#EF4444")
+    return f'<div class="barra"><i style="width:{pct * 100:.0f}%;background:{cor}"></i></div>'
+
+
+def _clima_txt(molhado):
+    return "🌧️ Molhado" if molhado else "☀️ Ensolarado"
+
+
+def _cabecalho_treino(etapa):
+    """Cabeçalho da tela de treino (fiel ao original): Treino / circuito / GP."""
+    st.markdown(
+        f'<div class="sessao-card">'
+        f'<div class="sessao-titulo">Treino</div>'
+        f'<div class="sessao-circuito">{etapa["circuito"]}</div>'
+        f'<div class="sessao-gp">{etapa["gp"]} {bnd.img_bandeira(etapa["bandeira"], 22)}</div>'
+        f'</div>', unsafe_allow_html=True)
+
+
+def _cabecalho_corrida(game, etapa, molhado, com_checkbox=False):
+    """Cabeçalho da tela de corrida: GP — Etapa X de N, circuito e clima."""
+    rodada = game["rodada"] + 1
+    total = len(game["calendario"])
+    st.markdown(f'<div class="race-titulo">{etapa["gp"]} — Etapa {rodada} de {total}</div>',
+                unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="race-sub">{bnd.img_bandeira(etapa["bandeira"], 20)} {etapa["circuito"]}</div>',
+        unsafe_allow_html=True)
+    c1, c2 = st.columns([1, 1])
+    c1.markdown(f'**Clima:** {_clima_txt(molhado)}')
+    if com_checkbox:
+        c2.checkbox("Ver pits/pneus", key="ver_pits",
+                    help="Mostra colunas de composto e paradas na tabela ao vivo.")
+
+
+def _html_tabela_viva(game, linhas, mostrar_pits=False, meus_ids=()):
+    """Tabela ao vivo (treino/corrida) com chip colorido da equipe por linha."""
+    th = ["Pos.", "Nome", "Equipe", "Últ. volta", "Dif. ant.", "Dif 1º"]
+    if mostrar_pits:
+        th += ["Pneu", "Paradas"]
+    cab = "".join(f"<th>{t}</th>" for t in th)
+    corpo = []
+    for l in linhas:
+        p = sim.piloto(game, l["pid"])
+        eq = sim.equipe(game, l["equipe_id"])
+        classes = []
+        if l["pid"] in meus_ids:
+            classes.append("meu")
+        if l.get("fora"):
+            classes.append("fora")
+        tr = f'<tr class="{" ".join(classes)}">' if classes else "<tr>"
+        pos = l["pos"]
+        cls_pos = "pos" + (" p1" if pos == 1 else " p2" if pos == 2 else " p3" if pos == 3 else "")
+        if l.get("fora"):
+            ult = f'💥 {l["fora"]}'
+        elif l.get("box"):
+            ult = f'<b style="color:#F59E0B">BOX</b> {fmt_tempo(l["tempo"])}'
+        else:
+            ult = fmt_tempo(l["tempo"]) if l.get("tempo") is not None else "—"
+        dif_ant = "—" if l.get("dif_ant") is None else f'+{l["dif_ant"]:.1f}'
+        if l.get("dif1") is None or pos == 1:
+            dif1 = "—"
+        else:
+            dif1 = f'+{l["dif1"]:.1f}'
+        extra = f'<td>{l.get("pneu", "—")}</td><td>{l.get("pits", 0)}/{l.get("paradas", 0)}</td>' if mostrar_pits else ""
+        corpo.append(
+            f'{tr}<td class="{cls_pos}">{pos}º</td><td>{p["nome"]}</td>'
+            f'<td>{_chip_equipe(eq)}</td><td>{ult}</td>'
+            f'<td>{dif_ant}</td><td>{dif1}</td>{extra}</tr>')
+    return (f'<div class="sessao-card" style="padding-top:8px">'
+            f'<table class="tbl-viva"><thead><tr>{cab}</tr></thead>'
+            f'<tbody>{"".join(corpo)}</tbody></table></div>')
+
+
+def _html_tabela_treino(game, grid, sessao, minuto):
+    """Tabela do treino: ordem pelo melhor tempo do minuto atual; ao fim
+    (minuto 60) os tempos batem exatamente com o grid do motor."""
+    entries = []
+    for g in grid:
+        t = sim.melhor_tempo_treino(sessao, g["piloto_id"], minuto) if sessao else None
+        entries.append((g, t))
+    entries.sort(key=lambda e: (e[1] is None, e[1] if e[1] is not None else 0.0, e[0]["pos"]))
+    corpo = []
+    for i, (g, t) in enumerate(entries):
+        p = sim.piloto(game, g["piloto_id"])
+        eq = sim.equipe(game, g["equipe_id"])
+        tr = '<tr class="meu">' if g["equipe_id"] == game["equipe_jogador"] else "<tr>"
+        pos = i + 1
+        cls_pos = "pos" + (" p1" if pos == 1 else " p2" if pos == 2 else " p3" if pos == 3 else "")
+        tempo_txt = fmt_tempo(t) if t is not None else "—"
+        corpo.append(f'{tr}<td class="{cls_pos}">{pos}º</td><td>{p["nome"]}</td>'
+                     f'<td>{_chip_equipe(eq)}</td><td>{tempo_txt}</td></tr>')
+    cab = "<th>Pos.</th><th>Nome</th><th>Equipe</th><th>Melhor tempo</th>"
+    return (f'<div class="sessao-card" style="padding-top:8px">'
+            f'<table class="tbl-viva"><thead><tr>{cab}</tr></thead>'
+            f'<tbody>{"".join(corpo)}</tbody></table></div>')
+
+
+@st.fragment(run_every=0.5)
+def _frag_treino(game, etapa, molhado, fds):
+    """Relógio da sessão de treino (60 min em ~15 s): barra e tempos ao vivo."""
+    sess = fds.get("treino")
+    if not sess or fds.get("grid") is None or sess.get("t0") is None:
+        return
+    dur = int(sess["duracao"])
+    minuto = min(dur, int((time.time() - float(sess["t0"])) * dur / 15.0))
+    if minuto >= dur:
+        sess["concluido"] = True
+        st.rerun()
+    restante = dur - minuto
+    c1, c2 = st.columns([3.2, 1])
+    c1.progress(minuto / dur, text=f"⏱️ Tempo de treino restante: {restante} min")
+    c2.markdown(f"**Clima:** {_clima_txt(molhado)}")
+    st.markdown(_html_tabela_treino(game, fds["grid"], sess, minuto), unsafe_allow_html=True)
+    if st.button("⏭️ Concluir treino agora", key="concluir_treino"):
+        sess["t0"] = time.time() - 16.0
+        st.rerun()
+
+
+@st.fragment(run_every=0.4)
+def _frag_corrida(game, etapa, molhado, fds, meus):
+    """Corrida ao vivo: volta a volta (replay fiel ao resultado do motor),
+    boxes manuais/automáticos, vida dos pneus e feed de eventos."""
+    stt = fds.get("replay")
+    if not stt or stt.get("concluido"):
+        return
+    rep = stt["rep"]
+    voltas = int(rep["voltas"])
+    if stt.get("pulou"):
+        lap = voltas
+    else:
+        s_por_volta = max(0.2, min(0.55, 24.0 / max(1, voltas)))
+        lap = min(voltas, int((time.time() - float(stt["t0"])) / s_por_volta))
+    lap = max(1, lap)
+    stt["lap"] = lap
+    sim.auto_pits(rep, lap, stt["pits"])
+    feed = stt.setdefault("feed", [])
+    marcados = stt.setdefault("feed_dnf", [])
+    for pid, d in rep["info"].items():
+        if d["dnf"] and d["volta_dnf"] <= lap and pid not in marcados:
+            marcados.append(pid)
+            feed.append(f"💥 {sim.piloto(game, pid)['nome']} abandonou: "
+                        f"{d['motivo'].lower()} na volta {d['volta_dnf']}.")
+    if rep.get("sc_lap") and lap >= rep["sc_lap"] and not stt.get("sc_ok"):
+        stt["sc_ok"] = True
+        feed.append("🟨 Safety Car agrupou o pelotão — estratégias embaralhadas!")
+    if lap >= voltas:
+        stt["concluido"] = True
+        st.rerun()
+    mostrar = bool(st.session_state.get("ver_pits", False))
+    meus_ids = {p["id"] for p in meus}
+    linhas = sim.linhas_replay(rep, lap, stt["pits"])
+    c1, c2 = st.columns([2.3, 1], gap="medium")
+    with c1:
+        st.markdown(_html_tabela_viva(game, linhas, mostrar, meus_ids), unsafe_allow_html=True)
+    with c2:
+        st.markdown(f'<div class="voltas-box"><div class="lab">Voltas</div>'
+                    f'<div class="n">{lap} / {voltas}</div></div>', unsafe_allow_html=True)
+        for p in meus:
+            ln = next((x for x in linhas if x["pid"] == p["id"]), None)
+            exec_pits = [x for x in stt["pits"].get(p["id"], []) if x <= lap]
+            plano = int(rep["info"][p["id"]]["paradas"])
+            ultimo = max(exec_pits, default=0)
+            pneu = ln["pneu"] if ln else "—"
+            vida = sim.vida_pneu(etapa, pneu, lap - ultimo)
+            papel = ROTULOS_PAPEL.get(p["papel"], p["papel"])
+            st.markdown(
+                f'<div class="box-piloto"><div class="papel">{papel}</div>'
+                f'<div class="nome">{bnd.img_bandeira(p["bandeira"], 18)} {p["nome"]}</div>'
+                f'<div class="mini">Paradas: {len(exec_pits)}/{plano} · Pneus: <b>{pneu}</b></div>'
+                f'{_barra_html(vida)}'
+                f'<div class="mini">Vida do pneu: {vida * 100:.0f}%</div></div>',
+                unsafe_allow_html=True)
+            restam = plano - len(exec_pits)
+            if st.button("Pit stop!", key=f"pit_{p['id']}_{fds['chave']}",
+                         disabled=(restam <= 0 or lap >= voltas),
+                         help="Ordem de parada nos boxes AGORA — antecipa a parada planejada."):
+                if lap not in stt["pits"].get(p["id"], []):
+                    stt["pits"].setdefault(p["id"], []).append(lap)
+                    feed.append(f"🛠️ Box para **{p['nome']}** na volta {lap} (ordem do comando).")
+                st.rerun()
+        if feed:
+            st.markdown('<div class="feed-race">' + "<br>".join(feed[-4:]) + "</div>",
+                        unsafe_allow_html=True)
+        if st.button("⏭️ Concluir corrida agora", key="concluir_corrida"):
+            stt["pulou"] = True
+            st.rerun()
+
+
 def pagina_corrida(game):
+
     if game["rodada"] >= len(game["calendario"]):
         painel_fim_temporada(game)
         return
@@ -630,35 +976,112 @@ def pagina_corrida(game):
             st.dataframe(df_resultado(game, fds["sprint"]), hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
             st.caption(f"Pontos da {rot_corrida2(game)} já somados ao campeonato.")
 
-    # ---------------- classificação
+    # ---------------- tela de treino classificatório
     st.divider()
-    st.subheader("⏱️ Classificação")
-    if fds["grid"] is None:
-        if st.button("▶️ Simular classificação", width="stretch",
-                     disabled=(etapa["sprint"] and fds["sprint"] is None)):
-            fds["grid"] = sim.simular_classificacao(game, etapa, molhado)
-            pole = sim.piloto(game, fds["grid"][0]["piloto_id"])
-            flash("info", f"Pole position: {pole['nome']} ({fmt_tempo(fds['grid'][0]['tempo'])})")
+    st.subheader("⏱️ Treino classificatório")
+    bloqueado = bool(etapa["sprint"] and fds["sprint"] is None)
+    _cabecalho_treino(etapa)
+    sess = fds.get("treino")
+    if not sess or not sess.get("t0"):
+        # cronômetro parado: grade neutra com '-' (sem spoiler do grid)
+        cm1, cm2 = st.columns([3.2, 1])
+        cm1.progress(0.0, text="⏱️ Tempo de treino restante: 60 min")
+        cm2.markdown(f"**Clima:** {_clima_txt(molhado)}")
+        neutro = [{"piloto_id": p["id"], "equipe_id": p["equipe_id"], "pos": i + 1}
+                  for i, p in enumerate(sorted(
+                      sim.titulares(game),
+                      key=lambda x: (sim.equipe(game, x["equipe_id"])["nome"],
+                                     ["P1", "P2", "P3", "P4"].index(x["papel"])
+                                     if x["papel"] in ("P1", "P2", "P3", "P4") else 9)))]
+        st.markdown(_html_tabela_treino(game, neutro, None, 0), unsafe_allow_html=True)
+        if st.button("⏱️ Iniciar treino", type="primary", width="stretch",
+                     key="iniciar_treino", disabled=bloqueado):
+            grid = sim.simular_classificacao(game, etapa, molhado)
+            fds["grid"] = grid
+            fds["treino"] = sim.sessao_treino(game, etapa, molhado, grid)
+            fds["treino"]["t0"] = time.time()
             st.rerun()
-        if etapa["sprint"] and fds["sprint"] is None:
-            st.caption(f"Primeiro simule a {rot_corrida2(game)}.")
+        if bloqueado:
+            st.caption(f"🏁 Primeiro simule o {rot_corrida2(game)}.")
+    elif not sess.get("concluido"):
+        _frag_treino(game, etapa, molhado, fds)
     else:
-        st.dataframe(df_grid(game, fds["grid"]), hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
+        # sessão encerrada: grade final congelada + pole + passagem para a corrida
+        cm1, cm2 = st.columns([3.2, 1])
+        cm1.progress(1.0, text="⏱️ Tempo de treino restante: 0 min")
+        cm2.markdown(f"**Clima:** {_clima_txt(molhado)}")
+        st.markdown(_html_tabela_treino(game, fds["grid"], sess, int(sess["duracao"])),
+                    unsafe_allow_html=True)
+        pole = sim.piloto(game, fds["grid"][0]["piloto_id"])
+        st.caption(f"🏆 **Pole position:** {pole['nome']} "
+                   f"({fmt_tempo(fds['grid'][0]['tempo'])}) · {len(fds['grid'])} no grid")
+        if not fds.get("treino_ok"):
+            if st.button("➡️ Ir para corrida!", type="primary", width="stretch", key="ir_corrida"):
+                fds["treino_ok"] = True
+                flash("success", "Treino encerrado e grid confirmado — prepare a estratégia "
+                                 "e dê a largada na tela abaixo!")
+                st.rerun()
+        else:
+            st.caption("✅ Treino concluído — role até a tela da corrida e aperte **Dar largada!**")
 
-    # ---------------- corrida principal
+    # ---------------- tela da corrida
     st.divider()
-    st.subheader("🏁 Corrida principal")
-    if fds["resultado"] is None:
-        if st.button("🚥 LARGADA!", type="primary", width="stretch", disabled=fds["grid"] is None):
-            res, ev = sim.simular_corrida(game, etapa, fds["grid"], estrategias, molhado)
-            fds["resumo"] = sim.aplicar_resultado(game, etapa, fds["grid"], res, molhado, eventos=ev)
-            fds["resultado"], fds["eventos"] = res, ev
-            venceu = any(l["equipe_id"] == eqj["id"] and l["pos"] == 1 and not l["dnf"] for l in res)
-            if venceu:
-                st.balloons()
-            st.rerun()
+    rep_state = fds.get("replay")
+    _cabecalho_corrida(game, etapa, molhado,
+                       com_checkbox=bool(rep_state) and not rep_state.get("concluido"))
+    if rep_state is not None and not rep_state.get("concluido"):
+        _frag_corrida(game, etapa, molhado, fds, meus)
+    elif rep_state is None:
+        # ---- pré-largada: grid + painel dos pilotos + Dar largada!
+        treino_ok = bool(fds.get("treino_ok"))
+        c1, c2 = st.columns([2.3, 1], gap="medium")
+        with c1:
+            if fds.get("grid"):
+                linhas_ini = [{"pid": g["piloto_id"], "equipe_id": g["equipe_id"],
+                               "pos": g["pos"], "tempo": None, "dif_ant": None, "dif1": None,
+                               "box": False} for g in fds["grid"]]
+                st.markdown(_html_tabela_viva(game, linhas_ini, False, {p["id"] for p in meus}),
+                            unsafe_allow_html=True)
+            else:
+                st.info("🏁 O grid de largada aparece aqui depois do treino.")
+        with c2:
+            st.markdown(f'<div class="voltas-box"><div class="lab">Voltas</div>'
+                        f'<div class="n">0 / {etapa["voltas"]}</div></div>', unsafe_allow_html=True)
+            for p in meus:
+                est = estrategias.get(p["id"], {})
+                papel = ROTULOS_PAPEL.get(p["papel"], p["papel"])
+                st.markdown(
+                    f'<div class="box-piloto"><div class="papel">{papel}</div>'
+                    f'<div class="nome">{bnd.img_bandeira(p["bandeira"], 18)} {p["nome"]}</div>'
+                    f'<div class="mini">Pneu de largada: <b>{est.get("pneu", "—")}</b> · '
+                    f'Paradas planejadas: {est.get("paradas", "—")}</div></div>',
+                    unsafe_allow_html=True)
+            pode_largar = treino_ok and bool(fds.get("grid")) and not bloqueado
+            if st.button("🚦 Dar largada!", type="primary", width="stretch",
+                         key="dar_largada", disabled=not pode_largar):
+                res, ev = sim.simular_corrida(game, etapa, fds["grid"], estrategias, molhado)
+                fds["resumo"] = sim.aplicar_resultado(game, etapa, fds["grid"], res, molhado,
+                                                      eventos=ev)
+                fds["resultado"], fds["eventos"] = res, ev
+                venceu = any(l["equipe_id"] == eqj["id"] and l["pos"] == 1 and not l["dnf"]
+                             for l in res)
+                fds["replay"] = {
+                    "rep": sim.montar_replay(game, etapa, fds["grid"], res, molhado, eventos=ev),
+                    "t0": time.time(), "pits": {}, "feed": [], "feed_dnf": [], "sc_ok": False,
+                    "lap": 0, "pulou": False, "concluido": False, "venceu": venceu,
+                    "balloons_ok": False}
+                st.rerun()
+            if bloqueado:
+                st.caption(f"🏁 Simule o {rot_corrida2(game)} primeiro.")
+            elif not treino_ok:
+                st.caption("⏱️ Complete o treino para liberar a largada.")
     else:
-        st.dataframe(df_resultado(game, fds["resultado"]), hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
+        # ---- pós-corrida: classificação final, eventos e finanças
+        if rep_state.get("venceu") and not rep_state.get("balloons_ok"):
+            rep_state["balloons_ok"] = True
+            st.balloons()
+        st.dataframe(df_resultado(game, fds["resultado"]), hide_index=True, width="stretch",
+                     column_config=CFG_BANDEIRA)
         for ev in fds["eventos"]:
             st.markdown(f"- {ev}")
         if fds["resumo"]:
@@ -668,9 +1091,12 @@ def pagina_corrida(game):
                         f" → caixa atual: **{sim.fmt_dinheiro_m(eqj['caixa'])}**")
         prox = "Encerrar a temporada 🏁" if game["rodada"] >= len(game["calendario"]) else "Continuar ▶️"
         if st.button(prox, type="primary", width="stretch"):
+            game["rodada"] += 1
             st.session_state.fds = None
             ir_para("🏠 Escritório")
             st.rerun()
+    st.markdown(f'<div class="banner-circuito"><b>{etapa["circuito"]} — {etapa["gp"]}</b><br>'
+                f'Clima: {_clima_txt(molhado)}</div>', unsafe_allow_html=True)
 
 
 # ======================================================================

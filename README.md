@@ -46,7 +46,11 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 
 ## 🎮 O que foi recriado do original
 
-- **Tela-resumo ("Escritório")** com nível do carro, motor, pilotos, finanças, notícias e o botão **Continuar**
+- **Tela-resumo ("Escritório")** no layout do original: cabeçalho com **nome do gerente**
+  (ex.: "Vick 2026, 1ª etapa") + equipe em destaque, e os painéis **Carro** (6 eixos em %:
+  aerodinâmica, câmbio, freio, elétrico, direção e confiabilidade), **Contratos** (motor),
+  **Pilotos** (1º/2º/…/testes), **Finanças** (receitas, despesas, balanço do ano e caixa),
+  **Notícias** com contador de novas e **Próxima corrida** com o botão **Continuar**
 - **Investimento por corrida** no carro + comparação de nível com as rivais (menu *Campeonato → Equipes* do CM14)
 - **Contratos de motor** para a próxima temporada — inclusive o lendário **motor FIA compulsório de 50%**
   de potência para quem ficar sem caixa
@@ -55,6 +59,14 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
   tudo negociado **para a temporada seguinte** — inclusive **pré-contrato com sinal** (fecha na
   hora, sem chance de recusa, como no original)
 - **Estratégia de corrida**: pneu de largada, número de paradas e ritmo, com clima (seco/molhado)
+- **Tela de treino classificatório** (como no original): relógio de 60 min com barra, clima, tabela
+  de Pos./Nome/Equipe/**Melhor tempo** se enchendo aos poucos e o grid final fiel ao motor;
+  botões **Iniciar treino** e **Ir para corrida!**
+- **Tela de corrida ao vivo**: título do GP com "Etapa X de N", contador de **Voltas k / N**,
+  tabela posição a posição (últ. volta, dif. ant., dif 1º), painel dos seus dois pilotos com
+  paradas, pneu, **barra de vida** e **Pit stop!** manual (ou parada automática na volta
+  planejada), feed de quebras/boxes e botão **Dar largada!** — o resultado final continua
+  sendo o do motor
 - **Patrocinadores** com bônus por ponto/pódio/vitória e premiação de construtores
 - **Hall da Fama** (Senna, Schumacher, Lauda, Hunt…) com indução dos seus pilotos
 - **10 conquistas**, como no original
