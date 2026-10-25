@@ -95,3 +95,15 @@ def test_ultimas_corridas_e_forma_texto(game):
     assert [h["rodada"] for h in hist] == sorted(h["rodada"] for h in hist)
     marcas = sim.forma_texto(hist).split("·")
     assert len(marcas) == 3 and all(m == "D" or m.isdigit() for m in marcas)
+
+
+def test_arquivos_estaticos_continuam_no_lugar():
+    """Depois da divisão em paginas/, os caminhos de static/ e assets/ seguem válidos."""
+    import os
+
+    from paginas import corrida
+
+    assert os.path.isfile(corrida.ATALHOS_HTML), "o iframe dos atalhos perderia o arquivo"
+    raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    assert corrida.RAIZ_PROJETO == raiz
+    assert os.path.isdir(os.path.join(raiz, "static", "fonts"))

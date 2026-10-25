@@ -37,7 +37,7 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 ruff check .      # lint (config em pyproject.toml)
-python -m pytest  # 48 testes: motor, replay/pits, tema/save e smoke test das telas
+python -m pytest --cov  # 73 testes + cobertura (piso de 75%)
 ```
 
 O **GitHub Actions** (`.github/workflows/ci.yml`) roda ruff + pytest em Python 3.12/3.13
@@ -48,7 +48,9 @@ pedem **Python 3.12+**).
 
 | Arquivo | Função |
 |---|---|
-| `app.py` | Interface Streamlit (telas: Escritório, Corrida, Carro, Pilotos, Motores, Finanças, Campeonato, Hall da Fama…) |
+| `app.py` | Ponto de entrada: estado da sessão, barra lateral e roteamento entre as páginas (~250 linhas) |
+| `paginas/` | Uma página por arquivo: `inicio`, `escritorio`, `corrida`, `carro`, `pilotos`, `motores`, `financas`, `campeonato`, `hall`, `save`, `ajuda` + `comum.py` com os componentes compartilhados |
+| `armazenamento.py` | Saves em **slots** (`saves/`), **auto-save** a cada etapa, **migração** de saves antigos (schema versionado) e exportação CSV |
 | `ui/tema.py` | **Design system**: todo o CSS do jogo (tokens `--cm-font-*`, painéis, tabelas ao vivo, cartões de undercut/overcut, barra lateral, responsivo e acessibilidade) + `aplicar()` chamado uma vez no início do app |
 | `simulacao.py` | Motor do jogo: classificação, corrida, estratégia, desenvolvimento, finanças, mercado, evolução e virada de temporada |
 | `dados2026.py` | A DB F1 2026: 11 equipes, 49 pilotos, 10 motores, calendário de 24 etapas |
@@ -56,12 +58,29 @@ pedem **Python 3.12+**).
 | `editor_db.py` | Editor de DBs na tela inicial: edite equipes/pilotos/calendário/fornecedores, valide, baixe/compartilhe o `.json` e jogue na hora |
 | `bandeiras.py` + `assets/bandeiras/` | Bandeiras dos países como **imagens PNG locais** (o Windows não renderiza emoji de bandeira!) — 45 países padronizados em 96×72 px, fonte: flagcdn.com / flag-icons (domínio público) |
 | `tools/padronizar_bandeiras.py` | Regenera/atualiza as bandeiras: baixa do flagcdn e encaixa todas no mesmo tamanho, sem distorcer (`python tools/padronizar_bandeiras.py`) |
+| `saves/` | (criada ao salvar) Slots e o `_autosave.json` da sua carreira — fora do Git |
 | `minhas_dbs/` | (criada ao salvar) Suas DBs personalizadas em `.json` viram opções permanentes na lista de DBs |
 | `.streamlit/config.toml` | Tema escuro profissional (design system do jogo) |
-| `tests/` | Suíte **pytest** (48 testes): determinismo e pontuação do motor, replay/pits (janela, automático, recusa, clima, undercut/overcut), tema/save em JSON e smoke test de todas as telas com `AppTest` |
+| `tests/` | Suíte **pytest** (73 testes): determinismo e pontuação do motor, replay/pits (janela, automático, recusa, clima, undercut/overcut), tema/save em JSON e smoke test de todas as telas com `AppTest` |
 | `requirements.txt` / `requirements-dev.txt` | `streamlit` + `pandas` / `pytest` + `ruff` |
 | `pyproject.toml` | Configuração do **ruff** (lint) e do **pytest** |
-| `.github/workflows/ci.yml` | CI: lint + testes (Python 3.12/3.13) + smoke do servidor Streamlit |
+| `.github/workflows/ci.yml` | CI: lint + testes com **cobertura (piso de 75%)** em Python 3.12/3.13 + smoke do servidor Streamlit |
+
+## 🆕 Últimas melhorias (v3)
+
+- **Safety Car, Virtual Safety Car e bandeira vermelha** — a prova neutralizada junta o pelotão (as
+  diferenças derretem na torre), o box fica mais barato e, na **bandeira vermelha**, a corrida para de
+  verdade até você clicar em **🟥 Relargada**.
+- **Volta mais rápida vale +1 ponto**, com registro no save e destaque no resultado.
+- **Gráfico de stints e degradação** no pós-corrida (tempo de volta × volta, com as quedas das paradas).
+- **Negociação de contratos em até 3 rodadas**, com **contraproposta** de salário/anos.
+- **Comparador de carros** (radar SVG dos 6 eixos seu time × rival, sem dependências novas).
+- **Linha do tempo do calendário** no Escritório (concluídas, próxima, sprints).
+- **⏩ Simular etapas em lote** para quem quer temporadas longas sem transmissão.
+- **Exportação CSV** das tabelas (Excel pt-BR: `;` + BOM) no Campeonato, Finanças, Pilotos e resultado.
+- **Tema claro** (☀️ na barra lateral) usando os mesmos tokens do design system.
+- **Save em slots + auto-save a cada etapa + migração automática** de saves antigos (schema `versao`).
+- **`app.py` dividido em `paginas/`** (uma por tela) e **cobertura mínima de 75%** no CI.
 
 ## 🎮 O que foi recriado do original
 

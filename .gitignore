@@ -18,6 +18,7 @@ env/
 
 # Saves do jogo gerados localmente
 cockpit_save_*.json
+saves/
 *.zip
 
 # IDEs / sistema
@@ -28,3 +29,8 @@ Thumbs.db
 
 # Scratch de buscas de imagem
 image-search/
+
+# Cobertura de testes
+.coverage
+coverage.xml
+htmlcov/

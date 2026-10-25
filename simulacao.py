@@ -257,6 +257,7 @@ def criar_novo_jogo(
         "noticias": [],
         "extrato": [],
         "contratos_proxima": {},  # piloto_id -> {papel, salario, anos}
+        "negociacoes": {},  # piloto_id -> contraproposta em aberto
         "motor_proxima": None,
         "patrocinador_proxima": None,
         "hall_da_fama": db_dados.get("hall_da_fama") or [],
@@ -551,7 +552,84 @@ def montar_replay(game, etapa, grid, resultado, molhado, eventos=None, sprint=Fa
             ],
         }
     texto_ev = " ".join(eventos or [])
-    return {"voltas": voltas, "info": info, "sc_lap": int(voltas * 0.55) if "Safety Car" in texto_ev else None}
+    # janelas de neutralização (só exibição: não mudam o resultado do motor)
+    sc_lap = int(voltas * 0.58) if "Safety Car no meio da prova" in texto_ev else None
+    vsc_lap = int(voltas * 0.32) if "Virtual Safety Car" in texto_ev else None
+    red_lap = int(voltas * 0.66) if "Bandeira vermelha" in texto_ev else None
+    return {
+        "voltas": voltas,
+        "info": info,
+        "sc_lap": sc_lap,
+        "sc_dur": 3 if sc_lap else 0,
+        "vsc_lap": vsc_lap,
+        "vsc_dur": 2 if vsc_lap else 0,
+        "red_lap": red_lap,
+    }
+
+
+def _fator_neutralizacao(rep, lap):
+    """Quanto o pelotão está comprimido na volta `lap` (1.0 = corrida normal,
+    perto de 0 = todos grudados atrás do safety car). VSC comprime menos que o
+    safety car, e a bandeira vermelha zera o pelotão na relargada."""
+    fator, ativa = 1.0, False
+    sc, sc_dur = rep.get("sc_lap"), int(rep.get("sc_dur") or 0)
+    if sc and lap >= sc:
+        ativa = True
+        passo = lap - sc
+        f = 0.16 if passo <= sc_dur else min(1.0, 0.16 + (passo - sc_dur) * 0.22)
+        fator = min(fator, f)
+    vsc, vsc_dur = rep.get("vsc_lap"), int(rep.get("vsc_dur") or 0)
+    if vsc and lap >= vsc:
+        ativa = True
+        passo = lap - vsc
+        f = 0.55 if passo <= vsc_dur else min(1.0, 0.55 + (passo - vsc_dur) * 0.20)
+        fator = min(fator, f)
+    red = rep.get("red_lap")
+    if red and lap >= red:
+        ativa = True
+        passo = lap - red
+        f = 0.05 if passo <= 1 else min(1.0, 0.30 + (passo - 1) * 0.22)
+        fator = min(fator, f)
+    return fator, ativa
+
+
+def stints_corrida(rep, pid, pits_feitas=None, pneus_manual=None):
+    """Stints de um piloto no replay: composto, janela de voltas e tempo médio.
+    Serve ao gráfico de degradação do pós-corrida."""
+    d = rep["info"].get(pid)
+    if not d:
+        return []
+    base_pits = (pits_feitas or {}).get(pid) or d["pits_plano"]
+    paradas = sorted({int(x) for x in base_pits if 1 < int(x) < rep["voltas"]})
+    cortes = [0] + paradas + [rep["voltas"]]
+    saida = []
+    for i in range(len(cortes) - 1):
+        inicio, fim = cortes[i] + 1, cortes[i + 1]
+        if inicio > fim:
+            continue
+        pneu = d["pneus"][min(i, len(d["pneus"]) - 1)]
+        if pneus_manual:
+            pneu = pneus_manual.get(pid, {}).get(i, pneu)
+        tempos = [d["tempos"][v] for v in range(inicio, min(fim, rep["voltas"]) + 1) if v < len(d["tempos"])]
+        if d["dnf"] and inicio >= d["volta_dnf"]:
+            break
+        saida.append(
+            {
+                "stint": i + 1,
+                "pneu": pneu,
+                "inicio": inicio,
+                "fim": fim,
+                "voltas": max(0, fim - inicio + 1),
+                "tempo_medio": round(sum(tempos) / len(tempos), 3) if tempos else None,
+                "tempos": tempos,
+            }
+        )
+    return saida
+
+
+def volta_mais_rapida(resultado):
+    """Linha do piloto que marcou a volta mais rápida (ou None)."""
+    return next((l for l in resultado or [] if l.get("volta_rapida")), None)
 
 
 def linhas_replay(rep, lap, pits_feitas, pneus_manual=None, ritmos=None, overcut=None):
@@ -563,6 +641,7 @@ def linhas_replay(rep, lap, pits_feitas, pneus_manual=None, ritmos=None, overcut
     lap = max(1, min(int(lap), rep["voltas"]))
     w = lap / rep["voltas"]
     fase = 4.0 * w * (1.0 - w)  # efeito do ritmo cresce no meio e zera na chegada
+    neutro, em_neutro = _fator_neutralizacao(rep, lap)
     campos, fora = [], []
     for pid, d in rep["info"].items():
         executadas = [x for x in sorted(pits_feitas.get(pid) or []) if x <= lap]
@@ -600,10 +679,15 @@ def linhas_replay(rep, lap, pits_feitas, pneus_manual=None, ritmos=None, overcut
     for i, ln in enumerate(campos):
         d = rep["info"][ln["pid"]]
         sint = max(0.0, (ln["s"] - lider_s) * 0.9)
-        dif1 = sint * (1 - w) + d["gap_final"] * w
+        dif1 = (sint * (1 - w) + d["gap_final"] * w) * neutro
         dif_ant = None if dif_lider is None else max(0.0, dif1 - dif_lider)
         ritmo = (ritmos or {}).get(ln["pid"], "Normal")
-        tempo = d["tempos"][lap] + RITMO_TEMPO.get(ritmo, 0.0) + (21.5 if ln["box"] else 0.0)
+        tempo = d["tempos"][lap] + RITMO_TEMPO.get(ritmo, 0.0)
+        if ln["box"]:
+            # com a prova neutralizada o box é mais barato (não se perde tanto tempo)
+            tempo += 12.0 if em_neutro else 21.5
+        if em_neutro:
+            tempo += 28.0  # voltas atrás do carro de segurança são bem mais lentas
         saida.append(
             {
                 **ln,
@@ -837,7 +921,11 @@ def simular_corrida(game, etapa, grid, estrategias_jogador, molhado, sprint=Fals
     abandonaram = sorted([l for l in linhas if l["dnf"]], key=lambda x: -x["volta_dnf"])
     ordem = terminaram + abandonaram
 
-    safety_car = rng.random() < 0.28 and not sprint
+    # neutralizações: safety car, VSC ou (só na chuva) bandeira vermelha
+    sorte = rng.random() if not sprint else 1.0
+    safety_car = sorte < 0.24
+    vsc = (not safety_car) and sorte < 0.42
+    bandeira_vermelha = (not sprint) and molhado and (not safety_car) and (not vsc) and sorte < 0.50
     melhor = terminaram[0]["score"] if terminaram else 0
     _meta = game.get("meta") or {}
     tabela = (
@@ -845,7 +933,8 @@ def simular_corrida(game, etapa, grid, estrategias_jogador, molhado, sprint=Fals
         if sprint
         else (_meta.get("pontos_corrida") or db.PONTOS_CORRIDA)
     )
-    fator_gap = etapa["voltas"] * (0.16 if sprint else 0.55) * (0.55 if safety_car else 1.0)
+    aperto = 0.55 if safety_car else (0.80 if vsc else (0.50 if bandeira_vermelha else 1.0))
+    fator_gap = etapa["voltas"] * (0.16 if sprint else 0.55) * aperto
     for i, l in enumerate(ordem):
         l["pos"] = i + 1
         l["pontos"] = tabela[i] if (i < len(tabela) and (not l["dnf"] or _meta.get("pontua_abandono"))) else 0
@@ -857,9 +946,21 @@ def simular_corrida(game, etapa, grid, estrategias_jogador, molhado, sprint=Fals
         cand = terminaram[:10]
         vr = max(cand, key=lambda l: piloto(game, l["piloto_id"])["atributos"]["velocidade"] + rng.gauss(0, 3))
         vr["volta_rapida"] = True
-        eventos.append(f"⚡ Volta mais rápida: **{piloto(game, vr['piloto_id'])['nome']}**.")
+        nome_vr = piloto(game, vr["piloto_id"])["nome"]
+        if sprint:
+            eventos.append(f"⚡ Volta mais rápida: **{nome_vr}**.")
+        else:
+            vr["pontos"] = int(vr.get("pontos") or 0) + 1
+            vr["ponto_volta_rapida"] = True
+            eventos.append(f"⚡ Volta mais rápida: **{nome_vr}** — leva +1 ponto.")
     if safety_car:
         eventos.append("🟨 Safety Car no meio da prova agrupou todo o pelotão e embaralhou as estratégias!")
+    elif vsc:
+        eventos.append("🟨 Virtual Safety Car: o pelotão se aproximou e quem estava no box ganhou tempo.")
+    if bandeira_vermelha:
+        eventos.append(
+            "🟥 Bandeira vermelha com a pista alagada: prova interrompida e relargada com o pelotão colado!"
+        )
     if molhado:
         eventos.append("🌧️ Corrida com pista molhada — quem nasceu para a chuva brilhou (e quem errou o pneu, chorou).")
     if clima and clima.get("virada_volta"):
@@ -983,6 +1084,8 @@ def aplicar_resultado(game, etapa, grid, resultado, molhado, sprint=False, event
         eq["pontos"] += l["pontos"]
         if not sprint:
             p["corridas"] += 1
+            if l.get("volta_rapida"):
+                p["voltas_rapidas"] = int(p.get("voltas_rapidas") or 0) + 1
             if l["dnf"]:
                 p["abandonos"] += 1
             if l["pos"] == 1 and not l["dnf"]:
@@ -1075,6 +1178,54 @@ def aplicar_resultado(game, etapa, grid, resultado, molhado, sprint=False, event
 
 
 # ---------------------------------------------------------------- tabelas
+def simular_etapas(game, quantas=1, estrategia=None):
+    """Roda etapas inteiras sem transmissão (modo "temporada rápida").
+
+    Repete o mesmo caminho da tela de corrida — sprint (quando existe), treino
+    classificatório e corrida — e aplica cada resultado ao save. `estrategia` =
+    {pid: {"pneu", "paradas", "ritmo"}} para os pilotos do jogador; o resto fica
+    com a IA. Devolve um resumo por etapa simulada.
+    """
+    feitas = []
+    eqj_id = game["equipe_jogador"]
+    for _ in range(max(0, int(quantas))):
+        if game["rodada"] >= len(game["calendario"]):
+            break
+        etapa = game["calendario"][game["rodada"]]
+        molhado = sortear_clima(game, etapa)
+        clima = plano_clima(game, etapa, molhado)
+        est = {}
+        for p in titulares(game):
+            if p["equipe_id"] != eqj_id:
+                continue
+            base = dict((estrategia or {}).get(p["id"]) or {})
+            base.setdefault("pneu", "Intermediário" if molhado else "Médio")
+            base.setdefault("paradas", paradas_ideais(etapa))
+            base.setdefault("ritmo", "Normal")
+            est[p["id"]] = base
+        resumo = {"ano": game["ano"], "rodada": game["rodada"] + 1, "gp": etapa["gp"], "sprint": None}
+        if etapa.get("sprint"):
+            grid_s = simular_classificacao(game, etapa, molhado)
+            res_s, ev_s = simular_corrida(
+                game, etapa, grid_s, est, molhado, sprint=True, clima=clima
+            )
+            aplicar_resultado(game, etapa, grid_s, res_s, molhado, sprint=True, eventos=ev_s)
+            resumo["sprint"] = res_s
+        grid = simular_classificacao(game, etapa, molhado)
+        res, ev = simular_corrida(game, etapa, grid, est, molhado, clima=clima)
+        aplicar_resultado(game, etapa, grid, res, molhado, eventos=ev)
+        resumo["resultado"] = res
+        resumo["eventos"] = ev
+        resumo["molhado"] = molhado
+        vencedor = next((l for l in res if l["pos"] == 1 and not l["dnf"]), None)
+        resumo["vencedor"] = piloto(game, vencedor["piloto_id"])["nome"] if vencedor else "—"
+        pos_jogador = [l["pos"] for l in res if l["equipe_id"] == eqj_id and not l["dnf"]]
+        resumo["minha_melhor_pos"] = min(pos_jogador) if pos_jogador else None
+        game["rodada"] += 1
+        feitas.append(resumo)
+    return feitas
+
+
 def tabela_pilotos(game):
     return sorted(titulares(game), key=lambda p: (-p["pontos"], -p["vitorias"], -p["podios"]))
 
@@ -1129,10 +1280,8 @@ def salario_esperado(game, p, papel):
     return int(round(base / 10.0) * 10)
 
 
-def negociar_piloto(game, piloto_id, papel, salario, anos):
-    """Negocia para a PRÓXIMA temporada (como no original). Retorna (bool, mensagem)."""
-    rng = _rng(game)
-    p = piloto(game, piloto_id)
+def _prob_aceite(game, p, papel, salario, anos):
+    """Chance (0..1) de o piloto aceitar a proposta — mesma conta usada pelo mercado."""
     eqj = equipe(game, game["equipe_jogador"])
     esperado = salario_esperado(game, p, papel)
     prob = 0.38 + (salario - esperado) / max(100.0, esperado * 0.9)
@@ -1147,24 +1296,86 @@ def negociar_piloto(game, piloto_id, papel, salario, anos):
     if papel == "P1":
         prob += 0.08
     prob += (anos - 2) * 0.04
-    prob = max(0.03, min(0.96, prob))
+    return max(0.03, min(0.96, prob))
+
+
+def _fechar_contrato(game, p, papel, salario, anos):
+    eqj = equipe(game, game["equipe_jogador"])
+    game["contratos_proxima"][p["id"]] = {"papel": papel, "salario": int(salario), "anos": int(anos)}
+    game.get("negociacoes", {}).pop(p["id"], None)
+    noticia(
+        game,
+        f"✍️ **{p['nome']}** fechou com a {eqj['nome']} para {game['ano'] + 1} "
+        f"({papel}, {fmt_dinheiro_k(salario)}/corrida, {anos} ano(s)).",
+    )
+    _rot = {"P1": "1º piloto", "P2": "2º piloto", "P3": "3º piloto", "P4": "4º piloto"}.get(
+        papel, "piloto de testes"
+    )
+    return f"{p['nome']} aceitou! Contrato assinado para {game['ano'] + 1} como {_rot}."
+
+
+def negociar_piloto_detalhado(game, piloto_id, papel, salario, anos):
+    """Mercado de contratos em até 3 rodadas: a primeira oferta pode voltar como
+    CONTRA-PROPOSTA (salário/anos pedidos pelo estafe), que você aceita, cobre
+    ou abandona. Depois de duas contrapropostas o piloto encerra a conversa.
+
+    Devolve {"status": "aceita" | "contra" | "recusa", "mensagem": str,
+             "pedido": {"salario", "anos"} | None, "rodada": int}.
+    """
+    rng = _rng(game)
+    p = piloto(game, piloto_id)
+    esperado = salario_esperado(game, p, papel)
+    nego = game.setdefault("negociacoes", {})
+    atual = nego.get(piloto_id)
+    rodada = 1 if not atual else int(atual.get("rodada", 1)) + 1
+    prob = _prob_aceite(game, p, papel, salario, anos)
+    if atual and salario >= atual.get("pedido", {}).get("salario", 0):
+        prob += 0.35  # cobriu o pedido do estafe
+    if rodada >= 3:
+        prob += 0.20  # última chance: ele quer resolver hoje
     if rng.random() < prob:
-        game["contratos_proxima"][piloto_id] = {"papel": papel, "salario": int(salario), "anos": int(anos)}
-        noticia(
-            game,
-            f"✍️ **{p['nome']}** fechou com a {eqj['nome']} para {game['ano'] + 1} "
-            f"({papel}, {fmt_dinheiro_k(salario)}/corrida, {anos} ano(s)).",
-        )
-        _rot = {"P1": "1º piloto", "P2": "2º piloto", "P3": "3º piloto", "P4": "4º piloto"}.get(
-            papel, "piloto de testes"
-        )
-        return True, f"{p['nome']} aceitou! Contrato assinado para {game['ano'] + 1} como {_rot}."
-    motivos = [
-        f"{p['nome']} recusou: achou {fmt_dinheiro_k(salario)}/corrida pouco (esperava algo perto de {fmt_dinheiro_k(esperado)}).",
-        f"{p['nome']} agradeceu, mas não se convenceu com o projeto da equipe neste momento.",
-        f"O estafe de {p['nome']} encerrou a conversa: quer garantias esportivas (e salariais) maiores.",
-    ]
-    return False, rng.choice(motivos)
+        msg = _fechar_contrato(game, p, papel, salario, anos)
+        return {"status": "aceita", "mensagem": msg, "pedido": None, "rodada": rodada}
+
+    if rodada >= 3:
+        nego.pop(piloto_id, None)
+        return {
+            "status": "recusa",
+            "mensagem": f"{p['nome']} encerrou a conversa: sem acordo sobre salário e projeto para {game['ano'] + 1}.",
+            "pedido": None,
+            "rodada": rodada,
+        }
+
+    # contraproposta: perto do esperado, com desconto conforme o prestígio/projeto
+    eqj = equipe(game, game["equipe_jogador"])
+    fator = 1.0 - (eqj["prestigio"] - 68) * 0.004 - (desempenho_carro(game, eqj) - 80) * 0.003
+    fator = max(0.55, min(1.25, fator))
+    pedido_sal = int(round(esperado * fator / 10.0) * 10) or int(esperado)
+    pedido_sal = max(pedido_sal, int(salario * 1.02) + 10)
+    pedido_anos = max(1, min(5, int(anos) + (1 if esperado > salario else 0)))
+    nego[piloto_id] = {
+        "papel": papel,
+        "salario": int(salario),
+        "anos": int(anos),
+        "pedido": {"salario": pedido_sal, "anos": pedido_anos},
+        "rodada": rodada,
+    }
+    return {
+        "status": "contra",
+        "mensagem": (
+            f"{p['nome']} quer {fmt_dinheiro_k(pedido_sal)}/corrida por {pedido_anos} ano(s). "
+            f"Sua oferta foi {fmt_dinheiro_k(salario)}/corrida por {anos} ano(s) "
+            f"(referência do mercado: {fmt_dinheiro_k(esperado)}/corrida)."
+        ),
+        "pedido": {"salario": pedido_sal, "anos": pedido_anos},
+        "rodada": rodada,
+    }
+
+
+def negociar_piloto(game, piloto_id, papel, salario, anos):
+    """Negocia para a PRÓXIMA temporada (como no original). Retorna (bool, mensagem)."""
+    r = negociar_piloto_detalhado(game, piloto_id, papel, salario, anos)
+    return r["status"] == "aceita", r["mensagem"]
 
 
 def taxa_sinal(salario):

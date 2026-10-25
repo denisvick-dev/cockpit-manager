@@ -366,3 +366,148 @@ def test_overcut_na_transmissao_avisa_e_permite_atacar(app_com_jogo, game):
 
     assert any(r == "Atacar" for r in stt["ritmos"].values())
     assert not app.exception
+
+
+def test_escritorio_tem_timeline_do_calendario(app_com_jogo, game):
+    app = app_com_jogo
+    app.session_state["menu"] = "🏠 Escritório"
+    app.run()
+    assert not app.exception
+    html = "\n".join(str(m.value) for m in app.markdown)
+    assert "timeline" in html and "tl-item" in html
+    # uma etapa marcada como atual e as futuras em aberto
+    assert html.count('class="tl-item agora"') == 1
+    assert "tl-item done" not in html  # temporada recém-começada
+
+
+def test_escritorio_simula_etapas_em_lote(app_com_jogo, game):
+    app = app_com_jogo
+    app.session_state["menu"] = "🏠 Escritório"
+    app.run()
+    rodada = game["rodada"]
+    app.slider(key="lote_n").set_value(2).run()
+    app.button(key="lote_simular").click().run()
+    assert not app.exception
+    assert app.session_state["game"]["rodada"] == rodada + 2
+    assert len(app.session_state["game"]["resultados"]) >= 2
+    assert app.dataframe  # a tabela do resumo do lote aparece
+
+
+def test_pagina_save_grava_e_lista_slot(app_com_jogo, game, tmp_path, monkeypatch):
+    import armazenamento
+
+    monkeypatch.setattr(armazenamento, "PASTA_SAVES", str(tmp_path))
+    app = app_com_jogo
+    app.session_state["menu"] = "💾 Salvar / Carregar"
+    app.run()
+    assert not app.exception
+
+    app.text_input(key="slot_nome").set_value("carreira_teste").run()
+    app.button(key="slot_salvar").click().run()
+
+    assert not app.exception
+    assert (tmp_path / "carreira_teste.json").exists()
+    slots = armazenamento.listar_saves()
+    assert [s["nome"] for s in slots] == ["carreira_teste"]
+    assert any(df.value["Slot"].eq("carreira_teste").any() for df in app.dataframe if "Slot" in df.value.columns)
+
+
+def test_tema_claro_alterna_sem_quebrar(app_com_jogo):
+    app = app_com_jogo
+    app.session_state["tema_claro"] = True
+    app.run()
+    assert not app.exception
+    css = "\n".join(str(m.value) for m in app.markdown)
+    assert "--cm-bg:#F4F6FA" in css  # bloco do tema claro injetado
+
+
+def test_pilotos_mostra_contraproposta_e_fecha_acordo(app_com_jogo, game):
+    app = app_com_jogo
+    app.session_state["menu"] = "👨‍✈️ Pilotos & Contratos"
+    eqj = game["equipe_jogador"]
+    # o seletor da página lista os pilotos por overall: usamos o primeiro da lista
+    alvo = sorted(
+        [p for p in game["pilotos"] if not p["aposentado"]], key=lambda p: -sim.overall(p)
+    )[0]
+    assert alvo["equipe_id"] != eqj
+    game["negociacoes"] = {
+        alvo["id"]: {
+            "papel": "P2",
+            "salario": 100,
+            "anos": 1,
+            "pedido": {"salario": 400, "anos": 2},
+            "rodada": 1,
+        }
+    }
+    app.run()
+    assert not app.exception
+
+    assert any("Contraproposta" in str(w.value) for w in app.warning)
+
+    app.button(key="nego_aceitar").click().run()
+    assert not app.exception
+    assert alvo["id"] in game["contratos_proxima"]
+    assert alvo["id"] not in game["negociacoes"]
+
+
+def test_pagina_save_carrega_e_apaga_slot(app_com_jogo, game, tmp_path):
+    import armazenamento
+
+    armazenamento.salvar(game, "slot_para_carregar")
+    app = app_com_jogo
+    app.session_state["menu"] = "💾 Salvar / Carregar"
+    app.run()
+    assert not app.exception
+
+    app.button(key="slot_apagar").click().run()
+    assert not app.exception
+    assert armazenamento.listar_saves() == []
+
+
+def test_pos_corrida_mostra_volta_rapida_e_stints(app_com_jogo, game):
+    """Depois da bandeirada: ⚡ volta rápida, gráfico de stints e CSV do resultado."""
+    app = app_com_jogo
+    app.session_state["menu"] = "🏁 Corrida"
+    app.run()
+    etapa = game["calendario"][game["rodada"]]
+    fds = app.session_state["fds"]
+    fds["molhado"] = False
+    fds["grid"] = sim.simular_classificacao(game, etapa, False)
+    res, ev = sim.simular_corrida(game, etapa, fds["grid"], {}, False, clima=fds.get("clima"))
+    fds["resultado"], fds["eventos"] = res, ev
+    fds["resumo"] = sim.aplicar_resultado(game, etapa, fds["grid"], res, False, eventos=ev)
+    fds["replay"] = {
+        "rep": sim.montar_replay(game, etapa, fds["grid"], res, False, eventos=ev),
+        "t0": 0.0,
+        "pits": {},
+        "feed": [],
+        "feed_dnf": [],
+        "sc_ok": True,
+        "lap": etapa["voltas"],
+        "pulou": True,
+        "concluido": True,
+        "venceu": False,
+        "balloons_ok": True,
+        "ritmos": {},
+        "pneus_manual": {},
+        "pit_perguntar": {},
+        "pit_aberto": None,
+        "pits_recusados": {},
+        "clima": fds.get("clima"),
+        "clima_visto": None,
+        "pausado": False,
+        "velocidade": 1,
+        "red_ok": True,
+    }
+    fds["treino"] = sim.sessao_treino(game, etapa, False, fds["grid"])
+    fds["treino"]["concluido"] = True
+    fds["treino_ok"] = True
+    fds["paddock_ok"] = True
+    app.run()
+
+    assert not app.exception
+    html = "\n".join(str(m.value) for m in app.markdown)
+    assert "Volta mais rápida" in html
+    assert any("Stints e degradação" in str(e.label) for e in app.expander)
+    # botão de CSV do resultado (download_button não entra em app.button)
+    assert any("Exportar CSV" in str(d.label) for d in app.get("download_button"))
