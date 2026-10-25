@@ -3,6 +3,7 @@
 Smoke test das DBs embutidas: valida, cria um jogo, simula a 1ª etapa
 e vira a temporada de cada DB. Uso:  python tools/smoke_test_dbs.py
 """
+
 import random
 import sys
 from pathlib import Path
@@ -23,8 +24,10 @@ def main():
     for key, dbd in banco:
         nome = dbd["meta"]["nome"]
         norm, erros, avisos = dbs.validar_e_normalizar(dbd)
-        print(f"[{key}] {nome} — {len(dbd['equipes'])} equipes / {len(dbd['pilotos'])} pilotos / "
-              f"grid {dbs.grid_natural(dbd)} (máx {dbs.grid_maximo(dbd)}) / {len(dbd['calendario'])} etapas")
+        print(
+            f"[{key}] {nome} — {len(dbd['equipes'])} equipes / {len(dbd['pilotos'])} pilotos / "
+            f"grid {dbs.grid_natural(dbd)} (máx {dbs.grid_maximo(dbd)}) / {len(dbd['calendario'])} etapas"
+        )
         for e in erros:
             print("   ERRO:", e)
             falhas += 1
@@ -35,8 +38,9 @@ def main():
             continue
         try:
             ano_jogo = int(norm["meta"].get("ano", 2026))
-            g = sim.criar_novo_jogo(norm["equipes"][0]["id"], ano_jogo, True, 0.5,
-                                    db_dados=norm, qtd_pilotos=dbs.grid_natural(norm))
+            g = sim.criar_novo_jogo(
+                norm["equipes"][0]["id"], ano_jogo, True, 0.5, db_dados=norm, qtd_pilotos=dbs.grid_natural(norm)
+            )
             # pré-contrato: fecha na hora e é consumido na virada
             livres = [p for p in norm["pilotos"] if p["papel"] == "livre"]
             if livres:
@@ -52,16 +56,17 @@ def main():
                         falhas += 1
             et = g["calendario"][0]
             grid = sim.simular_classificacao(g, et, False)
-            estr = {p["id"]: {"pneu": "Médio", "paradas": 2, "ritmo": "Normal"}
-                    for p in sim.titulares(g)}
+            estr = {p["id"]: {"pneu": "Médio", "paradas": 2, "ritmo": "Normal"} for p in sim.titulares(g)}
             res, ev = sim.simular_corrida(g, et, grid, estr, False, sprint=bool(et["sprint"]))
             sim.aplicar_resultado(g, et, grid, res, False, sprint=bool(et["sprint"]), eventos=ev)
             if et["sprint"] and g["rodada"] == 0:
                 g["rodada"] += 1
             r = sim.virar_temporada(g)
             jovem = sim._gerar_jovem(g, random.Random(7))
-            print(f"   jogo OK — temporada {g['ano']} | novo jovem: {jovem['nome']} | "
-                  f"campeões {ano_jogo}: {r['campeao_pilotos']} / {r['campea_construtores']}")
+            print(
+                f"   jogo OK — temporada {g['ano']} | novo jovem: {jovem['nome']} | "
+                f"campeões {ano_jogo}: {r['campeao_pilotos']} / {r['campea_construtores']}"
+            )
         except Exception as exc:
             print("   ERRO no jogo:", type(exc).__name__, exc)
             falhas += 1

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Fixtures compartilhadas dos testes do Cockpit Manager."""
+
 import os
 import sys
 

@@ -8,6 +8,7 @@ Padroniza as bandeiras de assets/bandeiras/:
 
 Uso:  python tools/padronizar_bandeiras.py
 """
+
 import sys
 import urllib.request
 from io import BytesIO
@@ -17,8 +18,8 @@ from PIL import Image, ImageDraw
 
 RAIZ = Path(__file__).resolve().parent.parent
 PASTA = RAIZ / "assets" / "bandeiras"
-LARGURA, ALTURA = 96, 72          # canvas final (4:3)
-MARGEM = 4                        # respiro em volta da bandeira
+LARGURA, ALTURA = 96, 72  # canvas final (4:3)
+MARGEM = 4  # respiro em volta da bandeira
 
 
 def padronizar(img):
@@ -29,8 +30,7 @@ def padronizar(img):
     y = (ALTURA - img.height) // 2
     canvas.paste(img, (x, y), img)
     borda = ImageDraw.Draw(canvas)
-    borda.rectangle([x, y, x + img.width - 1, y + img.height - 1],
-                    outline=(255, 255, 255, 64), width=2)
+    borda.rectangle([x, y, x + img.width - 1, y + img.height - 1], outline=(255, 255, 255, 64), width=2)
     return canvas
 
 
@@ -44,8 +44,9 @@ def main():
     for arq in arquivos:
         codigo = arq.stem
         try:
-            req = urllib.request.Request(f"https://flagcdn.com/w160/{codigo}.png",
-                                         headers={"User-Agent": "cockpit-manager-streamlit"})
+            req = urllib.request.Request(
+                f"https://flagcdn.com/w160/{codigo}.png", headers={"User-Agent": "cockpit-manager-streamlit"}
+            )
             bruto = urllib.request.urlopen(req, timeout=20).read()
             img = Image.open(BytesIO(bruto))
         except Exception:

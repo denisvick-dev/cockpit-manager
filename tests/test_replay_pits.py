@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Testes do replay: pneus, pits (janela/auto/recusa), clima e vida do pneu."""
+
 import simulacao as sim
 
 
@@ -7,11 +8,19 @@ def _replay_com_pits(plano_por_piloto, voltas=50):
     """Replay sintético: {pid: [voltas planejadas]}."""
     info = {}
     for pid, plano in plano_por_piloto.items():
-        info[pid] = {"pits_plano": list(plano), "dnf": False,
-                     "pneus": ["Médio"] * (len(plano) + 1),
-                     "paradas": len(plano), "grid": 1, "final_pos": 1,
-                     "gap_final": 0.0, "volta_dnf": voltas, "motivo": "",
-                     "ruido": [0.0] * (voltas + 2), "tempos": [90.0] * (voltas + 2)}
+        info[pid] = {
+            "pits_plano": list(plano),
+            "dnf": False,
+            "pneus": ["Médio"] * (len(plano) + 1),
+            "paradas": len(plano),
+            "grid": 1,
+            "final_pos": 1,
+            "gap_final": 0.0,
+            "volta_dnf": voltas,
+            "motivo": "",
+            "ruido": [0.0] * (voltas + 2),
+            "tempos": [90.0] * (voltas + 2),
+        }
     return {"voltas": voltas, "info": info, "sc_lap": None}
 
 
@@ -98,8 +107,7 @@ def test_linhas_replay_ordenadas_e_com_box(game, etapa):
     assert box["box"] is True and box["pits"] == 1
 
     # pneu manual escolhido na janela aparece no replay
-    linhas_manual = sim.linhas_replay(rep, lap_pit, {pid: [lap_pit]},
-                                      pneus_manual={pid: {1: "Duro"}})
+    linhas_manual = sim.linhas_replay(rep, lap_pit, {pid: [lap_pit]}, pneus_manual={pid: {1: "Duro"}})
     assert next(l for l in linhas_manual if l["pid"] == pid)["pneu"] == "Duro"
 
 

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Smoke test da interface Streamlit (AppTest): todas as telas e a corrida."""
+
 import os
 import time
 
@@ -12,9 +13,18 @@ import simulacao as sim
 APP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "app.py")
 
 
-MENUS = ["🏠 Escritório", "🏁 Corrida", "🔧 Carro & Investimentos", "👨‍✈️ Pilotos & Contratos",
-         "⚙️ Motores", "💰 Patrocinadores & Finanças", "📊 Campeonato",
-         "🏆 Hall da Fama & Conquistas", "💾 Salvar / Carregar", "❓ Como Jogar"]
+MENUS = [
+    "🏠 Escritório",
+    "🏁 Corrida",
+    "🔧 Carro & Investimentos",
+    "👨‍✈️ Pilotos & Contratos",
+    "⚙️ Motores",
+    "💰 Patrocinadores & Finanças",
+    "📊 Campeonato",
+    "🏆 Hall da Fama & Conquistas",
+    "💾 Salvar / Carregar",
+    "❓ Como Jogar",
+]
 
 
 @pytest.fixture()
@@ -36,6 +46,30 @@ def app_com_jogo(app, game):
 def test_tela_inicial(app):
     assert any(b.label == "🚥 Iniciar carreira" for b in app.button)
     assert any("Base de dados" in sb.label for sb in app.selectbox)
+
+
+def test_botao_novo_jogo_confirma_antes_de_abandonar(app_com_jogo):
+    app = app_com_jogo
+    jogo_atual = app.session_state["game"]
+
+    next(b for b in app.button if b.label == "🆕 Novo jogo").click().run()
+
+    assert not app.exception
+    assert app.session_state["game"] is jogo_atual
+    assert app.button(key="cancelar_novo_jogo")
+    assert app.button(key="confirmar_novo_jogo")
+
+    app.button(key="cancelar_novo_jogo").click().run()
+
+    assert app.session_state["game"] is jogo_atual
+    assert not any(b.key == "confirmar_novo_jogo" for b in app.button)
+
+    next(b for b in app.button if b.label == "🆕 Novo jogo").click().run()
+    app.button(key="confirmar_novo_jogo").click().run()
+
+    assert not app.exception
+    assert app.session_state["game"] is None
+    assert app.session_state["fds"] is None
 
 
 @pytest.mark.parametrize("menu", MENUS)
@@ -71,8 +105,7 @@ def test_corrida_janela_de_pit_pausa_e_volta(app_com_jogo, game):
     plano = stt["rep"]["info"]
     # avança até a primeira parada planejada de um piloto do jogador
     meus = set(stt["pit_perguntar"])
-    alvo = min((p, v) for p, d in plano.items() if p in meus and stt["pit_perguntar"][p]
-               for v in d["pits_plano"])
+    alvo = min((p, v) for p, d in plano.items() if p in meus and stt["pit_perguntar"][p] for v in d["pits_plano"])
     pid, volta = alvo
     stt["t0"] = time.time() - 0.41 * (volta + 0.6)
     app.run()

@@ -7,6 +7,7 @@ e na DB F1 2026 v1.0 by Jonathan Daniel (blog Cockpit Manager - Brasil).
 
 Rode com:  streamlit run app.py
 """
+
 import json
 import os
 import re
@@ -21,10 +22,10 @@ import dbs as dbsmod
 import editor_db
 import simulacao as sim
 
-st.set_page_config(page_title="Cockpit Manager", page_icon="🏎️", layout="wide",
-                   initial_sidebar_state="expanded")
+st.set_page_config(page_title="Cockpit Manager", page_icon="🏎️", layout="wide", initial_sidebar_state="expanded")
 
-st.markdown("""
+st.markdown(
+    """
 <style>
   :root{
     --cm-red:#C8102E; --cm-red2:#E02444; --cm-bg:#0B0F14; --cm-panel:#151C25;
@@ -292,11 +293,22 @@ st.markdown("""
   .side-stat .val{font-size:1rem; font-weight:600; margin-top:3px; white-space:nowrap}
   .flag-img{box-shadow:0 1px 4px rgba(0,0,0,.35)}
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
-MENUS = ["🏠 Escritório", "🏁 Corrida", "🔧 Carro & Investimentos", "👨‍✈️ Pilotos & Contratos",
-         "⚙️ Motores", "💰 Patrocinadores & Finanças", "📊 Campeonato",
-         "🏆 Hall da Fama & Conquistas", "💾 Salvar / Carregar", "❓ Como Jogar"]
+MENUS = [
+    "🏠 Escritório",
+    "🏁 Corrida",
+    "🔧 Carro & Investimentos",
+    "👨‍✈️ Pilotos & Contratos",
+    "⚙️ Motores",
+    "💰 Patrocinadores & Finanças",
+    "📊 Campeonato",
+    "🏆 Hall da Fama & Conquistas",
+    "💾 Salvar / Carregar",
+    "❓ Como Jogar",
+]
 
 if "game" not in st.session_state:
     st.session_state.game = None
@@ -332,6 +344,25 @@ def flash(tipo, texto):
     st.session_state.flash = (tipo, texto)
 
 
+def iniciar_novo_jogo():
+    st.session_state.game = None
+    st.session_state.fds = None
+    st.session_state.novo_jogo_pendente = False
+
+
+def exibir_confirmacao_novo_jogo():
+    st.warning(
+        "A carreira atual será encerrada nesta sessão. Salve o jogo antes de continuar, se quiser retomá-lo depois."
+    )
+    col_cancelar, col_confirmar = st.columns(2)
+    if col_cancelar.button("Cancelar", key="cancelar_novo_jogo", width="stretch"):
+        st.session_state.novo_jogo_pendente = False
+        st.rerun()
+    if col_confirmar.button("Começar novo jogo", key="confirmar_novo_jogo", type="primary", width="stretch"):
+        iniciar_novo_jogo()
+        st.rerun()
+
+
 def mostrar_flash():
     if st.session_state.flash:
         tipo, texto = st.session_state.flash
@@ -344,12 +375,14 @@ def mostrar_flash():
 # ======================================================================
 def titulo_pagina(kicker, titulo, subtitulo=None):
     sub = f"<p>{subtitulo}</p>" if subtitulo else ""
-    st.markdown(f'<div class="page-head"><div class="kicker">{kicker}</div><h1>{titulo}</h1>{sub}</div>',
-                unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="page-head"><div class="kicker">{kicker}</div><h1>{titulo}</h1>{sub}</div>', unsafe_allow_html=True
+    )
 
 
 def cabecalho_inicial():
-    st.markdown("""
+    st.markdown(
+        """
     <div class="hero">
       <div class="hero-inner">
         <div class="logo-mark">CM</div>
@@ -369,7 +402,9 @@ def cabecalho_inicial():
       </div>
       <div class="checker"></div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 
 def barra_stat(rotulo, valor, obs="", cor="#C8102E"):
@@ -379,7 +414,8 @@ def barra_stat(rotulo, valor, obs="", cor="#C8102E"):
         f'<div class="stat"><div class="stat-top"><span>{rotulo}</span><strong>{v:.0f}</strong></div>'
         f'<div class="stat-track"><div class="stat-fill" style="width:{v:.0f}%;'
         f'background:linear-gradient(90deg,{cor},#E4636F)"></div></div>{small}</div>',
-        unsafe_allow_html=True)
+        unsafe_allow_html=True,
+    )
 
 
 # ======================================================================
@@ -408,31 +444,40 @@ def _slider_grid(sel_db, key_suffix=""):
     padrao = max(minimo, min(maximo, natural))
     return st.slider(
         "👥 Pilotos no grid (titulares)" + (" — começa em 22" if minimo == 22 else ""),
-        minimo, maximo, padrao,
+        minimo,
+        maximo,
+        padrao,
         help=f"Grid natural desta DB: {natural}. Acima disso, as equipes inscrevem 3º e 4º carros "
-             f"com reservas e jovens do mercado; abaixo, os carros excedentes sao cortados.",
-        key=f"qtd_grid{key_suffix}")
+        f"com reservas e jovens do mercado; abaixo, os carros excedentes sao cortados.",
+        key=f"qtd_grid{key_suffix}",
+    )
 
 
 def tela_inicial():
     cabecalho_inicial()
-    st.caption("Remake de fã inspirado no *Cockpit Manager '14* (Cartola Games) e na "
-               "[DB F1 2026 by Jonathan Daniel]"
-               "(http://cockpitmanager.blogspot.com/2026/05/db-f1-2026-v10-by-jonathan-daniel.html). "
-               "Escolha uma **base de dados (DB)**, a sua equipe e **quantos pilotos terá o grid** — "
-               "ou crie a sua própria categoria na aba 🛠️ **Criar / editar DB**.")
+    st.caption(
+        "Remake de fã inspirado no *Cockpit Manager '14* (Cartola Games) e na "
+        "[DB F1 2026 by Jonathan Daniel]"
+        "(http://cockpitmanager.blogspot.com/2026/05/db-f1-2026-v10-by-jonathan-daniel.html). "
+        "Escolha uma **base de dados (DB)**, a sua equipe e **quantos pilotos terá o grid** — "
+        "ou crie a sua própria categoria na aba 🛠️ **Criar / editar DB**."
+    )
 
     disp = dbs_disponiveis()
     db_chave = st.selectbox(
-        "📚 Base de dados (DB)", list(disp.keys()),
-        format_func=lambda k: f"{disp[k]['meta'].get('nome', k)} — {disp[k]['meta'].get('categoria', '')}")
+        "📚 Base de dados (DB)",
+        list(disp.keys()),
+        format_func=lambda k: f"{disp[k]['meta'].get('nome', k)} — {disp[k]['meta'].get('categoria', '')}",
+    )
     sel_db = disp[db_chave]
     if sel_db["meta"].get("anos_historicos"):
         _anos = [int(a) for a in sel_db["meta"]["anos_historicos"]]
         ano_hist = st.selectbox(
-            "📅 Temporada histórica", _anos,
+            "📅 Temporada histórica",
+            _anos,
             help="Como no original: escolha o ano — grids, equipes, motores, calendário e "
-                 "pontuação daquela temporada (décadas de 1950 a 2020).")
+            "pontuação daquela temporada (décadas de 1950 a 2020).",
+        )
         _norm_h, _erros_h, _ = dbsmod.validar_e_normalizar(dbsmod.db_f1_historica(ano_hist))
         if _norm_h:
             sel_db = _norm_h
@@ -447,74 +492,139 @@ def tela_inicial():
     if meta.get("descricao"):
         st.info(meta["descricao"])
     tem_cancelavel = any(e.get("cancelavel") for e in sel_db["calendario"])
-    st.text_input("👤 Seu nome (gerente)", value="", key="gerente", placeholder="ex.: Vick",
-                  help="Como no original: seu nome aparece no topo do Escritório "
-                       "(\"Vick 1999, 2ª etapa\").")
+    st.text_input(
+        "👤 Seu nome (gerente)",
+        value="",
+        key="gerente",
+        placeholder="ex.: Vick",
+        help='Como no original: seu nome aparece no topo do Escritório ("Vick 1999, 2ª etapa").',
+    )
 
     tab_equipe, tab_criar, tab_editor, tab_load = st.tabs(
-        ["🏁 Escolher uma equipe", "🆕 Criar minha equipe", "🛠️ Criar / editar DB", "💾 Carregar save"])
+        ["🏁 Escolher uma equipe", "🆕 Criar minha equipe", "🛠️ Criar / editar DB", "💾 Carregar save"]
+    )
 
     with tab_equipe:
-        nomes = {e["id"]: f"[{bnd.codigo_texto(e['bandeira'])}] {e['nome']} — carro {e['nivel_carro']:.0f} · caixa {sim.fmt_dinheiro_m(e['caixa'])}"
-                 for e in sel_db["equipes"]}
-        eq_id = st.selectbox(f"Sua equipe para {meta.get('ano', '')}", list(nomes.keys()), format_func=lambda x: nomes[x])
+        nomes = {
+            e[
+                "id"
+            ]: f"[{bnd.codigo_texto(e['bandeira'])}] {e['nome']} — carro {e['nivel_carro']:.0f} · caixa {sim.fmt_dinheiro_m(e['caixa'])}"
+            for e in sel_db["equipes"]
+        }
+        eq_id = st.selectbox(
+            f"Sua equipe para {meta.get('ano', '')}", list(nomes.keys()), format_func=lambda x: nomes[x]
+        )
         eq = next(e for e in sel_db["equipes"] if e["id"] == eq_id)
         mot = next((m for m in sel_db["motores"] if m["id"] == eq["motor_id"]), sel_db["motores"][0])
         rot = meta.get("rotulo_fornecedor", "Motor")
-        st.markdown(f'<div class="team-bar" style="background:linear-gradient(112deg,{eq["cor"]} 0%, rgba(13,17,26,.93) 58%, #0D111A 100%)">'
-                    f'<div class="team-main"><div class="team-flag">{bnd.img_bandeira(eq["bandeira"], 44)}</div>'
-                    f'<div><div class="kicker">{eq["pais"]}</div><h2>{eq["nome_completo"]}</h2>'
-                    f'<p>{rot} {"próprio" if eq.get("motor_proprio") else "cliente"}: <b>{mot["nome"]}</b> '
-                    f'(desempenho {mot["potencia"]}) · Prestígio: {eq["prestigio"]}</p></div></div></div>', unsafe_allow_html=True)
-        quad = sorted([p for p in sel_db["pilotos"] if p["equipe_id"] == eq_id],
-                      key=lambda p: {"P1": 0, "P2": 1, "P3": 2, "P4": 3, "teste": 4}.get(p["papel"], 5))
-        st.dataframe(pd.DataFrame([{
-            "Bandeira": bnd.url_bandeira(p['bandeira']), "Piloto": p['nome'], "#": p["numero"], "Idade": p["idade"],
-            "Função": {"P1": "1o piloto", "P2": "2o piloto", "P3": "3o piloto", "P4": "4o piloto", "teste": "Testes/reserva"}.get(p["papel"], p["papel"]),
-            "Overall": sim.overall(p), "Salário/corrida": sim.fmt_dinheiro_k(p["salario_corrida"]),
-        } for p in quad]), hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
+        st.markdown(
+            f'<div class="team-bar" style="background:linear-gradient(112deg,{eq["cor"]} 0%, rgba(13,17,26,.93) 58%, #0D111A 100%)">'
+            f'<div class="team-main"><div class="team-flag">{bnd.img_bandeira(eq["bandeira"], 44)}</div>'
+            f'<div><div class="kicker">{eq["pais"]}</div><h2>{eq["nome_completo"]}</h2>'
+            f"<p>{rot} {'próprio' if eq.get('motor_proprio') else 'cliente'}: <b>{mot['nome']}</b> "
+            f"(desempenho {mot['potencia']}) · Prestígio: {eq['prestigio']}</p></div></div></div>",
+            unsafe_allow_html=True,
+        )
+        quad = sorted(
+            [p for p in sel_db["pilotos"] if p["equipe_id"] == eq_id],
+            key=lambda p: {"P1": 0, "P2": 1, "P3": 2, "P4": 3, "teste": 4}.get(p["papel"], 5),
+        )
+        st.dataframe(
+            pd.DataFrame(
+                [
+                    {
+                        "Bandeira": bnd.url_bandeira(p["bandeira"]),
+                        "Piloto": p["nome"],
+                        "#": p["numero"],
+                        "Idade": p["idade"],
+                        "Função": {
+                            "P1": "1o piloto",
+                            "P2": "2o piloto",
+                            "P3": "3o piloto",
+                            "P4": "4o piloto",
+                            "teste": "Testes/reserva",
+                        }.get(p["papel"], p["papel"]),
+                        "Overall": sim.overall(p),
+                        "Salário/corrida": sim.fmt_dinheiro_k(p["salario_corrida"]),
+                    }
+                    for p in quad
+                ]
+            ),
+            hide_index=True,
+            width="stretch",
+            column_config=CFG_BANDEIRA,
+        )
 
         qtd_grid = _slider_grid(sel_db)
         c1, c2, c3 = st.columns(3)
         incluir = True
         if tem_cancelavel:
             incluir = c1.checkbox("Calendário completo (inclui etapas canceláveis da DB)", value=True)
-        imp = c2.slider("Importância do carro (%)", 30, 90,
-                        int(float(meta.get("importancia_carro_sugerida", 0.6)) * 100), 5,
-                        help="Sugerido pela DB: F1 60%, Indy 45%, Stock 40%, DTM 50%.") / 100.0
+        imp = (
+            c2.slider(
+                "Importância do carro (%)",
+                30,
+                90,
+                int(float(meta.get("importancia_carro_sugerida", 0.6)) * 100),
+                5,
+                help="Sugerido pela DB: F1 60%, Indy 45%, Stock 40%, DTM 50%.",
+            )
+            / 100.0
+        )
         semente = c3.number_input("semente (aleatoriedade)", 1, 99999, 2026)
         if st.button("🚥 Iniciar carreira", type="primary", width="stretch"):
-            st.session_state.game = sim.criar_novo_jogo(eq_id, int(semente), incluir, imp,
-                                                        db_dados=sel_db, qtd_pilotos=qtd_grid)
+            st.session_state.game = sim.criar_novo_jogo(
+                eq_id, int(semente), incluir, imp, db_dados=sel_db, qtd_pilotos=qtd_grid
+            )
             st.session_state.game["gerente"] = str(st.session_state.get("gerente", "") or "").strip()
             st.session_state.fds = None
             st.session_state.menu = MENUS[0]
-            flash("success", f"Bem-vindo ao comando da {eq['nome']}! Primeira parada: "
-                             f"{sel_db['calendario'][0]['gp']}. Grid com {qtd_grid} pilotos.")
+            flash(
+                "success",
+                f"Bem-vindo ao comando da {eq['nome']}! Primeira parada: "
+                f"{sel_db['calendario'][0]['gp']}. Grid com {qtd_grid} pilotos.",
+            )
             st.rerun()
 
     with tab_criar:
-        st.write(f"Entre como **equipe extra** no grid da DB **{meta.get('nome')}**, do seu jeito — "
-                 f"como no modo 'nova equipe' do original. O grid terá o tamanho natural da DB + os seus 2 carros.")
+        st.write(
+            f"Entre como **equipe extra** no grid da DB **{meta.get('nome')}**, do seu jeito — "
+            f"como no modo 'nova equipe' do original. O grid terá o tamanho natural da DB + os seus 2 carros."
+        )
         c1, c2 = st.columns(2)
         nome_custom = c1.text_input("Nome da equipe", "Minha Equipe")
         pais_custom = c2.text_input("País sede", "Brasil")
         cor_custom = c1.color_picker("Cor do carro", "#009C3B")
         fornecedores_disp: list[dict] = [m for m in sel_db["motores"] if not m.get("proprio_de") and m["id"] != "fia"]
-        mot_custom = c2.selectbox(f"{meta.get('rotulo_fornecedor', 'Motor')}", fornecedores_disp,
-                                  format_func=lambda m: f"{m['nome']} — desempenho {m['potencia']} · US$ {m['preco']:.0f} mi/ano")
+        mot_custom = c2.selectbox(
+            f"{meta.get('rotulo_fornecedor', 'Motor')}",
+            fornecedores_disp,
+            format_func=lambda m: f"{m['nome']} — desempenho {m['potencia']} · US$ {m['preco']:.0f} mi/ano",
+        )
         assert mot_custom is not None  # selectbox com lista não vazia sempre escolhe um valor
-        perfil = st.radio("Perfil do projeto", ["🥾 Estreante pé-rapado", "💼 Investidor sério", "🏭 Projeto de montadora"],
-                          horizontal=True)
-        perfil_map = {"🥾 Estreante pé-rapado": (70.0, 55, 35), "💼 Investidor sério": (140.0, 62, 50),
-                      "🏭 Projeto de montadora": (190.0, 70, 60)}
+        perfil = st.radio(
+            "Perfil do projeto",
+            ["🥾 Estreante pé-rapado", "💼 Investidor sério", "🏭 Projeto de montadora"],
+            horizontal=True,
+        )
+        perfil_map = {
+            "🥾 Estreante pé-rapado": (70.0, 55, 35),
+            "💼 Investidor sério": (140.0, 62, 50),
+            "🏭 Projeto de montadora": (190.0, 70, 60),
+        }
         caixa_c, carro_c, prest_c = perfil_map[perfil]
         livres = [p for p in sel_db["pilotos"] if p["papel"] == "livre"]
         if len(livres) < 3:
-            st.warning("Esta DB tem poucos pilotos livres para montar uma equipe nova. "
-                       "Edite a DB na aba 🛠️ e adicione pilotos 'livre', ou escolha outra DB.")
+            st.warning(
+                "Esta DB tem poucos pilotos livres para montar uma equipe nova. "
+                "Edite a DB na aba 🛠️ e adicione pilotos 'livre', ou escolha outra DB."
+            )
         else:
-            fmt_p = lambda pid: next(f"[{bnd.codigo_texto(p['bandeira'])}] {p['nome']} (ovr {sim.overall(p)}, {p['idade']} anos)" for p in livres if p["id"] == pid)
+            fmt_p = lambda pid: next(
+                f"[{bnd.codigo_texto(p['bandeira'])}] {p['nome']} (ovr {sim.overall(p)}, {p['idade']} anos)"
+                for p in livres
+                if p["id"] == pid
+            )
             ids_livres = [p["id"] for p in livres]
             c1, c2, c3 = st.columns(3)
             p1 = c1.selectbox("1o piloto", ids_livres, format_func=fmt_p)
@@ -523,18 +633,36 @@ def tela_inicial():
             if len({p1, p2, pt}) < 3:
                 st.error("Escolha três pilotos diferentes.")
             elif st.button("🚥 Fundar equipe e iniciar", type="primary", width="stretch"):
-                eq_c = {"id": "custom", "nome": nome_custom, "nome_completo": nome_custom,
-                        "pais": pais_custom, "bandeira": "🏁", "cor": cor_custom,
-                        "motor_id": mot_custom["id"], "motor_proprio": False, "nivel_carro": carro_c,
-                        "confiabilidade": 84, "caixa": caixa_c, "prestigio": prest_c,
-                        "investimento_corrida": 1000, "titulos_construtores": 0,
-                        "patrocinador": "Lanchonetes BigBurguer"}
-                contr = [(pid, papel, sim.salario_esperado(None, next(p for p in livres if p["id"] == pid), papel))
-                         for pid, papel in [(p1, "P1"), (p2, "P2"), (pt, "teste")]]
-                st.session_state.game = sim.criar_novo_jogo("custom", 2026, True,
-                                                            float(meta.get("importancia_carro_sugerida", 0.6)),
-                                                            equipe_custom=eq_c, pilotos_custom=contr,
-                                                            db_dados=sel_db)
+                eq_c = {
+                    "id": "custom",
+                    "nome": nome_custom,
+                    "nome_completo": nome_custom,
+                    "pais": pais_custom,
+                    "bandeira": "🏁",
+                    "cor": cor_custom,
+                    "motor_id": mot_custom["id"],
+                    "motor_proprio": False,
+                    "nivel_carro": carro_c,
+                    "confiabilidade": 84,
+                    "caixa": caixa_c,
+                    "prestigio": prest_c,
+                    "investimento_corrida": 1000,
+                    "titulos_construtores": 0,
+                    "patrocinador": "Lanchonetes BigBurguer",
+                }
+                contr = [
+                    (pid, papel, sim.salario_esperado(None, next(p for p in livres if p["id"] == pid), papel))
+                    for pid, papel in [(p1, "P1"), (p2, "P2"), (pt, "teste")]
+                ]
+                st.session_state.game = sim.criar_novo_jogo(
+                    "custom",
+                    2026,
+                    True,
+                    float(meta.get("importancia_carro_sugerida", 0.6)),
+                    equipe_custom=eq_c,
+                    pilotos_custom=contr,
+                    db_dados=sel_db,
+                )
                 st.session_state.game["gerente"] = str(st.session_state.get("gerente", "") or "").strip()
                 st.session_state.fds = None
                 st.session_state.menu = MENUS[0]
@@ -550,9 +678,17 @@ def tela_inicial():
             try:
                 dados = json.loads(up.read().decode("utf-8"))
                 assert "equipes" in dados and "pilotos" in dados and "ano" in dados
-                dados.setdefault("meta", {"nome": "Save (F1 2026)", "categoria": "Fórmula 1",
-                                          "rotulo_fornecedor": "Motor", "rotulo_corrida2": "Sprint",
-                                          "pontos_corrida": db.PONTOS_CORRIDA, "pontos_corrida2": db.PONTOS_SPRINT})
+                dados.setdefault(
+                    "meta",
+                    {
+                        "nome": "Save (F1 2026)",
+                        "categoria": "Fórmula 1",
+                        "rotulo_fornecedor": "Motor",
+                        "rotulo_corrida2": "Sprint",
+                        "pontos_corrida": db.PONTOS_CORRIDA,
+                        "pontos_corrida2": db.PONTOS_SPRINT,
+                    },
+                )
                 dados.setdefault("patrocinadores", db.PATROCINADORES)
                 dados.setdefault("calendario_base", dados.get("calendario", []))
                 st.session_state.game = dados
@@ -566,8 +702,14 @@ def tela_inicial():
 # ======================================================================
 #  COMPONENTES REUTILIZÁVEIS
 # ======================================================================
-ROTULOS_PAPEL = {"P1": "1o piloto", "P2": "2o piloto", "P3": "3o piloto", "P4": "4o piloto",
-                 "teste": "Testes/reserva", "livre": "Livre"}
+ROTULOS_PAPEL = {
+    "P1": "1o piloto",
+    "P2": "2o piloto",
+    "P3": "3o piloto",
+    "P4": "4o piloto",
+    "teste": "Testes/reserva",
+    "livre": "Livre",
+}
 
 
 def meta_game(game):
@@ -584,16 +726,32 @@ def rot_corrida2(game):
 
 def df_pilotos_equipe(game, equipe_id):
     linhas = []
-    for p in sorted([x for x in game["pilotos"] if x["equipe_id"] == equipe_id and not x["aposentado"]],
-                    key=lambda x: {"P1": 0, "P2": 1, "P3": 2, "P4": 3, "teste": 4}.get(x["papel"], 5)):
+    for p in sorted(
+        [x for x in game["pilotos"] if x["equipe_id"] == equipe_id and not x["aposentado"]],
+        key=lambda x: {"P1": 0, "P2": 1, "P3": 2, "P4": 3, "teste": 4}.get(x["papel"], 5),
+    ):
         a = p["atributos"]
-        linhas.append({"Bandeira": bnd.url_bandeira(p['bandeira']), "Piloto": p['nome'], "#": p["numero"], "Idade": p["idade"],
-                       "Função": ROTULOS_PAPEL.get(p["papel"], p["papel"]),
-                       "Overall": sim.overall(p), "Velocidade": a["velocidade"], "Chuva": a["chuva"],
-                       "Concentração": a["concentracao"], "Largada": a["largada"],
-                       "Ultrapassagem": a["ultrapassagem"], "Acerto": a["acerto"], "Físico": a["fisico"],
-                       "Forma": p["forma"], "Pontos": p["pontos"],
-                       "Salário/corrida": p["salario_corrida"], "Contrato": f"{p['contrato_anos']} ano(s)"})
+        linhas.append(
+            {
+                "Bandeira": bnd.url_bandeira(p["bandeira"]),
+                "Piloto": p["nome"],
+                "#": p["numero"],
+                "Idade": p["idade"],
+                "Função": ROTULOS_PAPEL.get(p["papel"], p["papel"]),
+                "Overall": sim.overall(p),
+                "Velocidade": a["velocidade"],
+                "Chuva": a["chuva"],
+                "Concentração": a["concentracao"],
+                "Largada": a["largada"],
+                "Ultrapassagem": a["ultrapassagem"],
+                "Acerto": a["acerto"],
+                "Físico": a["fisico"],
+                "Forma": p["forma"],
+                "Pontos": p["pontos"],
+                "Salário/corrida": p["salario_corrida"],
+                "Contrato": f"{p['contrato_anos']} ano(s)",
+            }
+        )
     return pd.DataFrame(linhas)
 
 
@@ -602,8 +760,9 @@ def barra_equipe(eq):
         f'<div class="team-bar" style="background:linear-gradient(112deg,{eq["cor"]} 0%, rgba(13,17,26,.93) 58%, #0D111A 100%)">'
         f'<div class="team-main"><div class="team-flag">{bnd.img_bandeira(eq["bandeira"], 44)}</div>'
         f'<div><div class="kicker">Sua equipe · {eq["pais"]}</div><h2>{eq["nome_completo"]}</h2>'
-        f'<p>Prestígio {eq["prestigio"]} · {eq.get("titulos_construtores", 0)} título(s) de construtores na história</p></div></div></div>',
-        unsafe_allow_html=True)
+        f"<p>Prestígio {eq['prestigio']} · {eq.get('titulos_construtores', 0)} título(s) de construtores na história</p></div></div></div>",
+        unsafe_allow_html=True,
+    )
 
 
 def _fmt_k_bruto(valor_k):
@@ -619,8 +778,7 @@ def _plinha(k, v, v_cor=None):
 
 def _painel(titulo, corpo):
     """Painel fechado (título + linhas) do Escritório."""
-    st.markdown(f'<div class="painel"><h4>{titulo}</h4><div class="corpo">{corpo}</div></div>',
-                unsafe_allow_html=True)
+    st.markdown(f'<div class="painel"><h4>{titulo}</h4><div class="corpo">{corpo}</div></div>', unsafe_allow_html=True)
 
 
 def _painel_ini(titulo):
@@ -629,7 +787,7 @@ def _painel_ini(titulo):
 
 
 def _painel_fim():
-    st.markdown('</div></div>', unsafe_allow_html=True)
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
 
 def painel_fim_temporada(game):
@@ -637,23 +795,36 @@ def painel_fim_temporada(game):
     st.success(f"🏁 **Fim da temporada {game['ano']}!**")
     if tab_p:
         camp = tab_p[0]
-        st.markdown(f"🏆 Campeão de Pilotos: {bnd.img_bandeira(camp['bandeira'])} **{camp['nome']}** "
-                    f"({sim.equipe(game, camp['equipe_id'])['nome']}) — {camp['pontos']} pts", unsafe_allow_html=True)
+        st.markdown(
+            f"🏆 Campeão de Pilotos: {bnd.img_bandeira(camp['bandeira'])} **{camp['nome']}** "
+            f"({sim.equipe(game, camp['equipe_id'])['nome']}) — {camp['pontos']} pts",
+            unsafe_allow_html=True,
+        )
     if tab_c:
-        st.markdown(f"🏭 Campeã de Construtores: {bnd.img_bandeira(tab_c[0]['bandeira'])} **{tab_c[0]['nome']}** — {tab_c[0]['pontos']} pts", unsafe_allow_html=True)
+        st.markdown(
+            f"🏭 Campeã de Construtores: {bnd.img_bandeira(tab_c[0]['bandeira'])} **{tab_c[0]['nome']}** — {tab_c[0]['pontos']} pts",
+            unsafe_allow_html=True,
+        )
     eqj = sim.equipe(game, game["equipe_jogador"])
     st.markdown(f"Sua equipe terminou em **{sim.posicao_equipe(game, eqj['id'])}º** com {eqj['pontos']} pontos.")
     if game["contratos_proxima"]:
-        st.info("✍️ Contratos já fechados para a próxima temporada: " +
-                ", ".join(sim.piloto(game, pid)["nome"] for pid in game["contratos_proxima"]))
+        st.info(
+            "✍️ Contratos já fechados para a próxima temporada: "
+            + ", ".join(sim.piloto(game, pid)["nome"] for pid in game["contratos_proxima"])
+        )
     else:
-        st.warning("Você não fechou nenhum contrato novo. Passe em **Pilotos & Contratos**, **Motores** e "
-                   "**Patrocinadores** antes de virar a temporada (renovações valem ouro!).")
+        st.warning(
+            "Você não fechou nenhum contrato novo. Passe em **Pilotos & Contratos**, **Motores** e "
+            "**Patrocinadores** antes de virar a temporada (renovações valem ouro!)."
+        )
     if st.button("📅 Virar a temporada (mercado, evolução dos pilotos, carro novo)", type="primary", width="stretch"):
         res = sim.virar_temporada(game)
         st.session_state.fds = None
-        flash("success", f"Temporada {game['ano']} começou! Campeões de {game['ano'] - 1}: "
-                         f"{res['campeao_pilotos']} / {res['campea_construtores']}.")
+        flash(
+            "success",
+            f"Temporada {game['ano']} começou! Campeões de {game['ano'] - 1}: "
+            f"{res['campeao_pilotos']} / {res['campea_construtores']}.",
+        )
         st.balloons()
         st.rerun()
 
@@ -674,7 +845,8 @@ def pagina_escritorio(game):
         f'<div class="office-head"><div class="quem">{quem}{game["ano"]}, {etapa_n}ª etapa</div>'
         f'<div class="time">{eqj["nome"]}</div>'
         f'<div class="fl">{bnd.img_bandeira(eqj["bandeira"], 30)}</div></div>',
-        unsafe_allow_html=True)
+        unsafe_allow_html=True,
+    )
     if fim:
         painel_fim_temporada(game)
         return
@@ -685,31 +857,40 @@ def pagina_escritorio(game):
         ex = sim.eixos_carro(eqj)
         conf = ex["confiabilidade"]
         conf_cor = "#4ADE80" if conf >= 85 else ("#FACC15" if conf >= 75 else "#F87171")
-        _painel("Carro", "".join([
-            _plinha("Aerodinâmica", f'{ex["aerodinamica"]}%'),
-            _plinha("Caixa de câmbio", f'{ex["cambio"]}%'),
-            _plinha("Freio", f'{ex["freio"]}%'),
-            _plinha("Sistema elétrico", f'{ex["eletrico"]}%'),
-            _plinha("Direção", f'{ex["direcao"]}%'),
-            _plinha("Confiabilidade", f'{conf}%', conf_cor),
-        ]))
-        _painel("Contratos",
-                _plinha(rot_fornecedor(game),
-                        f'{bnd.img_bandeira(eqj["bandeira"], 16)} {mot["nome"]}'
-                        + (" (próprio)" if eqj.get("motor_proprio") else "")))
+        _painel(
+            "Carro",
+            "".join(
+                [
+                    _plinha("Aerodinâmica", f"{ex['aerodinamica']}%"),
+                    _plinha("Caixa de câmbio", f"{ex['cambio']}%"),
+                    _plinha("Freio", f"{ex['freio']}%"),
+                    _plinha("Sistema elétrico", f"{ex['eletrico']}%"),
+                    _plinha("Direção", f"{ex['direcao']}%"),
+                    _plinha("Confiabilidade", f"{conf}%", conf_cor),
+                ]
+            ),
+        )
+        _painel(
+            "Contratos",
+            _plinha(
+                rot_fornecedor(game),
+                f"{bnd.img_bandeira(eqj['bandeira'], 16)} {mot['nome']}"
+                + (" (próprio)" if eqj.get("motor_proprio") else ""),
+            ),
+        )
 
     with col2:
         rot_p = {"P1": "1º Piloto", "P2": "2º Piloto", "P3": "3º Piloto", "P4": "4º Piloto"}
-        tits = sorted([p for p in game["pilotos"]
-                       if p["equipe_id"] == eqj["id"] and not p["aposentado"]
-                       and p["papel"] in rot_p],
-                      key=lambda p: list(rot_p).index(p["papel"]))
+        tits = sorted(
+            [p for p in game["pilotos"] if p["equipe_id"] == eqj["id"] and not p["aposentado"] and p["papel"] in rot_p],
+            key=lambda p: list(rot_p).index(p["papel"]),
+        )
         corpo_p = "".join(
-            _plinha(rot_p[p["papel"]], f'{bnd.img_bandeira(p["bandeira"], 16)} {p["nome"]}')
-            for p in tits)
+            _plinha(rot_p[p["papel"]], f"{bnd.img_bandeira(p['bandeira'], 16)} {p['nome']}") for p in tits
+        )
         teste = sim.piloto_teste(game, eqj["id"])
         if teste:
-            corpo_p += _plinha("P. Testes", f'{bnd.img_bandeira(teste["bandeira"], 16)} {teste["nome"]}')
+            corpo_p += _plinha("P. Testes", f"{bnd.img_bandeira(teste['bandeira'], 16)} {teste['nome']}")
         _painel("Pilotos", corpo_p or '<span class="k">Sem pilotos registrados.</span>')
 
         fa = game.get("financas_ano") or {}
@@ -717,20 +898,28 @@ def pagina_escritorio(game):
             fa = {"ano": int(game["ano"]), "receitas": 0.0, "despesas": 0.0}
         bal = round(float(fa["receitas"]) - float(fa["despesas"]), 1)
         bal_cor = "#4ADE80" if bal >= 0 else "#F87171"
-        _painel("Finanças", "".join([
-            _plinha("Receitas", _fmt_k_bruto(float(fa["receitas"]))),
-            _plinha("Despesas", _fmt_k_bruto(float(fa["despesas"]))),
-            _plinha(f"Balanço {game['ano']}", _fmt_k_bruto(bal), bal_cor),
-            _plinha("Caixa", _fmt_k_bruto(round(float(eqj["caixa"]) * 1000.0, 1))),
-        ]))
+        _painel(
+            "Finanças",
+            "".join(
+                [
+                    _plinha("Receitas", _fmt_k_bruto(float(fa["receitas"]))),
+                    _plinha("Despesas", _fmt_k_bruto(float(fa["despesas"]))),
+                    _plinha(f"Balanço {game['ano']}", _fmt_k_bruto(bal), bal_cor),
+                    _plinha("Caixa", _fmt_k_bruto(round(float(eqj["caixa"]) * 1000.0, 1))),
+                ]
+            ),
+        )
 
     with col3:
         novas = max(0, len(game["noticias"]) - int(game.get("noticias_lidas", 0)))
         aberto = bool(st.session_state.get("ver_noticias", False))
         _painel_ini("Notícias")
         uma = novas == 1
-        rot_novo = (f"📰 Você tem {novas} nova{'s' if not uma else ''} "
-                    f"notíci{'as' if not uma else 'a'}") if novas > 0 else "📰 Ver notícias"
+        rot_novo = (
+            (f"📰 Você tem {novas} nova{'s' if not uma else ''} notíci{'as' if not uma else 'a'}")
+            if novas > 0
+            else "📰 Ver notícias"
+        )
         if st.button(rot_novo, key="btn_noticias", width="stretch"):
             st.session_state.ver_noticias = not aberto
             if not aberto:
@@ -740,24 +929,32 @@ def pagina_escritorio(game):
             if not game["noticias"]:
                 st.caption("Sem notícias no paddock.")
             for n in game["noticias"][:8]:
-                _txt = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>",
-                              bnd.substituir_emojis(n["texto"]))
-                st.markdown(f'<div class="news-card"><span class="small">{n["ano"]} · '
-                            f'etapa {n["rodada"]}</span><br>{_txt}</div>', unsafe_allow_html=True)
+                _txt = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", bnd.substituir_emojis(n["texto"]))
+                st.markdown(
+                    f'<div class="news-card"><span class="small">{n["ano"]} · '
+                    f"etapa {n['rodada']}</span><br>{_txt}</div>",
+                    unsafe_allow_html=True,
+                )
         _painel_fim()
 
         etapa = game["calendario"][game["rodada"]]
         _painel_ini("Próxima corrida")
         st.markdown(
             _plinha("Circuito", etapa["circuito"])
-            + _plinha("Grande Prêmio", f'{bnd.img_bandeira(etapa["bandeira"], 16)} {etapa["gp"]}')
+            + _plinha("Grande Prêmio", f"{bnd.img_bandeira(etapa['bandeira'], 16)} {etapa['gp']}")
             + _plinha("Data", etapa["data"])
             + _plinha("Voltas", str(etapa["voltas"]))
             + (_plinha("Formato", f"⚡ {rot_corrida2(game)} + principal") if etapa["sprint"] else ""),
-            unsafe_allow_html=True)
-        st.button("▶️ CONTINUAR", type="primary", width="stretch",
-                  on_click=ir_para, args=("🏁 Corrida",),
-                  help=f"{etapa['gp']} — {etapa['circuito']} · {etapa['pais']}")
+            unsafe_allow_html=True,
+        )
+        st.button(
+            "▶️ CONTINUAR",
+            type="primary",
+            width="stretch",
+            on_click=ir_para,
+            args=("🏁 Corrida",),
+            help=f"{etapa['gp']} — {etapa['circuito']} · {etapa['pais']}",
+        )
         _painel_fim()
 
 
@@ -768,20 +965,38 @@ def obter_fds(game, etapa):
     chave = f"{game['ano']}-{game['rodada']}"
     if not st.session_state.fds or st.session_state.fds.get("chave") != chave:
         molhado = sim.sortear_clima(game, etapa)
-        st.session_state.fds = {"chave": chave, "molhado": molhado,
-                                "clima": sim.plano_clima(game, etapa, molhado),
-                                "grid": None, "sprint": None, "resultado": None, "resumo": None,
-                                "eventos": [], "treino": None, "treino_ok": False, "replay": None,
-                                "paddock_ok": False}
+        st.session_state.fds = {
+            "chave": chave,
+            "molhado": molhado,
+            "clima": sim.plano_clima(game, etapa, molhado),
+            "grid": None,
+            "sprint": None,
+            "resultado": None,
+            "resumo": None,
+            "eventos": [],
+            "treino": None,
+            "treino_ok": False,
+            "replay": None,
+            "paddock_ok": False,
+        }
     return st.session_state.fds
 
 
 def df_grid(game, grid):
-    return pd.DataFrame([{
-        "Pos": g["pos"], "Bandeira": bnd.url_bandeira(sim.piloto(game, g['piloto_id'])['bandeira']), "Piloto": sim.piloto(game, g['piloto_id'])['nome'],
-        "Equipe": sim.equipe(game, g["equipe_id"])["nome"], "": "⭐" if g["equipe_id"] == game["equipe_jogador"] else "",
-        "Tempo": fmt_tempo(g["tempo"]), "Gap": "—" if g["gap"] == 0 else f"+{g['gap']:.3f}",
-    } for g in grid])
+    return pd.DataFrame(
+        [
+            {
+                "Pos": g["pos"],
+                "Bandeira": bnd.url_bandeira(sim.piloto(game, g["piloto_id"])["bandeira"]),
+                "Piloto": sim.piloto(game, g["piloto_id"])["nome"],
+                "Equipe": sim.equipe(game, g["equipe_id"])["nome"],
+                "": "⭐" if g["equipe_id"] == game["equipe_jogador"] else "",
+                "Tempo": fmt_tempo(g["tempo"]),
+                "Gap": "—" if g["gap"] == 0 else f"+{g['gap']:.3f}",
+            }
+            for g in grid
+        ]
+    )
 
 
 def df_resultado(game, resultado):
@@ -789,14 +1004,23 @@ def df_resultado(game, resultado):
     for l in resultado:
         p = sim.piloto(game, l["piloto_id"])
         est = l["estrategia"]
-        linhas.append({
-            "Pos": l["pos"], "Bandeira": bnd.url_bandeira(p['bandeira']), "Piloto": p['nome'], "Equipe": sim.equipe(game, l["equipe_id"])["nome"],
-            "": "⭐" if l["equipe_id"] == game["equipe_jogador"] else "",
-            "Grid": l["grid"], "▲▼": l["grid"] - l["pos"],
-            "Pneu": est["pneu"], "Paradas": est["paradas"], "Ritmo": est["ritmo"],
-            "Gap/Status": l["status"] if l["dnf"] else ("Vencedor" if l["pos"] == 1 else f"+{l['gap_seg']:.1f}s"),
-            "VR": "⚡" if l.get("volta_rapida") else "", "Pontos": l["pontos"],
-        })
+        linhas.append(
+            {
+                "Pos": l["pos"],
+                "Bandeira": bnd.url_bandeira(p["bandeira"]),
+                "Piloto": p["nome"],
+                "Equipe": sim.equipe(game, l["equipe_id"])["nome"],
+                "": "⭐" if l["equipe_id"] == game["equipe_jogador"] else "",
+                "Grid": l["grid"],
+                "▲▼": l["grid"] - l["pos"],
+                "Pneu": est["pneu"],
+                "Paradas": est["paradas"],
+                "Ritmo": est["ritmo"],
+                "Gap/Status": l["status"] if l["dnf"] else ("Vencedor" if l["pos"] == 1 else f"+{l['gap_seg']:.1f}s"),
+                "VR": "⚡" if l.get("volta_rapida") else "",
+                "Pontos": l["pontos"],
+            }
+        )
     return pd.DataFrame(linhas)
 
 
@@ -812,8 +1036,7 @@ def _cor_texto(hex_cor):
 
 
 def _chip_equipe(eq):
-    return (f'<span class="eq-chip" style="background:{eq["cor"]};'
-            f'color:{_cor_texto(eq["cor"])}">{eq["nome"]}</span>')
+    return f'<span class="eq-chip" style="background:{eq["cor"]};color:{_cor_texto(eq["cor"])}">{eq["nome"]}</span>'
 
 
 def _barra_html(pct):
@@ -832,26 +1055,29 @@ def _cabecalho_treino(etapa):
         f'<div class="sessao-titulo">Treino</div>'
         f'<div class="sessao-circuito">{etapa["circuito"]}</div>'
         f'<div class="sessao-gp">{etapa["gp"]} {bnd.img_bandeira(etapa["bandeira"], 22)}</div>'
-        f'</div>', unsafe_allow_html=True)
+        f"</div>",
+        unsafe_allow_html=True,
+    )
 
 
 def _cabecalho_corrida(game, etapa, molhado, com_checkbox=False):
     """Cabeçalho da tela de corrida: GP — Etapa X de N, circuito e clima."""
     rodada = game["rodada"] + 1
     total = len(game["calendario"])
-    st.markdown(f'<div class="race-titulo">{etapa["gp"]} — Etapa {rodada} de {total}</div>',
-                unsafe_allow_html=True)
+    st.markdown(f'<div class="race-titulo">{etapa["gp"]} — Etapa {rodada} de {total}</div>', unsafe_allow_html=True)
     st.markdown(
         f'<div class="race-sub">{bnd.img_bandeira(etapa["bandeira"], 20)} {etapa["circuito"]}</div>',
-        unsafe_allow_html=True)
+        unsafe_allow_html=True,
+    )
     c1, c2 = st.columns([1, 1])
-    c1.markdown(f'**Clima:** {_clima_txt(molhado)}')
+    c1.markdown(f"**Clima:** {_clima_txt(molhado)}")
     if com_checkbox:
-        c2.checkbox("Ver pits/pneus", key="ver_pits",
-                    help="Mostra colunas de composto e paradas na tabela ao vivo.")
-        st.caption("📻 Em **cada parada** a prova pausa e abre a janela do **Pit Stop**: trocar de "
-                   "pneu (e qual composto) e o **ritmo do próximo stint**. Também dá para chamar o "
-                   "box a qualquer momento com o **Pit stop!**.")
+        c2.checkbox("Ver pits/pneus", key="ver_pits", help="Mostra colunas de composto e paradas na tabela ao vivo.")
+        st.caption(
+            "📻 Em **cada parada** a prova pausa e abre a janela do **Pit Stop**: trocar de "
+            "pneu (e qual composto) e o **ritmo do próximo stint**. Também dá para chamar o "
+            "box a qualquer momento com o **Pit stop!**."
+        )
 
 
 def _html_tabela_viva(game, linhas, mostrar_pits=False, meus_ids=()):
@@ -873,24 +1099,29 @@ def _html_tabela_viva(game, linhas, mostrar_pits=False, meus_ids=()):
         pos = l["pos"]
         cls_pos = "pos" + (" p1" if pos == 1 else " p2" if pos == 2 else " p3" if pos == 3 else "")
         if l.get("fora"):
-            ult = f'💥 {l["fora"]}'
+            ult = f"💥 {l['fora']}"
         elif l.get("box"):
             ult = f'<b style="color:#F59E0B">BOX</b> {fmt_tempo(l["tempo"])}'
         else:
             ult = fmt_tempo(l["tempo"]) if l.get("tempo") is not None else "—"
-        dif_ant = "—" if l.get("dif_ant") is None else f'+{l["dif_ant"]:.1f}'
+        dif_ant = "—" if l.get("dif_ant") is None else f"+{l['dif_ant']:.1f}"
         if l.get("dif1") is None or pos == 1:
             dif1 = "—"
         else:
-            dif1 = f'+{l["dif1"]:.1f}'
-        extra = f'<td>{l.get("pneu", "—")}</td><td>{l.get("pits", 0)}/{l.get("paradas", 0)}</td>' if mostrar_pits else ""
+            dif1 = f"+{l['dif1']:.1f}"
+        extra = (
+            f"<td>{l.get('pneu', '—')}</td><td>{l.get('pits', 0)}/{l.get('paradas', 0)}</td>" if mostrar_pits else ""
+        )
         corpo.append(
             f'{tr}<td class="{cls_pos}">{pos}º</td><td>{p["nome"]}</td>'
-            f'<td>{_chip_equipe(eq)}</td><td>{ult}</td>'
-            f'<td>{dif_ant}</td><td>{dif1}</td>{extra}</tr>')
-    return (f'<div class="sessao-card" style="padding-top:8px">'
-            f'<table class="tbl-viva"><thead><tr>{cab}</tr></thead>'
-            f'<tbody>{"".join(corpo)}</tbody></table></div>')
+            f"<td>{_chip_equipe(eq)}</td><td>{ult}</td>"
+            f"<td>{dif_ant}</td><td>{dif1}</td>{extra}</tr>"
+        )
+    return (
+        f'<div class="sessao-card" style="padding-top:8px">'
+        f'<table class="tbl-viva"><thead><tr>{cab}</tr></thead>'
+        f"<tbody>{''.join(corpo)}</tbody></table></div>"
+    )
 
 
 def _html_tabela_treino(game, grid, sessao, minuto):
@@ -909,12 +1140,16 @@ def _html_tabela_treino(game, grid, sessao, minuto):
         pos = i + 1
         cls_pos = "pos" + (" p1" if pos == 1 else " p2" if pos == 2 else " p3" if pos == 3 else "")
         tempo_txt = fmt_tempo(t) if t is not None else "—"
-        corpo.append(f'{tr}<td class="{cls_pos}">{pos}º</td><td>{p["nome"]}</td>'
-                     f'<td>{_chip_equipe(eq)}</td><td>{tempo_txt}</td></tr>')
+        corpo.append(
+            f'{tr}<td class="{cls_pos}">{pos}º</td><td>{p["nome"]}</td>'
+            f"<td>{_chip_equipe(eq)}</td><td>{tempo_txt}</td></tr>"
+        )
     cab = "<th>Pos.</th><th>Nome</th><th>Equipe</th><th>Melhor tempo</th>"
-    return (f'<div class="sessao-card" style="padding-top:8px">'
-            f'<table class="tbl-viva"><thead><tr>{cab}</tr></thead>'
-            f'<tbody>{"".join(corpo)}</tbody></table></div>')
+    return (
+        f'<div class="sessao-card" style="padding-top:8px">'
+        f'<table class="tbl-viva"><thead><tr>{cab}</tr></thead>'
+        f"<tbody>{''.join(corpo)}</tbody></table></div>"
+    )
 
 
 @st.fragment(run_every=0.5)
@@ -962,8 +1197,8 @@ def _pit_dismiss():
         except Exception:
             pass
         stt.setdefault("feed", []).append(
-            f"🚪 Janela do box fechada sem troca — **{nome}** segue na pista "
-            f"(volta {volta}).")
+            f"🚪 Janela do box fechada sem troca — **{nome}** segue na pista (volta {volta})."
+        )
     stt["pit_aberto"] = None
 
 
@@ -979,7 +1214,7 @@ def _atalhos_corrida():
     try:
         if os.path.isfile(ATALHOS_HTML):
             st.iframe(ATALHOS_HTML, height=0)
-    except Exception:       # noqa: BLE001 — atalhos são acessório, nunca derrubam a tela
+    except Exception:  # noqa: BLE001 — atalhos são acessório, nunca derrubam a tela
         pass
 
 
@@ -1027,13 +1262,13 @@ def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
     planejada = bool(ped.get("planejada", False))
     volta_pit = int(ped.get("volta") or lap)
     st.markdown('<div class="pit-titulo">Pit Stop</div>', unsafe_allow_html=True)
-    st.markdown(f"**Piloto:** {bnd.img_bandeira(p['bandeira'], 18)} {p['nome']}",
-                unsafe_allow_html=True)
+    st.markdown(f"**Piloto:** {bnd.img_bandeira(p['bandeira'], 18)} {p['nome']}", unsafe_allow_html=True)
     if planejada:
         st.markdown(
             f'<div class="radio-box">📻 <b>Muro:</b> {p["nome"]}, hora do pit stop '
-            f'(volta {volta_pit}/{voltas}). <b>Trocar de pneu?</b></div>',
-            unsafe_allow_html=True)
+            f"(volta {volta_pit}/{voltas}). <b>Trocar de pneu?</b></div>",
+            unsafe_allow_html=True,
+        )
     else:
         st.caption(f"Ordem do comando na volta {lap} de {voltas}.")
     exec_pits = [x for x in stt["pits"].get(pid, []) if x <= lap]
@@ -1043,25 +1278,29 @@ def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
     cond = sim.condicao_pista(plano_clima, volta_pit or lap)
     molhado_agora = cond == "molhado"
     opcoes = sim.PNEUS_MOLHADO + sim.PNEUS_SECO if molhado_agora else sim.PNEUS_SECO
-    pneu = st.selectbox("Novos pneus", opcoes, format_func=_rot_pneu,
-                        index=opcoes.index(prox) if prox in opcoes else 0,
-                        key=f"dlg_pneu_{pid}_{fds['chave']}")
+    pneu = st.selectbox(
+        "Novos pneus",
+        opcoes,
+        format_func=_rot_pneu,
+        index=opcoes.index(prox) if prox in opcoes else 0,
+        key=f"dlg_pneu_{pid}_{fds['chave']}",
+    )
     st.markdown(_chip_pista(plano_clima, volta_pit or lap), unsafe_allow_html=True)
     if molhado_agora and pneu in sim.PNEUS_SECO:
         st.error("⚠️ Slick na chuva — vai perder muito tempo na volta de saída.")
     if not molhado_agora and pneu in sim.PNEUS_MOLHADO:
         st.error("⚠️ Pneu de chuva no seco derrete em poucas voltas.")
     ritmo_atual = (stt.get("ritmos") or {}).get(pid, "Normal")
-    ritmo = st.radio("Ritmo do próximo stint", sim.RITMOS,
-                     index=sim.RITMOS.index(ritmo_atual),
-                     horizontal=True,
-                     help="Atacar = voltas mais rápidas e mais desgaste; "
-                          "Conservar = protege o pneu novo e o carro.",
-                     key=f"dlg_ritmo_{pid}_{fds['chave']}")
-    st.caption(f"Volta atual: **{lap} / {voltas}** · pneu no carro: **{prox}** · "
-               f"ritmo atual: **{ritmo_atual}**")
-    if st.button("Trocar pneu e voltar ✓", type="primary", width="stretch",
-                 key=f"dlg_confirma_{pid}_{fds['chave']}"):
+    ritmo = st.radio(
+        "Ritmo do próximo stint",
+        sim.RITMOS,
+        index=sim.RITMOS.index(ritmo_atual),
+        horizontal=True,
+        help="Atacar = voltas mais rápidas e mais desgaste; Conservar = protege o pneu novo e o carro.",
+        key=f"dlg_ritmo_{pid}_{fds['chave']}",
+    )
+    st.caption(f"Volta atual: **{lap} / {voltas}** · pneu no carro: **{prox}** · ritmo atual: **{ritmo_atual}**")
+    if st.button("Trocar pneu e voltar ✓", type="primary", width="stretch", key=f"dlg_confirma_{pid}_{fds['chave']}"):
         feitas = stt["pits"].setdefault(pid, [])
         if volta_pit not in feitas:
             feitas.append(volta_pit)
@@ -1070,8 +1309,8 @@ def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
         stt.setdefault("pneus_manual", {}).setdefault(pid, {})[n] = pneu
         stt.setdefault("ritmos", {})[pid] = ritmo
         stt.setdefault("feed", []).append(
-            f"🛠️ Box para **{p['nome']}** na volta {volta_pit} → pneu **{pneu}** · "
-            f"ritmo **{ritmo}**.")
+            f"🛠️ Box para **{p['nome']}** na volta {volta_pit} → pneu **{pneu}** · ritmo **{ritmo}**."
+        )
         stt["pit_aberto"] = None
         st.rerun()
     rotulo_fora = "Continuar na pista ✕" if planejada else "Cancelar ordem ✕"
@@ -1083,10 +1322,10 @@ def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
             stt.setdefault("ritmos", {})[pid] = ritmo
             stt.setdefault("feed", []).append(
                 f"🚫 **{p['nome']}** dispensou o box na volta {volta_pit} e segue na "
-                f"pista com pneu **{prox}** · ritmo **{ritmo}**.")
+                f"pista com pneu **{prox}** · ritmo **{ritmo}**."
+            )
         else:
-            stt.setdefault("feed", []).append(
-                f"🚫 Ordem de box cancelada para **{p['nome']}** na volta {lap}.")
+            stt.setdefault("feed", []).append(f"🚫 Ordem de box cancelada para **{p['nome']}** na volta {lap}.")
         stt["pit_aberto"] = None
         st.rerun()
 
@@ -1123,24 +1362,25 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
     meus_ids = {p["id"] for p in meus}
     # rivais param sozinhos; os seus pilotos recebem a janela (ou param sozinhos
     # se o "Perguntar em cada pit stop" do Paddock foi desmarcado)
-    auto = {pid: True if pid not in meus_ids else not perguntar.get(pid, True)
-            for pid in rep["info"]}
+    auto = {pid: True if pid not in meus_ids else not perguntar.get(pid, True) for pid in rep["info"]}
     sim.auto_pits(rep, lap, stt["pits"], auto, recusadas)
     if _pit_pedido(stt) is None and lap < voltas and not pausado:
-        pend = sim.pits_pendentes(rep, lap, stt["pits"], recusadas,
-                                  {pid: perguntar.get(pid, True) for pid in meus_ids},
-                                  apenas=meus_ids)
+        pend = sim.pits_pendentes(
+            rep, lap, stt["pits"], recusadas, {pid: perguntar.get(pid, True) for pid in meus_ids}, apenas=meus_ids
+        )
         for pid_pend, volta_pend in pend:
             if lap - volta_pend > 2:
                 # janela vencida (aba em segundo plano): o piloto já passou do box
                 rec = recusadas.setdefault(pid_pend, [])
                 if volta_pend not in rec:
                     rec.append(volta_pend)
-                    feed.append(f"⌛ Janela do box perdida na volta {volta_pend} — "
-                                f"**{sim.piloto(game, pid_pend)['nome']}** seguiu na pista.")
+                    feed.append(
+                        f"⌛ Janela do box perdida na volta {volta_pend} — "
+                        f"**{sim.piloto(game, pid_pend)['nome']}** seguiu na pista."
+                    )
                 continue
             stt["pit_aberto"] = {"pid": pid_pend, "volta": volta_pend, "planejada": True}
-            stt["pausa_t0"] = time.time()   # congela a prova já nesta volta
+            stt["pausa_t0"] = time.time()  # congela a prova já nesta volta
             st.session_state.pop(f"dlg_pneu_{pid_pend}_{fds['chave']}", None)
             st.session_state.pop(f"dlg_ritmo_{pid_pend}_{fds['chave']}", None)
             break
@@ -1148,8 +1388,9 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
     for pid, d in rep["info"].items():
         if d["dnf"] and d["volta_dnf"] <= lap and pid not in marcados:
             marcados.append(pid)
-            feed.append(f"💥 {sim.piloto(game, pid)['nome']} abandonou: "
-                        f"{d['motivo'].lower()} na volta {d['volta_dnf']}.")
+            feed.append(
+                f"💥 {sim.piloto(game, pid)['nome']} abandonou: {d['motivo'].lower()} na volta {d['volta_dnf']}."
+            )
     if rep.get("sc_lap") and lap >= rep["sc_lap"] and not stt.get("sc_ok"):
         stt["sc_ok"] = True
         feed.append("🟨 Safety Car agrupou o pelotão — estratégias embaralhadas!")
@@ -1157,36 +1398,47 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
         stt["concluido"] = True
         st.rerun()
     mostrar = bool(st.session_state.get("ver_pits", False))
-    ritmos = stt.setdefault("ritmos", {l["piloto_id"]: l["estrategia"].get("ritmo", "Normal")
-                                       for l in (fds.get("resultado") or [])})
+    ritmos = stt.setdefault(
+        "ritmos", {l["piloto_id"]: l["estrategia"].get("ritmo", "Normal") for l in (fds.get("resultado") or [])}
+    )
     pneus_man = stt.setdefault("pneus_manual", {})
     linhas = sim.linhas_replay(rep, lap, stt["pits"], pneus_man, ritmos)
     plano_clima = stt.get("clima") or fds.get("clima")
     cond = sim.condicao_pista(plano_clima, lap)
     cond_ant = stt.get("clima_visto")
     if cond_ant is not None and cond != cond_ant:
-        feed.append("🌧️ **A pista está molhando!** Pneu de chuva agora, chefe."
-                    if cond == "molhado" else
-                    "☀️ **A pista está secando!** Hora de voltar para o slick.")
+        feed.append(
+            "🌧️ **A pista está molhando!** Pneu de chuva agora, chefe."
+            if cond == "molhado"
+            else "☀️ **A pista está secando!** Hora de voltar para o slick."
+        )
     stt["clima_visto"] = cond
     c1, c2 = st.columns([2.3, 1], gap="medium")
     with c1:
         st.markdown(_html_tabela_viva(game, linhas, mostrar, meus_ids), unsafe_allow_html=True)
     with c2:
-        st.markdown(f'<div class="voltas-box"><div class="lab">Voltas</div>'
-                    f'<div class="n">{lap} / {voltas}</div></div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="voltas-box"><div class="lab">Voltas</div><div class="n">{lap} / {voltas}</div></div>',
+            unsafe_allow_html=True,
+        )
         st.markdown(_chip_pista(plano_clima, lap), unsafe_allow_html=True)
         if pausado:
             st.markdown('<div class="pausa-chip">⏸ Corrida pausada</div>', unsafe_allow_html=True)
         cc = st.columns([1.15, 1, 1, 1])
-        if cc[0].button("▶ Retomar" if pausado else "⏸ Pausar", key="pausar_corrida",
-                        help="Congela a prova para pensar com calma (atalho: espaço)."):
+        if cc[0].button(
+            "▶ Retomar" if pausado else "⏸ Pausar",
+            key="pausar_corrida",
+            help="Congela a prova para pensar com calma (atalho: espaço).",
+        ):
             stt["pausado"] = not pausado
             st.rerun()
         for col, opcao in zip(cc[1:], (1, 2, 4)):
-            if col.button(f"{opcao}×", key=f"vel_{opcao}",
-                          type="primary" if velocidade == opcao else "secondary",
-                          help=f"Correr em {opcao}× (atalho: {opcao})."):
+            if col.button(
+                f"{opcao}×",
+                key=f"vel_{opcao}",
+                type="primary" if velocidade == opcao else "secondary",
+                help=f"Correr em {opcao}× (atalho: {opcao}).",
+            ):
                 stt["velocidade"] = opcao
                 st.rerun()
         st.caption("⌨️ espaço pausa · 1/2/4 velocidade · P/O box do 1º/2º piloto")
@@ -1206,9 +1458,11 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
                 alerta = '<div class="alerta">⚠️ Pneu de chuva no seco — troque já!</div>'
             pergunta_ok = perguntar.get(p["id"], True)
             rec_p = recusadas.get(p["id"]) or []
-            proxima = next((x for x in rep["info"][p["id"]]["pits_plano"]
-                            if x not in exec_pits and x not in rec_p), None)
-            if _pit_pedido(stt) and _pit_pedido(stt).get("pid") == p["id"]:
+            proxima = next(
+                (x for x in rep["info"][p["id"]]["pits_plano"] if x not in exec_pits and x not in rec_p), None
+            )
+            pedido_pit = _pit_pedido(stt)
+            if pedido_pit is not None and pedido_pit.get("pid") == p["id"]:
                 prox_txt = "📻 <b>No box — responda a janela!</b>"
             elif proxima:
                 prox_txt = f"Próxima parada: volta {proxima}"
@@ -1218,32 +1472,39 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
                 f'<div class="box-piloto"><div class="papel">{papel}</div>'
                 f'<div class="nome">{bnd.img_bandeira(p["bandeira"], 18)} {p["nome"]}</div>'
                 f'<div class="mini">Paradas: {len(exec_pits)}/{plano} · Pneus: <b>{pneu}</b> · '
-                f'Pit: {"pergunta" if pergunta_ok else "automático"}</div>'
-                f'{_barra_html(vida)}'
+                f"Pit: {'pergunta' if pergunta_ok else 'automático'}</div>"
+                f"{_barra_html(vida)}"
                 f'<div class="mini">Vida do pneu: {vida * 100:.0f}%</div>'
                 f'<div class="mini">{prox_txt}</div>{alerta}</div>',
-                unsafe_allow_html=True)
+                unsafe_allow_html=True,
+            )
             # ---- estratégia ao vivo: ritmo e chamada de box ----
             rk = f"ritmo_vivo_{p['id']}_{fds['chave']}"
             if rk not in st.session_state or st.session_state[rk] != ritmo:
                 st.session_state[rk] = ritmo
-            novo_ritmo = st.radio("Ritmo", sim.RITMOS, key=rk,
-                                  help="Ajuste durante a corrida: Atacar acelera as voltas e "
-                                       "consome mais pneu; Conservar faz o contrário.")
+            novo_ritmo = st.radio(
+                "Ritmo",
+                sim.RITMOS,
+                key=rk,
+                help="Ajuste durante a corrida: Atacar acelera as voltas e "
+                "consome mais pneu; Conservar faz o contrário.",
+            )
             if novo_ritmo != ritmo:
                 ritmos[p["id"]] = novo_ritmo
                 feed.append(f"🎯 **{p['nome']}** mudou para ritmo **{novo_ritmo}** na volta {lap}.")
             restam = plano + 1 - len(exec_pits)  # dá pra forçar UMA parada extra
-            if st.button("Pit stop!", key=f"pit_{p['id']}_{fds['chave']}",
-                         disabled=(restam <= 0 or lap >= voltas),
-                         help="Abrir o Pit Stop: escolha os novos pneus e confirme a parada."):
+            if st.button(
+                "Pit stop!",
+                key=f"pit_{p['id']}_{fds['chave']}",
+                disabled=(restam <= 0 or lap >= voltas),
+                help="Abrir o Pit Stop: escolha os novos pneus e confirme a parada.",
+            ):
                 stt["pit_aberto"] = {"pid": p["id"], "volta": lap, "planejada": False}
-                stt["pausa_t0"] = time.time()   # prova congelada com a janela aberta
+                stt["pausa_t0"] = time.time()  # prova congelada com a janela aberta
                 st.session_state.pop(f"dlg_pneu_{p['id']}_{fds['chave']}", None)
                 st.session_state.pop(f"dlg_ritmo_{p['id']}_{fds['chave']}", None)
         if feed:
-            st.markdown('<div class="feed-race">' + "<br>".join(feed[-4:]) + "</div>",
-                        unsafe_allow_html=True)
+            st.markdown('<div class="feed-race">' + "<br>".join(feed[-4:]) + "</div>", unsafe_allow_html=True)
         if st.button("⏭️ Concluir corrida agora", key="concluir_corrida"):
             stt["pit_aberto"] = None
             stt["pulou"] = True
@@ -1267,25 +1528,26 @@ def pagina_corrida(game):
 
     st.markdown(
         f'<div class="race-hero"><div class="kicker">Etapa {game["rodada"] + 1} · {game["ano"]}</div>'
-        f'<h1>{bnd.img_bandeira(etapa["bandeira"], 36)} {etapa["gp"]}</h1>'
+        f"<h1>{bnd.img_bandeira(etapa['bandeira'], 36)} {etapa['gp']}</h1>"
         f'<p style="margin:0;color:#CBD5E1">{etapa["circuito"]} · {etapa["pais"]}</p></div>',
-        unsafe_allow_html=True)
+        unsafe_allow_html=True,
+    )
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Etapa", f"{game['rodada'] + 1}/{len(game['calendario'])} · {game['ano']}")
     c2.metric("Voltas", etapa["voltas"])
     c3.metric("Clima", "🌧️ Molhado" if molhado else "☀️ Seco")
     c4.metric("Formato", f"⚡ {rot_corrida2(game)} + principal" if etapa["sprint"] else "Corrida única")
-    st.caption(f"Características: peso do motor {etapa['potencia'] * 100:.0f}% · facilidade de ultrapassar "
-               f"{etapa['ultrap'] * 100:.0f}% · desgaste {etapa['desgaste']:.1f}/3 → estratégia típica: "
-               f"**{sim.paradas_ideais(etapa)} parada(s)**")
+    st.caption(
+        f"Características: peso do motor {etapa['potencia'] * 100:.0f}% · facilidade de ultrapassar "
+        f"{etapa['ultrap'] * 100:.0f}% · desgaste {etapa['desgaste']:.1f}/3 → estratégia típica: "
+        f"**{sim.paradas_ideais(etapa)} parada(s)**"
+    )
     previsao = sim.previsao_texto(fds.get("clima"))
-    st.markdown(f'<div class="previsao-tempo"><b>Previsão do tempo</b> · {previsao}</div>',
-                unsafe_allow_html=True)
+    st.markdown(f'<div class="previsao-tempo"><b>Previsão do tempo</b> · {previsao}</div>', unsafe_allow_html=True)
 
     # ---------------- estratégia: os ajustes ficam no Paddock (pneus/grid) e
     # no rádio ao vivo; aqui só nasce o padrão de cada piloto.
-    estrategias = {p["id"]: {"paradas": sim.paradas_ideais(etapa), "ritmo": "Normal"}
-                   for p in meus}
+    estrategias = {p["id"]: {"paradas": sim.paradas_ideais(etapa), "ritmo": "Normal"} for p in meus}
 
     # ---------------- sprint
     if etapa["sprint"]:
@@ -1296,14 +1558,21 @@ def pagina_corrida(game):
             colss = st.columns(len(meus))
             for col, p in zip(colss, meus):
                 with col, st.container(border=True):
-                    st.markdown(bnd.com_bandeira(p['bandeira'], f"**#{p['numero']} {p['nome']}**"), unsafe_allow_html=True)
-                    pneu_s = st.selectbox("Pneu de largada", opcoes_pneu,
-                                          index=0 if molhado else 1,
-                                          format_func=_rot_pneu,
-                                          key=f"pneu_s_{p['id']}_{fds['chave']}")
-                    est_s[p["id"]] = {"pneu": pneu_s,
-                                      "paradas": sim.paradas_ideais(etapa),
-                                      "ritmo": estrategias.get(p["id"], {}).get("ritmo", "Normal")}
+                    st.markdown(
+                        bnd.com_bandeira(p["bandeira"], f"**#{p['numero']} {p['nome']}**"), unsafe_allow_html=True
+                    )
+                    pneu_s = st.selectbox(
+                        "Pneu de largada",
+                        opcoes_pneu,
+                        index=0 if molhado else 1,
+                        format_func=_rot_pneu,
+                        key=f"pneu_s_{p['id']}_{fds['chave']}",
+                    )
+                    est_s[p["id"]] = {
+                        "pneu": pneu_s,
+                        "paradas": sim.paradas_ideais(etapa),
+                        "ritmo": estrategias.get(p["id"], {}).get("ritmo", "Normal"),
+                    }
             if st.button(f"▶️ Simular {rot_corrida2(game)}", width="stretch"):
                 grid_s = sim.simular_classificacao(game, etapa, molhado)
                 res_s, ev_s = sim.simular_corrida(game, etapa, grid_s, est_s, molhado, sprint=True)
@@ -1311,7 +1580,9 @@ def pagina_corrida(game):
                 fds["sprint"] = res_s
                 st.rerun()
         else:
-            st.dataframe(df_resultado(game, fds["sprint"]), hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
+            st.dataframe(
+                df_resultado(game, fds["sprint"]), hide_index=True, width="stretch", column_config=CFG_BANDEIRA
+            )
             st.caption(f"Pontos da {rot_corrida2(game)} já somados ao campeonato.")
 
     # ---------------- tela de treino classificatório
@@ -1325,15 +1596,20 @@ def pagina_corrida(game):
         cm1, cm2 = st.columns([3.2, 1])
         cm1.progress(0.0, text="⏱️ Tempo de treino restante: 60 min")
         cm2.markdown(f"**Clima:** {_clima_txt(molhado)}")
-        neutro = [{"piloto_id": p["id"], "equipe_id": p["equipe_id"], "pos": i + 1}
-                  for i, p in enumerate(sorted(
-                      sim.titulares(game),
-                      key=lambda x: (sim.equipe(game, x["equipe_id"])["nome"],
-                                     ["P1", "P2", "P3", "P4"].index(x["papel"])
-                                     if x["papel"] in ("P1", "P2", "P3", "P4") else 9)))]
+        neutro = [
+            {"piloto_id": p["id"], "equipe_id": p["equipe_id"], "pos": i + 1}
+            for i, p in enumerate(
+                sorted(
+                    sim.titulares(game),
+                    key=lambda x: (
+                        sim.equipe(game, x["equipe_id"])["nome"],
+                        ["P1", "P2", "P3", "P4"].index(x["papel"]) if x["papel"] in ("P1", "P2", "P3", "P4") else 9,
+                    ),
+                )
+            )
+        ]
         st.markdown(_html_tabela_treino(game, neutro, None, 0), unsafe_allow_html=True)
-        if st.button("⏱️ Iniciar treino", type="primary", width="stretch",
-                     key="iniciar_treino", disabled=bloqueado):
+        if st.button("⏱️ Iniciar treino", type="primary", width="stretch", key="iniciar_treino", disabled=bloqueado):
             grid = sim.simular_classificacao(game, etapa, molhado)
             fds["grid"] = grid
             fds["treino"] = sim.sessao_treino(game, etapa, molhado, grid)
@@ -1348,24 +1624,25 @@ def pagina_corrida(game):
         cm1, cm2 = st.columns([3.2, 1])
         cm1.progress(1.0, text="⏱️ Tempo de treino restante: 0 min")
         cm2.markdown(f"**Clima:** {_clima_txt(molhado)}")
-        st.markdown(_html_tabela_treino(game, fds["grid"], sess, int(sess["duracao"])),
-                    unsafe_allow_html=True)
+        st.markdown(_html_tabela_treino(game, fds["grid"], sess, int(sess["duracao"])), unsafe_allow_html=True)
         pole = sim.piloto(game, fds["grid"][0]["piloto_id"])
-        st.caption(f"🏆 **Pole position:** {pole['nome']} "
-                   f"({fmt_tempo(fds['grid'][0]['tempo'])}) · {len(fds['grid'])} no grid")
+        st.caption(
+            f"🏆 **Pole position:** {pole['nome']} ({fmt_tempo(fds['grid'][0]['tempo'])}) · {len(fds['grid'])} no grid"
+        )
         if not fds.get("treino_ok"):
             if st.button("➡️ Ir para corrida!", type="primary", width="stretch", key="ir_corrida"):
                 fds["treino_ok"] = True
-                flash("success", "Treino encerrado e grid confirmado — prepare a estratégia "
-                                 "e dê a largada na tela abaixo!")
+                flash(
+                    "success",
+                    "Treino encerrado e grid confirmado — prepare a estratégia e dê a largada na tela abaixo!",
+                )
                 st.rerun()
         else:
             st.caption("✅ Treino concluído — role até a tela da corrida e aperte **Dar largada!**")
 
     # ---------------- tela da corrida
     st.divider()
-    _cabecalho_corrida(game, etapa, molhado,
-                       com_checkbox=bool(rep_state) and not rep_state.get("concluido"))
+    _cabecalho_corrida(game, etapa, molhado, com_checkbox=bool(rep_state) and not rep_state.get("concluido"))
     if rep_state is not None and not rep_state.get("concluido"):
         _atalhos_corrida()
         _frag_corrida(game, etapa, molhado, fds, meus)
@@ -1375,71 +1652,103 @@ def pagina_corrida(game):
         c1, c2 = st.columns([2.3, 1], gap="medium")
         with c1:
             if fds.get("grid"):
-                linhas_ini = [{"pid": g["piloto_id"], "equipe_id": g["equipe_id"],
-                               "pos": g["pos"], "tempo": None, "dif_ant": None, "dif1": None,
-                               "box": False} for g in fds["grid"]]
-                st.markdown(_html_tabela_viva(game, linhas_ini, False, {p["id"] for p in meus}),
-                            unsafe_allow_html=True)
+                linhas_ini = [
+                    {
+                        "pid": g["piloto_id"],
+                        "equipe_id": g["equipe_id"],
+                        "pos": g["pos"],
+                        "tempo": None,
+                        "dif_ant": None,
+                        "dif1": None,
+                        "box": False,
+                    }
+                    for g in fds["grid"]
+                ]
+                st.markdown(_html_tabela_viva(game, linhas_ini, False, {p["id"] for p in meus}), unsafe_allow_html=True)
             else:
                 st.info("🏁 O grid de largada aparece aqui depois do treino.")
         with c2:
-            st.markdown(f'<div class="voltas-box"><div class="lab">Voltas</div>'
-                        f'<div class="n">0 / {etapa["voltas"]}</div></div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="voltas-box"><div class="lab">Voltas</div>'
+                f'<div class="n">0 / {etapa["voltas"]}</div></div>',
+                unsafe_allow_html=True,
+            )
         # ---- Paddock (fiel ao original): pneus com durabilidade, grid e aviso de pit stop
         st.markdown(
             f'<div class="paddock-head"><div class="paddock-kick">Paddock</div>'
             f'<div class="paddock-gp">{etapa["gp"]} — {etapa["voltas"]} voltas '
-            f'{bnd.img_bandeira(etapa["bandeira"], 20)}</div></div>', unsafe_allow_html=True)
+            f"{bnd.img_bandeira(etapa['bandeira'], 20)}</div></div>",
+            unsafe_allow_html=True,
+        )
         pit_auto = {}
         grid_pos = {g["piloto_id"]: g["pos"] for g in (fds.get("grid") or [])}
         colsp = st.columns(len(meus))
         for col, p in zip(colsp, meus):
             with col, st.container(border=True):
-                st.markdown(bnd.com_bandeira(p['bandeira'], f"**#{p['numero']} {p['nome']}** ({ROTULOS_PAPEL.get(p['papel'], p['papel'])})"), unsafe_allow_html=True)
-                pneu_pad = st.selectbox("Pneus", opcoes_pneu, index=0 if molhado else 1,
-                                        format_func=_rot_pneu,
-                                        key=f"pad_pneu_{p['id']}_{fds['chave']}")
+                st.markdown(
+                    bnd.com_bandeira(
+                        p["bandeira"], f"**#{p['numero']} {p['nome']}** ({ROTULOS_PAPEL.get(p['papel'], p['papel'])})"
+                    ),
+                    unsafe_allow_html=True,
+                )
+                pneu_pad = st.selectbox(
+                    "Pneus",
+                    opcoes_pneu,
+                    index=0 if molhado else 1,
+                    format_func=_rot_pneu,
+                    key=f"pad_pneu_{p['id']}_{fds['chave']}",
+                )
                 if molhado and pneu_pad in sim.PNEUS_SECO:
                     st.error("⚠️ Pneu slick na chuva?! Isso vai doer...")
                 if not molhado and pneu_pad in sim.PNEUS_MOLHADO:
                     st.error("⚠️ Pneu de chuva no seco derrete em 3 voltas!")
-                estrategias.setdefault(p["id"],
-                                       {"paradas": sim.paradas_ideais(etapa), "ritmo": "Normal"})
+                estrategias.setdefault(p["id"], {"paradas": sim.paradas_ideais(etapa), "ritmo": "Normal"})
                 estrategias[p["id"]]["pneu"] = pneu_pad
                 pos = grid_pos.get(p["id"])
                 st.markdown(f"**Grid:** {f'{pos}º lugar' if pos else '—'}")
                 pit_auto[p["id"]] = st.checkbox(
-                    "Perguntar em cada pit stop", value=True,
+                    "Perguntar em cada pit stop",
+                    value=True,
                     help="A cada parada planejada abre a janela do Pit Stop para você "
-                         "decidir: trocar o pneu (e qual composto) e o novo ritmo. "
-                         "Desmarque para o box fazer as paradas sozinho.",
-                    key=f"pad_perg_{p['id']}_{fds['chave']}")
+                    "decidir: trocar o pneu (e qual composto) e o novo ritmo. "
+                    "Desmarque para o box fazer as paradas sozinho.",
+                    key=f"pad_perg_{p['id']}_{fds['chave']}",
+                )
         if st.button("✅ Confirmar", type="primary", width="stretch", key="paddock_confirmar"):
             fds["paddock_ok"] = True
-            flash("success", "Paddock confirmado — pneus e avisos de pit stop valendo. "
-                             "Agora é só dar a largada!")
+            flash("success", "Paddock confirmado — pneus e avisos de pit stop valendo. Agora é só dar a largada!")
             st.rerun()
         if fds.get("paddock_ok"):
             st.caption("✅ Paddock confirmado — estratégia valendo para a largada.")
         paddock_ok = bool(fds.get("paddock_ok"))
         pode_largar = treino_ok and bool(fds.get("grid")) and not bloqueado and paddock_ok
-        if st.button("🚦 Dar largada!", type="primary", width="stretch",
-                     key="dar_largada", disabled=not pode_largar):
+        if st.button("🚦 Dar largada!", type="primary", width="stretch", key="dar_largada", disabled=not pode_largar):
             res, ev = sim.simular_corrida(game, etapa, fds["grid"], estrategias, molhado)
-            fds["resumo"] = sim.aplicar_resultado(game, etapa, fds["grid"], res, molhado,
-                                                  eventos=ev)
+            fds["resumo"] = sim.aplicar_resultado(game, etapa, fds["grid"], res, molhado, eventos=ev)
             fds["resultado"], fds["eventos"] = res, ev
-            venceu = any(l["equipe_id"] == eqj["id"] and l["pos"] == 1 and not l["dnf"]
-                         for l in res)
+            venceu = any(l["equipe_id"] == eqj["id"] and l["pos"] == 1 and not l["dnf"] for l in res)
             fds["replay"] = {
                 "rep": sim.montar_replay(game, etapa, fds["grid"], res, molhado, eventos=ev),
-                "t0": time.time(), "pits": {}, "feed": [], "feed_dnf": [], "sc_ok": False,
-                "lap": 0, "pulou": False, "concluido": False, "venceu": venceu,
+                "t0": time.time(),
+                "pits": {},
+                "feed": [],
+                "feed_dnf": [],
+                "sc_ok": False,
+                "lap": 0,
+                "pulou": False,
+                "concluido": False,
+                "venceu": venceu,
                 "balloons_ok": False,
                 "ritmos": {pid: e.get("ritmo", "Normal") for pid, e in estrategias.items()},
-                "pneus_manual": {}, "pit_perguntar": pit_auto, "pit_aberto": None,
-                "pits_recusados": {}, "clima": fds.get("clima"),
-                "clima_visto": None, "pausado": False, "velocidade": 1}
+                "pneus_manual": {},
+                "pit_perguntar": pit_auto,
+                "pit_aberto": None,
+                "pits_recusados": {},
+                "clima": fds.get("clima"),
+                "clima_visto": None,
+                "pausado": False,
+                "velocidade": 1,
+            }
             st.rerun()
         if bloqueado:
             st.caption(f"🏁 Simule o {rot_corrida2(game)} primeiro.")
@@ -1452,19 +1761,24 @@ def pagina_corrida(game):
         if rep_state.get("venceu") and not rep_state.get("balloons_ok"):
             rep_state["balloons_ok"] = True
             st.balloons()
-        st.dataframe(df_resultado(game, fds["resultado"]), hide_index=True, width="stretch",
-                     column_config=CFG_BANDEIRA)
+        st.dataframe(df_resultado(game, fds["resultado"]), hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
         for ev in fds["eventos"]:
             st.markdown(f"- {ev}")
         if fds["resumo"]:
-            st.markdown("**💰 Balanço do fim de semana:** " +
-                        " · ".join(f"{d} {sim.fmt_dinheiro_k(v) if v >= 0 else '−' + sim.fmt_dinheiro_k(-v)}"
-                                   for d, v in fds["resumo"]) +
-                        f" → caixa atual: **{sim.fmt_dinheiro_m(eqj['caixa'])}**")
+            st.markdown(
+                "**💰 Balanço do fim de semana:** "
+                + " · ".join(
+                    f"{d} {sim.fmt_dinheiro_k(v) if v >= 0 else '−' + sim.fmt_dinheiro_k(-v)}" for d, v in fds["resumo"]
+                )
+                + f" → caixa atual: **{sim.fmt_dinheiro_m(eqj['caixa'])}**"
+            )
         prox = "Encerrar a temporada 🏁" if game["rodada"] >= len(game["calendario"]) else "Continuar ▶️"
         st.button(prox, type="primary", width="stretch", on_click=_continuar_da_corrida)
-    st.markdown(f'<div class="banner-circuito"><b>{etapa["circuito"]} — {etapa["gp"]}</b><br>'
-                f'Clima: {_clima_txt(molhado)}</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="banner-circuito"><b>{etapa["circuito"]} — {etapa["gp"]}</b><br>'
+        f"Clima: {_clima_txt(molhado)}</div>",
+        unsafe_allow_html=True,
+    )
 
 
 # ======================================================================
@@ -1473,7 +1787,9 @@ def pagina_corrida(game):
 def pagina_carro(game):
     eqj = sim.equipe(game, game["equipe_jogador"])
     mot = sim.motor(game, eqj["motor_id"])
-    titulo_pagina("Engenharia", "Carro & Investimentos", "Desenvolva o chassi, proteja a confiabilidade e acompanhe as rivais.")
+    titulo_pagina(
+        "Engenharia", "Carro & Investimentos", "Desenvolva o chassi, proteja a confiabilidade e acompanhe as rivais."
+    )
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Nível do chassi", f"{eqj['nivel_carro']:.1f}")
     c2.metric(f"Motor {mot['nome']}", f"{mot['potencia']} pot / {mot['confiabilidade']} conf")
@@ -1481,39 +1797,67 @@ def pagina_carro(game):
     c4.metric("Confiabilidade do carro", f"{eqj['confiabilidade']:.0f}")
 
     st.subheader("💸 Investimento por corrida")
-    inv = st.slider("Quanto investir no desenvolvimento a cada corrida (US$ mil)", 0, 3000,
-                    int(eqj["investimento_corrida"]), 50)
+    inv = st.slider(
+        "Quanto investir no desenvolvimento a cada corrida (US$ mil)", 0, 3000, int(eqj["investimento_corrida"]), 50
+    )
     eqj["investimento_corrida"] = inv
-    eqj["foco"] = st.radio("Foco do desenvolvimento",
-                           ["equilibrado", "chassi", "confiabilidade"],
-                           index=["equilibrado", "chassi", "confiabilidade"].index(eqj["foco"]),
-                           horizontal=True,
-                           format_func=lambda x: {"equilibrado": "⚖️ Equilibrado", "chassi": "🏎️ Chassi/aero (mais velocidade)",
-                                                  "confiabilidade": "🛡️ Confiabilidade (menos abandonos)"}[x])
+    eqj["foco"] = st.radio(
+        "Foco do desenvolvimento",
+        ["equilibrado", "chassi", "confiabilidade"],
+        index=["equilibrado", "chassi", "confiabilidade"].index(eqj["foco"]),
+        horizontal=True,
+        format_func=lambda x: {
+            "equilibrado": "⚖️ Equilibrado",
+            "chassi": "🏎️ Chassi/aero (mais velocidade)",
+            "confiabilidade": "🛡️ Confiabilidade (menos abandonos)",
+        }[x],
+    )
     teste = sim.piloto_teste(game, eqj["id"])
-    feedback = (sum(t["atributos"]["acerto"] for t in sim.titulares(game, eqj["id"])) / 2) * 0.7 + \
-               ((teste["atributos"]["acerto"] * 0.3) if teste else 21)
+    feedback = (sum(t["atributos"]["acerto"] for t in sim.titulares(game, eqj["id"])) / 2) * 0.7 + (
+        (teste["atributos"]["acerto"] * 0.3) if teste else 21
+    )
     ganho = (inv / 1000.0) * 0.22 * (feedback / 85.0) * max(0.12, (99.5 - eqj["nivel_carro"]) / 35.0)
-    st.info(f"Feedback dos pilotos (Acerto): **{feedback:.0f}** → ganho estimado de "
-            f"**+{ganho:.2f}** de nível por corrida. Piloto de testes com Acerto alto acelera tudo — "
-            f"o seu é {teste['nome'] if teste else '—'} (Acerto {teste['atributos']['acerto'] if teste else '—'}).")
-    st.caption("⚠️ Investir demais quebra o caixa (e sem caixa, sem motor decente na próxima temporada). "
-               "No CM14 original, esse era O erro fatal dos novatos.")
+    st.info(
+        f"Feedback dos pilotos (Acerto): **{feedback:.0f}** → ganho estimado de "
+        f"**+{ganho:.2f}** de nível por corrida. Piloto de testes com Acerto alto acelera tudo — "
+        f"o seu é {teste['nome'] if teste else '—'} (Acerto {teste['atributos']['acerto'] if teste else '—'})."
+    )
+    st.caption(
+        "⚠️ Investir demais quebra o caixa (e sem caixa, sem motor decente na próxima temporada). "
+        "No CM14 original, esse era O erro fatal dos novatos."
+    )
 
     st.subheader("📏 Nível das equipes (como em Campeonato → Equipes do original)")
     linhas = []
     for e in sorted(game["equipes"], key=lambda x: -sim.desempenho_carro(game, x)):
         m = sim.motor(game, e["motor_id"])
-        linhas.append({"Bandeira": bnd.url_bandeira(e['bandeira']), "Equipe": e['nome'], "": "⭐" if e["id"] == eqj["id"] else "",
-                       "Chassi": round(e["nivel_carro"], 1), "Motor": m["nome"],
-                       "Potência": m["potencia"], "Desempenho": round(sim.desempenho_carro(game, e), 1),
-                       "Confiabilidade": round(e["confiabilidade"]), "Prestígio": e["prestigio"],
-                       "Caixa (mi)": round(e["caixa"], 1)})
+        linhas.append(
+            {
+                "Bandeira": bnd.url_bandeira(e["bandeira"]),
+                "Equipe": e["nome"],
+                "": "⭐" if e["id"] == eqj["id"] else "",
+                "Chassi": round(e["nivel_carro"], 1),
+                "Motor": m["nome"],
+                "Potência": m["potencia"],
+                "Desempenho": round(sim.desempenho_carro(game, e), 1),
+                "Confiabilidade": round(e["confiabilidade"]),
+                "Prestígio": e["prestigio"],
+                "Caixa (mi)": round(e["caixa"], 1),
+            }
+        )
     df = pd.DataFrame(linhas)
-    st.dataframe(df, hide_index=True, width="stretch",
-                 column_config={**CFG_BANDEIRA,
-                                **{c: st.column_config.ProgressColumn(c, min_value=0, max_value=100, format="%.0f")
-                                   for c in ["Chassi", "Potência", "Desempenho", "Confiabilidade"]}})
+    st.dataframe(
+        df,
+        hide_index=True,
+        width="stretch",
+        column_config={
+            **CFG_BANDEIRA,
+            **{
+                c: st.column_config.ProgressColumn(c, min_value=0, max_value=100, format="%.0f")
+                for c in ["Chassi", "Potência", "Desempenho", "Confiabilidade"]
+            },
+        },
+    )
     st.bar_chart(df.set_index("Equipe")["Desempenho"])
 
 
@@ -1535,48 +1879,76 @@ def pagina_pilotos(game):
                 p = sim.piloto(game, pid)
                 col1, col2 = st.columns([5, 1])
                 marca = " · 📝 pré (sinal pago)" if c.get("pre") else ""
-                col1.markdown(bnd.com_bandeira(p['bandeira'], f"**{p['nome']}** — {c['papel']} · {sim.fmt_dinheiro_k(c['salario'])}/corrida · {c['anos']} ano(s){marca}"), unsafe_allow_html=True)
+                col1.markdown(
+                    bnd.com_bandeira(
+                        p["bandeira"],
+                        f"**{p['nome']}** — {c['papel']} · {sim.fmt_dinheiro_k(c['salario'])}/corrida · {c['anos']} ano(s){marca}",
+                    ),
+                    unsafe_allow_html=True,
+                )
                 if col2.button("Cancelar", key=f"canc_{pid}"):
                     del game["contratos_proxima"][pid]
                     if c.get("pre"):
-                        flash("warning", f"Pré-contrato de {p['nome']} cancelado — a sinalização de "
-                                         f"{sim.fmt_dinheiro_k(c.get('sinal', 0))} **não** é devolvida.")
+                        flash(
+                            "warning",
+                            f"Pré-contrato de {p['nome']} cancelado — a sinalização de "
+                            f"{sim.fmt_dinheiro_k(c.get('sinal', 0))} **não** é devolvida.",
+                        )
                     st.rerun()
 
     with tab2:
-        st.caption("Como no original: você negocia **durante** a temporada, mas o piloto só veste seu macacão "
-                   "na **próxima**. Salários são por corrida — ou feche na hora com um **pré-contrato** (sinal pago).")
+        st.caption(
+            "Como no original: você negocia **durante** a temporada, mas o piloto só veste seu macacão "
+            "na **próxima**. Salários são por corrida — ou feche na hora com um **pré-contrato** (sinal pago)."
+        )
         ativos: list[dict] = [p for p in game["pilotos"] if not p["aposentado"]]
         ativos.sort(key=lambda p: -sim.overall(p))
-        sel = st.selectbox("Piloto", ativos,
-                           format_func=lambda p: f"[{bnd.codigo_texto(p['bandeira'])}] {p['nome']} — ovr {sim.overall(p)} · {p['idade']} anos · "
-                                                 f"{(sim.equipe(game, p['equipe_id'])['nome'] if p['equipe_id'] else 'LIVRE')} ({p['papel']})")
+        sel = st.selectbox(
+            "Piloto",
+            ativos,
+            format_func=lambda p: (
+                f"[{bnd.codigo_texto(p['bandeira'])}] {p['nome']} — ovr {sim.overall(p)} · {p['idade']} anos · "
+                f"{(sim.equipe(game, p['equipe_id'])['nome'] if p['equipe_id'] else 'LIVRE')} ({p['papel']})"
+            ),
+        )
         assert sel is not None  # selectbox com lista não vazia sempre escolhe um valor
         a = sel["atributos"]
         st.bar_chart(pd.Series({db.ATRIBUTOS[k]: v for k, v in a.items()}))
-        st.caption(f"Auge: {sel['auge_inicio']}–{sel['auge_fim']} anos (platô) · Potencial: {sel['potencial']} · "
-                   f"Vitórias no save: {sel['vitorias']} · Títulos: {sel['titulos']}")
+        st.caption(
+            f"Auge: {sel['auge_inicio']}–{sel['auge_fim']} anos (platô) · Potencial: {sel['potencial']} · "
+            f"Vitórias no save: {sel['vitorias']} · Títulos: {sel['titulos']}"
+        )
         with st.form("form_contrato"):
             _vagas = list((game.get("vagas_por_equipe") or {}).get(eqj["id"], ["P1", "P2"])) + ["teste"]
-            papel = st.radio("Papel oferecido", _vagas, horizontal=True,
-                             format_func=lambda x: ROTULOS_PAPEL.get(x, x))
+            papel = st.radio("Papel oferecido", _vagas, horizontal=True, format_func=lambda x: ROTULOS_PAPEL.get(x, x))
             esperado = sim.salario_esperado(game, sel, papel)
-            salario = st.number_input(f"Salário oferecido (US$ mil/corrida) — o mercado pagaria ±{sim.fmt_dinheiro_k(esperado)}",
-                                      min_value=10, max_value=6000, value=int(esperado), step=10)
+            salario = st.number_input(
+                f"Salário oferecido (US$ mil/corrida) — o mercado pagaria ±{sim.fmt_dinheiro_k(esperado)}",
+                min_value=10,
+                max_value=6000,
+                value=int(esperado),
+                step=10,
+            )
             anos = st.slider("Duração (anos)", 1, 4, 2)
-            tipo = st.radio("Tipo de acordo",
-                            ["✍️ Proposta comum — grátis, ele pode recusar",
-                             "📝 Pré-contrato — fecha na hora, com sinal"],
-                            key="tipo_acordo",
-                            help="Como no original: o pré-contrato paga uma taxa de sinalização de 3 corridas do "
-                                 "salário AGORA e fecha o acordo sem chance de recusa. A taxa não é devolvida se "
-                                 "você cancelar (e some se o piloto se aposentar antes da virada).")
+            tipo = st.radio(
+                "Tipo de acordo",
+                ["✍️ Proposta comum — grátis, ele pode recusar", "📝 Pré-contrato — fecha na hora, com sinal"],
+                key="tipo_acordo",
+                help="Como no original: o pré-contrato paga uma taxa de sinalização de 3 corridas do "
+                "salário AGORA e fecha o acordo sem chance de recusa. A taxa não é devolvida se "
+                "você cancelar (e some se o piloto se aposentar antes da virada).",
+            )
             taxa = sim.taxa_sinal(int(salario))
             if tipo.startswith("📝"):
-                st.caption(f"💸 Sinal a pagar agora: **{sim.fmt_dinheiro_k(taxa)}** (3 corridas do salário) · "
-                           f"seu caixa: {sim.fmt_dinheiro_m(eqj['caixa'])}")
-            if st.form_submit_button("📝 Assinar pré-contrato" if tipo.startswith("📝") else "✍️ Fazer proposta",
-                                     type="primary", width="stretch"):
+                st.caption(
+                    f"💸 Sinal a pagar agora: **{sim.fmt_dinheiro_k(taxa)}** (3 corridas do salário) · "
+                    f"seu caixa: {sim.fmt_dinheiro_m(eqj['caixa'])}"
+                )
+            if st.form_submit_button(
+                "📝 Assinar pré-contrato" if tipo.startswith("📝") else "✍️ Fazer proposta",
+                type="primary",
+                width="stretch",
+            ):
                 if tipo.startswith("📝"):
                     ok, msg = sim.pre_contratar_piloto(game, sel["id"], papel, int(salario), anos)
                 else:
@@ -1587,11 +1959,22 @@ def pagina_pilotos(game):
     with tab3:
         linhas = []
         for p in sorted(ativos, key=lambda x: -x["pontos"]):
-            linhas.append({"Bandeira": bnd.url_bandeira(p['bandeira']), "Piloto": p['nome'], "Idade": p["idade"],
-                           "Equipe": sim.equipe(game, p["equipe_id"])["nome"] if p["equipe_id"] else "— LIVRE —",
-                           "Papel": p["papel"], "Overall": sim.overall(p), "Potencial": p["potencial"],
-                           "Pontos": p["pontos"], "Vitórias*": p["vitorias"], "Pódios*": p["podios"],
-                           "Títulos*": p["titulos"], "Salário": p["salario_corrida"]})
+            linhas.append(
+                {
+                    "Bandeira": bnd.url_bandeira(p["bandeira"]),
+                    "Piloto": p["nome"],
+                    "Idade": p["idade"],
+                    "Equipe": sim.equipe(game, p["equipe_id"])["nome"] if p["equipe_id"] else "— LIVRE —",
+                    "Papel": p["papel"],
+                    "Overall": sim.overall(p),
+                    "Potencial": p["potencial"],
+                    "Pontos": p["pontos"],
+                    "Vitórias*": p["vitorias"],
+                    "Pódios*": p["podios"],
+                    "Títulos*": p["titulos"],
+                    "Salário": p["salario_corrida"],
+                }
+            )
         st.dataframe(pd.DataFrame(linhas), hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
         st.caption("* Estatísticas acumuladas dentro deste save.")
 
@@ -1601,40 +1984,74 @@ def pagina_pilotos(game):
 # ======================================================================
 def pagina_motores(game):
     eqj = sim.equipe(game, game["equipe_jogador"])
-    titulo_pagina("Fornecedores", f"{rot_fornecedor(game)}s", "Desempenho de verdade custa caro. Ficar sem caixa sai mais caro ainda.")
+    titulo_pagina(
+        "Fornecedores",
+        f"{rot_fornecedor(game)}s",
+        "Desempenho de verdade custa caro. Ficar sem caixa sai mais caro ainda.",
+    )
     atual = sim.motor(game, eqj["motor_id"])
-    st.write(f"Motor atual: **{atual['nome']}** — potência {atual['potencia']}, confiabilidade {atual['confiabilidade']}"
-             + (" · **motor próprio** (custo interno reduzido; herança da equipe, como na DB: Audi/Ferrari/Mercedes/Red Bull)."
-                if eqj.get("motor_proprio") else f" · custo de US$ {atual['preco']:.0f} mi/temporada."))
-    df = pd.DataFrame([{"Motor": m["nome"], "": "⭐ atual" if m["id"] == eqj["motor_id"] else "",
-                        "Potência": m["potencia"], "Confiabilidade": m["confiabilidade"],
-                        "Preço (mi/ano)": m["preco"],
-                        "Obs.": ("de fábrica" if m["proprio_de"] else "independente/cliente")}
-                       for m in sorted(game["motores"], key=lambda x: -x["potencia"])])
-    st.dataframe(df, hide_index=True, width="stretch",
-                 column_config={c: st.column_config.ProgressColumn(c, min_value=0, max_value=100, format="%d")
-                                for c in ["Potência", "Confiabilidade"]})
+    st.write(
+        f"Motor atual: **{atual['nome']}** — potência {atual['potencia']}, confiabilidade {atual['confiabilidade']}"
+        + (
+            " · **motor próprio** (custo interno reduzido; herança da equipe, como na DB: Audi/Ferrari/Mercedes/Red Bull)."
+            if eqj.get("motor_proprio")
+            else f" · custo de US$ {atual['preco']:.0f} mi/temporada."
+        )
+    )
+    df = pd.DataFrame(
+        [
+            {
+                "Motor": m["nome"],
+                "": "⭐ atual" if m["id"] == eqj["motor_id"] else "",
+                "Potência": m["potencia"],
+                "Confiabilidade": m["confiabilidade"],
+                "Preço (mi/ano)": m["preco"],
+                "Obs.": ("de fábrica" if m["proprio_de"] else "independente/cliente"),
+            }
+            for m in sorted(game["motores"], key=lambda x: -x["potencia"])
+        ]
+    )
+    st.dataframe(
+        df,
+        hide_index=True,
+        width="stretch",
+        column_config={
+            c: st.column_config.ProgressColumn(c, min_value=0, max_value=100, format="%d")
+            for c in ["Potência", "Confiabilidade"]
+        },
+    )
     for m in game["motores"]:
         st.caption(f"**{m['nome']}** — {m['desc']}")
 
     if eqj.get("motor_proprio"):
-        st.info("Equipes com motor próprio não trocam de fornecedor (fidelidade à DB). "
-                "Seu motor evolui um pouco a cada temporada junto com o investimento da fábrica.")
+        st.info(
+            "Equipes com motor próprio não trocam de fornecedor (fidelidade à DB). "
+            "Seu motor evolui um pouco a cada temporada junto com o investimento da fábrica."
+        )
     else:
         st.subheader(f"🔁 Contrato para {game['ano'] + 1}")
         disponiveis: list[dict] = [m for m in game["motores"] if not m["proprio_de"] and m["id"] != "fia"]
-        escolhido = st.selectbox("Próximo motor", disponiveis,
-                                 format_func=lambda m: f"{m['nome']} — pot {m['potencia']} · US$ {m['preco']:.0f} mi/ano")
+        escolhido = st.selectbox(
+            "Próximo motor",
+            disponiveis,
+            format_func=lambda m: f"{m['nome']} — pot {m['potencia']} · US$ {m['preco']:.0f} mi/ano",
+        )
         assert escolhido is not None  # selectbox com lista não vazia sempre escolhe um valor
         if game["motor_proxima"]:
-            st.success(f"Acordo fechado: motor **{sim.motor(game, game['motor_proxima'])['nome']}** em {game['ano'] + 1} "
-                       f"(o valor é debitado na virada da temporada).")
+            st.success(
+                f"Acordo fechado: motor **{sim.motor(game, game['motor_proxima'])['nome']}** em {game['ano'] + 1} "
+                f"(o valor é debitado na virada da temporada)."
+            )
         if st.button("✍️ Assinar contrato de motor", type="primary"):
             game["motor_proxima"] = escolhido["id"]
-            flash("success", f"Motor {escolhido['nome']} garantido para {game['ano'] + 1} — se houver caixa para pagar!")
+            flash(
+                "success", f"Motor {escolhido['nome']} garantido para {game['ano'] + 1} — se houver caixa para pagar!"
+            )
             st.rerun()
-        st.caption("🚨 Se na virada da temporada o caixa não cobrir o motor, entra o lendário "
-                   "**motor FIA compulsório (50% de potência)** — pesadelo de todo jogador de CM14.")
+        st.caption(
+            "🚨 Se na virada da temporada o caixa não cobrir o motor, entra o lendário "
+            "**motor FIA compulsório (50% de potência)** — pesadelo de todo jogador de CM14."
+        )
 
 
 # ======================================================================
@@ -1642,7 +2059,9 @@ def pagina_motores(game):
 # ======================================================================
 def pagina_financas(game):
     eqj = sim.equipe(game, game["equipe_jogador"])
-    titulo_pagina("Dinheiro", "Patrocinadores & Finanças", "Quem paga a conta, para onde vai cada centavo — e o que sobra no fim.")
+    titulo_pagina(
+        "Dinheiro", "Patrocinadores & Finanças", "Quem paga a conta, para onde vai cada centavo — e o que sobra no fim."
+    )
     lista_spon = game.get("patrocinadores") or db.PATROCINADORES
     spon = next((s for s in lista_spon if s["nome"] == eqj["patrocinador"]), lista_spon[-1])
     salarios = sum(p["salario_corrida"] for p in game["pilotos"] if p["equipe_id"] == eqj["id"])
@@ -1651,22 +2070,35 @@ def pagina_financas(game):
     c2.metric("Patrocinador atual", spon["nome"])
     c3.metric("Receita fixa/corrida", sim.fmt_dinheiro_k(spon["por_corrida"]))
     saldo = spon["por_corrida"] - salarios - eqj["investimento_corrida"]
-    c4.metric("Saldo/corrida (sem bônus)", f"+ {sim.fmt_dinheiro_k(saldo)}" if saldo >= 0 else f"− {sim.fmt_dinheiro_k(-saldo)}")
+    c4.metric(
+        "Saldo/corrida (sem bônus)",
+        f"+ {sim.fmt_dinheiro_k(saldo)}" if saldo >= 0 else f"− {sim.fmt_dinheiro_k(-saldo)}",
+    )
     if saldo < 0:
-        st.warning("Você gasta mais do que recebe por corrida (antes dos bônus por ponto/pódio). "
-                   "Ou pontua muito, ou corta salário/investimento, ou troca o patrocinador na virada.")
+        st.warning(
+            "Você gasta mais do que recebe por corrida (antes dos bônus por ponto/pódio). "
+            "Ou pontua muito, ou corta salário/investimento, ou troca o patrocinador na virada."
+        )
 
     st.subheader(f"🤝 Patrocinadores disponíveis para {game['ano'] + 1} (seu prestígio: {eqj['prestigio']})")
-    linhas = [{"Patrocinador": s["nome"], "": "⭐ atual" if s["nome"] == eqj["patrocinador"] else "",
-               "Fixo/corrida": s["por_corrida"], "Bônus/ponto": s["bonus_ponto"],
-               "Bônus/pódio": s["bonus_podio"], "Bônus/vitória": s["bonus_vitoria"],
-               "Prestígio mín.": s["prestigio_min"],
-               "Status": "✅ assina" if eqj["prestigio"] >= s["prestigio_min"] else "🔒 prestígio insuficiente"}
-              for s in lista_spon]
+    linhas = [
+        {
+            "Patrocinador": s["nome"],
+            "": "⭐ atual" if s["nome"] == eqj["patrocinador"] else "",
+            "Fixo/corrida": s["por_corrida"],
+            "Bônus/ponto": s["bonus_ponto"],
+            "Bônus/pódio": s["bonus_podio"],
+            "Bônus/vitória": s["bonus_vitoria"],
+            "Prestígio mín.": s["prestigio_min"],
+            "Status": "✅ assina" if eqj["prestigio"] >= s["prestigio_min"] else "🔒 prestígio insuficiente",
+        }
+        for s in lista_spon
+    ]
     st.dataframe(pd.DataFrame(linhas), hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
     elegiveis = [s for s in lista_spon if eqj["prestigio"] >= s["prestigio_min"]]
-    novo = st.selectbox("Negociar para a próxima temporada", elegiveis,
-                        format_func=lambda s: f"{s['nome']} — {s['desc']}")
+    novo = st.selectbox(
+        "Negociar para a próxima temporada", elegiveis, format_func=lambda s: f"{s['nome']} — {s['desc']}"
+    )
     if game["patrocinador_proxima"]:
         st.success(f"Fechado: **{game['patrocinador_proxima']}** estreia no carro em {game['ano'] + 1}.")
     if st.button("✍️ Assinar com este patrocinador", type="primary"):
@@ -1679,9 +2111,13 @@ def pagina_financas(game):
         st.line_chart(pd.DataFrame(game["historico_caixa"]).set_index("rodada")["caixa"])
     st.subheader("🧾 Extrato")
     if game["extrato"]:
-        st.dataframe(pd.DataFrame(game["extrato"]).rename(columns={
-            "temporada": "Ano", "etapa": "Etapa", "descricao": "Descrição", "valor": "US$ mil"}),
-            hide_index=True, width="stretch")
+        st.dataframe(
+            pd.DataFrame(game["extrato"]).rename(
+                columns={"temporada": "Ano", "etapa": "Etapa", "descricao": "Descrição", "valor": "US$ mil"}
+            ),
+            hide_index=True,
+            width="stretch",
+        )
     else:
         st.caption("Nenhum lançamento ainda. Bora correr!")
 
@@ -1690,23 +2126,46 @@ def pagina_financas(game):
 #  CAMPEONATO
 # ======================================================================
 def pagina_campeonato(game):
-    titulo_pagina("Classificação", f"Campeonato {game['ano']}", "Pilotos, construtores, evolução dos pontos e todos os resultados.")
+    titulo_pagina(
+        "Classificação",
+        f"Campeonato {game['ano']}",
+        "Pilotos, construtores, evolução dos pontos e todos os resultados.",
+    )
     tab1, tab2, tab3, tab4 = st.tabs(["👨‍✈️ Pilotos", "🏭 Construtores", "📈 Evolução", "🗓️ Calendário & Resultados"])
 
     with tab1:
         linhas = []
         for i, p in enumerate(sim.tabela_pilotos(game)):
-            linhas.append({"Pos": i + 1, "Bandeira": bnd.url_bandeira(p['bandeira']), "Piloto": p['nome'],
-                           "Equipe": sim.equipe(game, p["equipe_id"])["nome"] if p["equipe_id"] else "—",
-                           "": "⭐" if p["equipe_id"] == game["equipe_jogador"] else "",
-                           "Pontos": p["pontos"], "Vitórias": p["vitorias"], "Pódios": p["podios"],
-                           "Poles": p["poles"], "Abandonos": p["abandonos"], "Forma": p["forma"]})
+            linhas.append(
+                {
+                    "Pos": i + 1,
+                    "Bandeira": bnd.url_bandeira(p["bandeira"]),
+                    "Piloto": p["nome"],
+                    "Equipe": sim.equipe(game, p["equipe_id"])["nome"] if p["equipe_id"] else "—",
+                    "": "⭐" if p["equipe_id"] == game["equipe_jogador"] else "",
+                    "Pontos": p["pontos"],
+                    "Vitórias": p["vitorias"],
+                    "Pódios": p["podios"],
+                    "Poles": p["poles"],
+                    "Abandonos": p["abandonos"],
+                    "Forma": p["forma"],
+                }
+            )
         st.dataframe(pd.DataFrame(linhas), hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
     with tab2:
-        linhas = [{"Pos": i + 1, "Bandeira": bnd.url_bandeira(e['bandeira']), "Equipe": e['nome'],
-                   "": "⭐" if e["id"] == game["equipe_jogador"] else "", "Pontos": e["pontos"],
-                   "Vitórias": e["vitorias"], "Pódios": e["podios"], "Poles": e["poles"]}
-                  for i, e in enumerate(sim.tabela_construtores(game))]
+        linhas = [
+            {
+                "Pos": i + 1,
+                "Bandeira": bnd.url_bandeira(e["bandeira"]),
+                "Equipe": e["nome"],
+                "": "⭐" if e["id"] == game["equipe_jogador"] else "",
+                "Pontos": e["pontos"],
+                "Vitórias": e["vitorias"],
+                "Pódios": e["podios"],
+                "Poles": e["poles"],
+            }
+            for i, e in enumerate(sim.tabela_construtores(game))
+        ]
         st.dataframe(pd.DataFrame(linhas), hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
     with tab3:
         if game["historico_pontos"]:
@@ -1717,18 +2176,35 @@ def pagina_campeonato(game):
             st.caption("Complete corridas para ver a evolução dos pontos.")
         if game["historico_temporadas"]:
             st.subheader("📜 Temporadas anteriores")
-            st.dataframe(pd.DataFrame(game["historico_temporadas"]).rename(columns={
-                "ano": "Ano", "campeao_pilotos": "Campeão (Pilotos)", "equipe_campea": "Campeã (Construtores)",
-                "sua_posicao": "Sua posição", "seus_pontos": "Seus pontos"}), hide_index=True, width="stretch")
+            st.dataframe(
+                pd.DataFrame(game["historico_temporadas"]).rename(
+                    columns={
+                        "ano": "Ano",
+                        "campeao_pilotos": "Campeão (Pilotos)",
+                        "equipe_campea": "Campeã (Construtores)",
+                        "sua_posicao": "Sua posição",
+                        "seus_pontos": "Seus pontos",
+                    }
+                ),
+                hide_index=True,
+                width="stretch",
+            )
     with tab4:
         for i, etapa in enumerate(game["calendario"]):
-            regs = [r for r in game["resultados"] if r["ano"] == game["ano"] and r["rodada"] == i + 1 and not r["sprint"]]
-            with st.expander(f"{i + 1}. [{bnd.codigo_texto(etapa['bandeira'])}] {etapa['gp']} — {etapa['circuito']} · {etapa['voltas']} voltas"
-                             + (f" · ⚡{rot_corrida2(game)}" if etapa["sprint"] else "") + (" ✅" if regs else "")):
+            regs = [
+                r for r in game["resultados"] if r["ano"] == game["ano"] and r["rodada"] == i + 1 and not r["sprint"]
+            ]
+            with st.expander(
+                f"{i + 1}. [{bnd.codigo_texto(etapa['bandeira'])}] {etapa['gp']} — {etapa['circuito']} · {etapa['voltas']} voltas"
+                + (f" · ⚡{rot_corrida2(game)}" if etapa["sprint"] else "")
+                + (" ✅" if regs else "")
+            ):
                 if regs:
                     r = regs[-1]
                     st.caption("🌧️ Corrida molhada" if r["molhado"] else "☀️ Corrida seca")
-                    st.dataframe(df_resultado(game, r["resultado"]), hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
+                    st.dataframe(
+                        df_resultado(game, r["resultado"]), hide_index=True, width="stretch", column_config=CFG_BANDEIRA
+                    )
                 else:
                     st.caption("Ainda não disputada.")
 
@@ -1740,38 +2216,62 @@ def pagina_hall(game):
     titulo_pagina("Legado", "Hall da Fama & Conquistas", "As lendas da categoria — e as suas 10 conquistas para caçar.")
     tab1, tab2 = st.tabs(["🌟 Hall da Fama", "🎖️ Conquistas (10)"])
     with tab1:
-        st.caption(f"Pilotos do seu save entram para a eternidade ao se aposentar com "
-                   f"**≥ {db.HOF_MIN_TITULOS} títulos** ou **≥ {db.HOF_MIN_VITORIAS} vitórias** na carreira.")
-        st.dataframe(pd.DataFrame([{
-            "Bandeira": bnd.url_bandeira(h['bandeira']), "Lenda": h['nome'], "País": h["pais"], "Títulos": h["titulos"],
-            "Vitórias": h["vitorias"], "Era": h["anos"],
-            "Origem": "induzido no seu save ✨" if h.get("induzido_no_save") else "histórico",
-        } for h in sorted(game["hall_da_fama"], key=lambda x: (-x["titulos"], -x["vitorias"]))]),
-            hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
+        st.caption(
+            f"Pilotos do seu save entram para a eternidade ao se aposentar com "
+            f"**≥ {db.HOF_MIN_TITULOS} títulos** ou **≥ {db.HOF_MIN_VITORIAS} vitórias** na carreira."
+        )
+        st.dataframe(
+            pd.DataFrame(
+                [
+                    {
+                        "Bandeira": bnd.url_bandeira(h["bandeira"]),
+                        "Lenda": h["nome"],
+                        "País": h["pais"],
+                        "Títulos": h["titulos"],
+                        "Vitórias": h["vitorias"],
+                        "Era": h["anos"],
+                        "Origem": "induzido no seu save ✨" if h.get("induzido_no_save") else "histórico",
+                    }
+                    for h in sorted(game["hall_da_fama"], key=lambda x: (-x["titulos"], -x["vitorias"]))
+                ]
+            ),
+            hide_index=True,
+            width="stretch",
+            column_config=CFG_BANDEIRA,
+        )
     with tab2:
         cols = st.columns(2)
         for i, c in enumerate(db.CONQUISTAS):
             ok = c["id"] in game["conquistas"]
             cols[i % 2].markdown(f"{'✅' if ok else '🔒'} {c['icone']} **{c['nome']}** — {c['desc']}")
-        st.progress(len(game["conquistas"]) / len(db.CONQUISTAS),
-                    text=f"{len(game['conquistas'])}/{len(db.CONQUISTAS)} conquistas")
+        st.progress(
+            len(game["conquistas"]) / len(db.CONQUISTAS),
+            text=f"{len(game['conquistas'])}/{len(db.CONQUISTAS)} conquistas",
+        )
 
 
 # ======================================================================
 #  SALVAR / CARREGAR
 # ======================================================================
 def pagina_save(game):
-    titulo_pagina("Sistema", "Salvar / Carregar", "Baixe o save da sua carreira e continue quando quiser.")
+    titulo_pagina(
+        "Sistema",
+        "Salvar / Carregar",
+        "Baixe o save para continuar depois ou use Novo jogo na barra lateral para começar outra carreira.",
+    )
     save_json = json.dumps(game, ensure_ascii=False, indent=1)
-    st.download_button("⬇️ Baixar save (.json)", save_json,
-                       file_name=f"cockpit_save_{game['ano']}_etapa{game['rodada'] + 1}.json",
-                       mime="application/json", type="primary")
+    st.download_button(
+        "⬇️ Baixar save (.json)",
+        save_json,
+        file_name=f"cockpit_save_{game['ano']}_etapa{game['rodada'] + 1}.json",
+        mime="application/json",
+        type="primary",
+    )
     st.caption("Guarde o arquivo e carregue na tela inicial para continuar a carreira em qualquer lugar.")
     st.divider()
     if st.checkbox("Entendo que começar um jogo novo apaga a carreira atual desta sessão"):
         if st.button("🗑️ Abandonar carreira e voltar ao início", type="primary"):
-            st.session_state.game = None
-            st.session_state.fds = None
+            iniciar_novo_jogo()
             st.rerun()
 
 
@@ -1890,30 +2390,45 @@ else:
         st.markdown(
             '<div class="side-brand"><div class="logo-mini">CM</div>'
             '<div><div class="b1">COCKPIT</div><div class="b2">MANAGER</div></div></div>',
-            unsafe_allow_html=True)
+            unsafe_allow_html=True,
+        )
         st.markdown(
             f'<div class="side-team" style="background:linear-gradient(125deg,{eqj["cor"]} 0%, rgba(13,17,26,.94) 62%)">'
-            f'{bnd.img_bandeira(eqj["bandeira"], 26)}'
+            f"{bnd.img_bandeira(eqj['bandeira'], 26)}"
             f'<div class="nome">{eqj["nome"]}</div>'
             f'<div class="meta">{meta_game(game).get("nome", "F1 2026")} · grid com {len(sim.titulares(game))} pilotos</div></div>',
-            unsafe_allow_html=True)
-        st.progress(min(1.0, game["rodada"] / total_etapas),
-                    text=f"Temporada {game['ano']} · {game['rodada']}/{total_etapas} etapas concluídas")
+            unsafe_allow_html=True,
+        )
+        st.progress(
+            min(1.0, game["rodada"] / total_etapas),
+            text=f"Temporada {game['ano']} · {game['rodada']}/{total_etapas} etapas concluídas",
+        )
         st.markdown(
             '<div class="side-stats">'
             f'<div class="side-stat"><div class="lab">Caixa</div>'
             f'<div class="val">{sim.fmt_dinheiro_m(eqj["caixa"]).replace("US$ ", "$")}</div></div>'
             f'<div class="side-stat"><div class="lab">Construtores</div>'
             f'<div class="val">{sim.posicao_equipe(game, eqj["id"])}º · {eqj["pontos"]} pts</div></div></div>',
-            unsafe_allow_html=True)
+            unsafe_allow_html=True,
+        )
         st.radio("Menu", MENUS, key="menu", label_visibility="collapsed")
         st.divider()
+        if st.button("🆕 Novo jogo", width="stretch"):
+            st.session_state.novo_jogo_pendente = True
+        if st.session_state.get("novo_jogo_pendente", False):
+            exibir_confirmacao_novo_jogo()
         save_json = json.dumps(game, ensure_ascii=False)
-        st.download_button("💾 Salvar (.json)", save_json,
-                           file_name=f"cockpit_save_{game['ano']}.json", mime="application/json",
-                           width="stretch")
-        st.caption("Fan remake inspirado no Cockpit Manager '14 (Cartola Games) · "
-                   "[DB F1 2026](http://cockpitmanager.blogspot.com/2026/05/db-f1-2026-v10-by-jonathan-daniel.html)")
+        st.download_button(
+            "💾 Salvar (.json)",
+            save_json,
+            file_name=f"cockpit_save_{game['ano']}.json",
+            mime="application/json",
+            width="stretch",
+        )
+        st.caption(
+            "Fan remake inspirado no Cockpit Manager '14 (Cartola Games) · "
+            "[DB F1 2026](http://cockpitmanager.blogspot.com/2026/05/db-f1-2026-v10-by-jonathan-daniel.html)"
+        )
 
     mostrar_flash()
     pagina = st.session_state.menu
