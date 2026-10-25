@@ -1807,7 +1807,7 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
             key="proxima_parada",
             disabled=alvo_pit is None,
             help="Avança a transmissão até a próxima parada planejada dos seus pilotos.",
-        ):
+        ) and alvo_pit is not None:
             spv = max(0.2, min(0.55, 24.0 / max(1, voltas)))
             stt["pausado"] = False
             stt["t0"] = time.time() - spv * alvo_pit / max(1, velocidade)
