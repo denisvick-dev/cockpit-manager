@@ -107,11 +107,13 @@ def test_corrida_janela_de_pit_pausa_e_volta(app_com_jogo, game):
     meus = set(stt["pit_perguntar"])
     alvo = min((p, v) for p, d in plano.items() if p in meus and stt["pit_perguntar"][p] for v in d["pits_plano"])
     pid, volta = alvo
-    stt["t0"] = time.time() - 0.41 * (volta + 0.6)
+    s_por_volta = max(0.2, min(0.55, 24.0 / stt["rep"]["voltas"]))
+    stt["t0"] = time.time() - s_por_volta * (volta + 0.5)
     app.run()
     pedido = stt.get("pit_aberto")
     assert pedido and pedido["pid"] == pid, "a janela do Pit Stop não abriu"
-    assert stt["lap"] == volta, "a prova não congelou na volta da parada"
+    assert pedido["volta"] == volta, "a janela não manteve a volta planejada"
+    assert stt["lap"] >= volta, "a prova retrocedeu antes da parada"
 
     # confirma a troca de pneu + ritmo
     app.selectbox(key=f"dlg_pneu_{pid}_{chave}").set_value("Duro")
@@ -122,6 +124,39 @@ def test_corrida_janela_de_pit_pausa_e_volta(app_com_jogo, game):
     assert stt["pneus_manual"][pid][1] == "Duro"
     assert stt["ritmos"][pid] == "Atacar"
     assert stt.get("pit_aberto") is None
+    assert not app.exception
+
+
+def test_corrida_abre_pit_automatico_quando_pneu_esgota(app_com_jogo, game):
+    app = app_com_jogo
+    app.session_state["menu"] = "🏁 Corrida"
+    app.run()
+    fds = app.session_state["fds"]
+    stt = _largo(app, game, fds)
+
+    pid = next(iter(stt["pit_perguntar"]))
+    stt["pit_perguntar"] = {piloto_id: False for piloto_id in stt["pit_perguntar"]}
+    stt["rep"]["info"][pid]["pneus"] = ["Macio"]
+    stt["rep"]["info"][pid]["pits_plano"] = []
+    stt["rep"]["info"][pid]["paradas"] = 0
+    for outro_pid, dados in stt["rep"]["info"].items():
+        if outro_pid != pid:
+            dados["pneus"] = ["Duro"]
+    lap = 15
+    s_por_volta = max(0.2, min(0.55, 24.0 / stt["rep"]["voltas"]))
+    stt["t0"] = time.time() - s_por_volta * (lap + 0.5)
+    etapa = game["calendario"][game["rodada"]]
+    etapa["desgaste"] = 3.0
+
+    app.run()
+
+    assert stt.get("pit_aberto") == {
+        "pid": pid,
+        "volta": stt["lap"],
+        "planejada": False,
+        "esgotado": True,
+    }
+    assert stt["lap"] >= lap
     assert not app.exception
 
 

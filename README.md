@@ -84,7 +84,8 @@ pedem **Python 3.12+**).
   abre a janela do muro — *"trocar de pneu?"* com os **novos pneus** (durabilidade de cada composto)
   e o **ritmo do próximo stint** (Conservar/Normal/Atacar). A prova **congela** enquanto a janela está
   aberta: **Trocar pneu e voltar ✓** cumpre o box naquela volta e **Continuar na pista ✕** dispensa a
-  parada (o piloto segue com o pneu velho). Se o chefe deixar a janela passar, ela é dada como perdida
+  parada (o piloto segue com o pneu velho). Se o pneu chegar a 0% antes de uma parada planejada, a
+  janela também abre automaticamente. Se o chefe deixar a janela passar, ela é dada como perdida
 - **Tela de treino classificatório** (como no original): relógio de 60 min com barra, clima, tabela
   de Pos./Nome/Equipe/**Melhor tempo** se enchendo aos poucos e o grid final fiel ao motor;
   botões **Iniciar treino** e **Ir para corrida!**

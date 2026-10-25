@@ -1179,8 +1179,7 @@ def _rot_pneu(p):
 
 
 def _pit_dismiss():
-    """X/ESC na janela do box: para parada planejada vale "seguir na pista"
-    (não insiste de novo na mesma volta); para ordem manual, só cancela."""
+    """X/ESC recusa parada planejada ou ignora aviso de pneu no stint atual."""
     fds = st.session_state.get("fds")
     if not (isinstance(fds, dict) and fds.get("replay")):
         return
@@ -1198,6 +1197,13 @@ def _pit_dismiss():
             pass
         stt.setdefault("feed", []).append(
             f"🚪 Janela do box fechada sem troca — **{nome}** segue na pista (volta {volta})."
+        )
+    elif ped and ped.get("esgotado"):
+        pid, volta = ped.get("pid"), int(ped.get("volta") or 0)
+        feitos = [x for x in stt["pits"].get(pid, []) if x <= volta]
+        stt.setdefault("pneus_esgotados_recusados", {})[pid] = len(feitos)
+        stt.setdefault("feed", []).append(
+            f"🚪 Janela fechada sem troca — o piloto segue na pista com o pneu esgotado (volta {volta})."
         )
     stt["pit_aberto"] = None
 
@@ -1260,6 +1266,7 @@ def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
         stt["pit_aberto"] = None
         return
     planejada = bool(ped.get("planejada", False))
+    esgotado = bool(ped.get("esgotado", False))
     volta_pit = int(ped.get("volta") or lap)
     st.markdown('<div class="pit-titulo">Pit Stop</div>', unsafe_allow_html=True)
     st.markdown(f"**Piloto:** {bnd.img_bandeira(p['bandeira'], 18)} {p['nome']}", unsafe_allow_html=True)
@@ -1267,6 +1274,12 @@ def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
         st.markdown(
             f'<div class="radio-box">📻 <b>Muro:</b> {p["nome"]}, hora do pit stop '
             f"(volta {volta_pit}/{voltas}). <b>Trocar de pneu?</b></div>",
+            unsafe_allow_html=True,
+        )
+    elif esgotado:
+        st.markdown(
+            f'<div class="radio-box">📻 <b>Muro:</b> {p["nome"]}, o pneu acabou na volta '
+            f"{volta_pit}/{voltas}. <b>Entrar no box?</b></div>",
             unsafe_allow_html=True,
         )
     else:
@@ -1313,7 +1326,7 @@ def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
         )
         stt["pit_aberto"] = None
         st.rerun()
-    rotulo_fora = "Continuar na pista ✕" if planejada else "Cancelar ordem ✕"
+    rotulo_fora = "Continuar na pista ✕" if planejada or esgotado else "Cancelar ordem ✕"
     if st.button(rotulo_fora, width="stretch", key=f"dlg_cancela_{pid}_{fds['chave']}"):
         if planejada:
             rec = stt.setdefault("pits_recusados", {}).setdefault(pid, [])
@@ -1323,6 +1336,13 @@ def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
             stt.setdefault("feed", []).append(
                 f"🚫 **{p['nome']}** dispensou o box na volta {volta_pit} e segue na "
                 f"pista com pneu **{prox}** · ritmo **{ritmo}**."
+            )
+        elif esgotado:
+            feitos = [x for x in stt["pits"].get(pid, []) if x <= volta_pit]
+            stt.setdefault("pneus_esgotados_recusados", {})[pid] = len(feitos)
+            stt.setdefault("ritmos", {})[pid] = ritmo
+            stt.setdefault("feed", []).append(
+                f"🚫 **{p['nome']}** continuou na pista na volta {volta_pit} mesmo com o pneu esgotado."
             )
         else:
             stt.setdefault("feed", []).append(f"🚫 Ordem de box cancelada para **{p['nome']}** na volta {lap}.")
@@ -1384,6 +1404,26 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
             st.session_state.pop(f"dlg_pneu_{pid_pend}_{fds['chave']}", None)
             st.session_state.pop(f"dlg_ritmo_{pid_pend}_{fds['chave']}", None)
             break
+        if _pit_pedido(stt) is None:
+            recusas_esgotado = stt.setdefault("pneus_esgotados_recusados", {})
+            pneus_man = stt.get("pneus_manual", {})
+            ritmos = stt.get("ritmos", {})
+            for pid_esgotado in sim.pneus_esgotados(
+                etapa, rep, lap, stt["pits"], pneus_man, ritmos, apenas=meus_ids
+            ):
+                feitos = [x for x in stt["pits"].get(pid_esgotado, []) if x <= lap]
+                if recusas_esgotado.get(pid_esgotado) == len(feitos):
+                    continue
+                stt["pit_aberto"] = {
+                    "pid": pid_esgotado,
+                    "volta": lap,
+                    "planejada": False,
+                    "esgotado": True,
+                }
+                stt["pausa_t0"] = time.time()
+                st.session_state.pop(f"dlg_pneu_{pid_esgotado}_{fds['chave']}", None)
+                st.session_state.pop(f"dlg_ritmo_{pid_esgotado}_{fds['chave']}", None)
+                break
     marcados = stt.setdefault("feed_dnf", [])
     for pid, d in rep["info"].items():
         if d["dnf"] and d["volta_dnf"] <= lap and pid not in marcados:

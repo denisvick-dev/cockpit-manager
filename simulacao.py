@@ -623,6 +623,20 @@ def vida_pneu(etapa, pneu, laps_no_pneu, ritmo=None):
     return max(0.0, min(1.0, 1.0 - laps_no_pneu / dur))
 
 
+def pneus_esgotados(etapa, rep, lap, pits_feitas, pneus_manual=None, ritmos=None, apenas=None):
+    """Ids dos pilotos ainda na prova cujo pneu chegou ao fim da vida útil."""
+    esgotados = []
+    for linha in linhas_replay(rep, lap, pits_feitas, pneus_manual, ritmos):
+        pid = linha["pid"]
+        if "fora" in linha or (apenas is not None and pid not in apenas):
+            continue
+        executadas = [x for x in pits_feitas.get(pid) or [] if x <= lap]
+        ultimo_pit = max(executadas, default=0)
+        if vida_pneu(etapa, linha["pneu"], lap - ultimo_pit, (ritmos or {}).get(pid)) == 0:
+            esgotados.append(pid)
+    return esgotados
+
+
 def estrategia_ia(game, p, etapa, molhado, rng):
     if molhado:
         return {"pneu": "Intermediário" if rng.random() < 0.8 else "Chuva extrema", "paradas": 1, "ritmo": "Normal"}

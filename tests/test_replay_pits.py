@@ -11,6 +11,7 @@ def _replay_com_pits(plano_por_piloto, voltas=50):
         info[pid] = {
             "pits_plano": list(plano),
             "dnf": False,
+            "equipe_id": "equipe",
             "pneus": ["Médio"] * (len(plano) + 1),
             "paradas": len(plano),
             "grid": 1,
@@ -89,6 +90,18 @@ def test_vida_pneu_degrada_com_voltas_e_ritmo(etapa_seca):
     assert 0.0 <= usada < nova
     assert ataque < usada < conservar
     assert sim.vida_pneu(etapa_seca, "Duro", 999, "Normal") == 0.0
+
+
+def test_pneus_esgotados_considera_pit_ritmo_e_pilotos_selecionados(etapa_seca):
+    rep = _replay_com_pits({"a": [], "b": []}, voltas=40)
+    rep["info"]["a"]["pneus"] = ["Macio"]
+    rep["info"]["b"]["pneus"] = ["Duro"]
+    etapa_seca["desgaste"] = 3.0
+
+    esgotados = sim.pneus_esgotados(etapa_seca, rep, 12, {}, apenas={"a"})
+
+    assert esgotados == ["a"]
+    assert sim.pneus_esgotados(etapa_seca, rep, 12, {"a": [10]}, apenas={"a"}) == []
 
 
 def test_linhas_replay_ordenadas_e_com_box(game, etapa):
