@@ -76,7 +76,7 @@ pedem **Python 3.12+**).
   Acerto de carro, Físico), salários por corrida, contratos de 1º/2º piloto e piloto de testes,
   tudo negociado **para a temporada seguinte** — inclusive **pré-contrato com sinal** (fecha na
   hora, sem chance de recusa, como no original)
-- **Estratégia de corrida**: paradas e ritmo escolhidos **antes** da corrida + **Paddock** fiel ao
+- **Estratégia de corrida**: número de paradas sugerido pela pista (`paradas_ideais`) e **Paddock** fiel ao
   original (pneus com durabilidade exata, posição no grid, **Perguntar em cada pit stop** e
   **Confirmar** para liberar a largada) — e **durante a prova** o ritmo ao vivo e o **Pit stop!** em
   diálogo (Novos pneus, volta atual, Cancelar/Confirmar), com clima (seco/molhado)
