@@ -68,6 +68,10 @@ pedem **Python 3.12+**).
 
 ## 🆕 Últimas melhorias (v3)
 
+- **Fluxo guiado no fim de semana** — a tela de corrida virou uma sequência de passos (**Treino → Paddock →
+  Corrida → Resultado**): cada etapa mostra só o que importa, o cabeçalho virou uma faixa compacta, os
+  detalhes da etapa ficam num expander e a preparação sai da tela quando a transmissão começa.
+
 - **Safety Car, Virtual Safety Car e bandeira vermelha** — a prova neutralizada junta o pelotão (as
   diferenças derretem na torre), o box fica mais barato e, na **bandeira vermelha**, a corrida para de
   verdade até você clicar em **🟥 Relargada**.

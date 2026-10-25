@@ -365,6 +365,29 @@ CSS = """
   .radar-leg{display:flex; align-items:center; gap:7px; color:#CBD5E1;}
   .radar-leg i{width:11px; height:11px; border-radius:3px; display:inline-block;}
 
+  /* ---------- fluxo da corrida (treino → paddock → corrida) ---------- */
+  .wizard{display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+    border:1px solid var(--cm-border); border-radius:14px; padding:7px 10px; margin:0 0 14px;
+    background:linear-gradient(100deg, rgba(255,255,255,.035), rgba(255,255,255,.008));}
+  .wz-step{display:flex; align-items:center; gap:7px; padding:4px 10px 4px 6px; border-radius:10px;
+    font-family:var(--cm-font-ui); font-size:.78rem; font-weight:700; color:#7C8AA0; white-space:nowrap;}
+  .wz-step .wz-n{display:inline-flex; align-items:center; justify-content:center; width:21px; height:21px;
+    border-radius:50%; font-size:.7rem; background:rgba(148,163,184,.14); color:#94A3B8;
+    border:1px solid rgba(148,163,184,.28); font-variant-numeric:tabular-nums;}
+  .wz-step.done{color:#BBF7D0;} .wz-step.done .wz-n{background:rgba(22,101,52,.55);
+    border-color:rgba(74,222,128,.55); color:#DCFCE7;}
+  .wz-step.agora{color:#F8FAFC; background:rgba(200,16,46,.20); box-shadow:inset 0 0 0 1px rgba(224,36,68,.45);}
+  .wz-step.agora .wz-n{background:var(--cm-red); border-color:#FF8FA0; color:#fff;}
+  .wz-trilha{flex:1 1 18px; min-width:14px; height:2px; border-radius:2px; background:rgba(148,163,184,.20);}
+  .wz-trilha.done{background:rgba(74,222,128,.45);}
+  .race-hero.compacto{padding:13px 16px; margin-bottom:10px; border-radius:16px;}
+  .race-hero.compacto h1{font-size:1.42rem; margin:.05rem 0 .1rem;}
+  .race-hero .migalha{display:flex; flex-wrap:wrap; gap:6px; margin-top:7px;}
+  .race-hero .migalha span{font-family:var(--cm-font-ui); font-size:.72rem; font-weight:700;
+    letter-spacing:.02em; padding:2px 9px; border-radius:999px; color:#CBD5E1;
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);}
+  .race-hero .migalha span.destaque{background:rgba(200,16,46,.22); border-color:rgba(224,36,68,.45); color:#FFE4E6;}
+
   /* ---------- calendário (timeline do escritório) ---------- */
   .timeline-wrap{overflow-x:auto; padding:2px 0 6px; margin-bottom:4px;}
   .timeline{display:flex; gap:0; min-width:max-content; align-items:flex-start;}
@@ -490,6 +513,11 @@ CSS_CLARO = """
   .stButton > button[kind="primary"],.stButton > button[data-testid="stBaseButton-primary"]{
     background:linear-gradient(135deg,#D61437,#93021C); color:#fff; border-color:transparent;}
   hr{border-color:var(--cm-border);}
+  .wizard{background:linear-gradient(100deg,#FFFFFF,#F7F9FC); border-color:var(--cm-border);}
+  .wz-step{color:#5A6779;} .wz-step.agora{color:#0B1220; background:rgba(200,16,46,.10);}
+  .wz-step.done{color:#14532D;}
+  .race-hero .migalha span{color:#334155; background:rgba(15,23,42,.05); border-color:rgba(15,23,42,.12);}
+  .race-hero .migalha span.destaque{background:rgba(200,16,46,.12); border-color:rgba(200,16,46,.35); color:#8C0E24;}
   .bandeira-vermelha{color:#7F1023; background:linear-gradient(100deg, rgba(255,205,214,.95), rgba(255,235,238,.85));
     border-color:rgba(190,18,60,.35);}
   .radar-wrap{background:linear-gradient(165deg,#FFFFFF,#F7F9FC); border-color:var(--cm-border);}
