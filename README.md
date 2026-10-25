@@ -18,7 +18,7 @@ nos títulos, marcas e indicadores de corrida; **Manrope** na interface (botões
 tabelas ao vivo e métricas); **Inter** na leitura (parágrafos, manuais e dataframes). **IBM Plex Mono**
 fica nos blocos de código. Os arquivos e as licenças OFL ficam em `static/fonts/` (incluindo
 `Manrope-OFL.txt`); o tema é configurado em `.streamlit/config.toml` e os tokens de fonte
-(`--cm-font-brand`, `--cm-font-ui`, `--cm-font-text`, `--cm-font-mono`) no `<style>` do `app.py`.
+(`--cm-font-brand`, `--cm-font-ui`, `--cm-font-text`, `--cm-font-mono`) no design system em `ui/tema.py`.
 
 ## ▶️ Como rodar
 
@@ -37,7 +37,7 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 ruff check .      # lint (config em pyproject.toml)
-python -m pytest  # 30 testes: motor, replay/pits e smoke test das telas
+python -m pytest  # 48 testes: motor, replay/pits, tema/save e smoke test das telas
 ```
 
 O **GitHub Actions** (`.github/workflows/ci.yml`) roda ruff + pytest em Python 3.12/3.13
@@ -49,6 +49,7 @@ pedem **Python 3.12+**).
 | Arquivo | Função |
 |---|---|
 | `app.py` | Interface Streamlit (telas: Escritório, Corrida, Carro, Pilotos, Motores, Finanças, Campeonato, Hall da Fama…) |
+| `ui/tema.py` | **Design system**: todo o CSS do jogo (tokens `--cm-font-*`, painéis, tabelas ao vivo, cartões de undercut/overcut, barra lateral, responsivo e acessibilidade) + `aplicar()` chamado uma vez no início do app |
 | `simulacao.py` | Motor do jogo: classificação, corrida, estratégia, desenvolvimento, finanças, mercado, evolução e virada de temporada |
 | `dados2026.py` | A DB F1 2026: 11 equipes, 49 pilotos, 10 motores, calendário de 24 etapas |
 | `dbs.py` | Sistema de DBs: **F1 2026**, **F1 Academy** (18 Tatuus idênticos, grade real de 2026), **F1 Legends** (Schumacher, Senna, Fangio… nos circuitos clássicos), **F1 Históricas** (8 temporadas âncora: 1950·1960·…·2020 com grids, motores e calendários reais da época), **Fórmula Indy** (25 carros, 18 etapas, Indy 500), **Indy Legends** (Foyt, Unser, Mario Andretti nos ovais históricos), **Stock Car** (34 SUVs V8, sprint+principal), **DTM** (GT3, 2 corridas/etapa) + validação de DBs personalizadas |
@@ -57,10 +58,10 @@ pedem **Python 3.12+**).
 | `tools/padronizar_bandeiras.py` | Regenera/atualiza as bandeiras: baixa do flagcdn e encaixa todas no mesmo tamanho, sem distorcer (`python tools/padronizar_bandeiras.py`) |
 | `minhas_dbs/` | (criada ao salvar) Suas DBs personalizadas em `.json` viram opções permanentes na lista de DBs |
 | `.streamlit/config.toml` | Tema escuro profissional (design system do jogo) |
-| `tests/` | Suíte **pytest**: determinismo e pontuação do motor, replay/pits (janela, automático, recusa, clima) e smoke test das 10 telas com `AppTest` |
+| `tests/` | Suíte **pytest** (48 testes): determinismo e pontuação do motor, replay/pits (janela, automático, recusa, clima, undercut/overcut), tema/save em JSON e smoke test de todas as telas com `AppTest` |
 | `requirements.txt` / `requirements-dev.txt` | `streamlit` + `pandas` / `pytest` + `ruff` |
 | `pyproject.toml` | Configuração do **ruff** (lint) e do **pytest** |
-| `.github/workflows/ci.yml` | CI: lint + testes (3.11/3.12) + smoke do servidor Streamlit |
+| `.github/workflows/ci.yml` | CI: lint + testes (Python 3.12/3.13) + smoke do servidor Streamlit |
 
 ## 🎮 O que foi recriado do original
 
@@ -151,9 +152,11 @@ pedem **Python 3.12+**).
   acordo na hora — sem chance de recusa. Cancelar não devolve o sinal (e um piloto que se aposentar
   antes da virada deixa o acordo no vazio, com aviso no feed).
 - **Polimento de interação** — cartões com hover suave, botões com leve elevação, anel de foco visível,
-  barras de rolagem finas e respeito a `prefers-reduced-motion` (acessibilidade).
+  barras de rolagem finas e respeito a `prefers-reduced-motion` (acessibilidade). O CSS inteiro vive em
+  `ui/tema.py` e tem **layout responsivo**: abaixo de 900 px a torre de tempos esconde as colunas menos
+  importantes e as barras de gap encurtam; abaixo de 760 px as abas quebram linha e as métricas reduzem.
 - **Tipografia em todo o projeto** — três famílias auto-hospedadas em `static/fonts/` e aplicadas por
-  componente (tokens `--cm-font-*` no `app.py` + `[[theme.fontFaces]]` no `.streamlit/config.toml`):
+  componente (tokens `--cm-font-*` em `ui/tema.py` + `[[theme.fontFaces]]` no `.streamlit/config.toml`):
 
   | Fonte | Onde aparece |
   |---|---|
