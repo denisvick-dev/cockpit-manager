@@ -1088,7 +1088,8 @@ def _passo_resultado(game, etapa, molhado, fds, meus, rep_state, eqj):
         p_vr = sim.piloto(game, vr["piloto_id"])
         st.markdown(
             f"⚡ **Volta mais rápida:** {bnd.com_bandeira(p_vr['bandeira'], p_vr['nome'])} — "
-            f"{sim.equipe(game, vr['equipe_id'])['nome']} · +1 ponto"
+            f"{sim.equipe(game, vr['equipe_id'])['nome']} · +1 ponto",
+            unsafe_allow_html=True,
         )
     with st.expander("📻 O que aconteceu na prova", expanded=False):
         for ev in fds["eventos"]:
