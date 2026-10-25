@@ -40,3 +40,13 @@ def etapa_seca(etapa):
     e["desgaste"] = 1.8
     e["ultrap"] = 0.5
     return e
+
+@pytest.fixture(autouse=True)
+def saves_isolados(tmp_path, monkeypatch):
+    """Nenhum teste escreve em saves/ de verdade: cada um ganha sua pasta."""
+    import armazenamento
+
+    pasta = tmp_path / "saves"
+    pasta.mkdir()
+    monkeypatch.setattr(armazenamento, "PASTA_SAVES", str(pasta))
+    return pasta

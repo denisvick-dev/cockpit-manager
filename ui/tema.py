@@ -345,6 +345,48 @@ CSS = """
   ::-webkit-scrollbar-thumb:hover{background:rgba(148,163,184,.45);}
   @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important;}}
 
+  /* ---------- bandeira vermelha (corrida interrompida) ---------- */
+  .bandeira-vermelha{display:flex; gap:8px; align-items:center; margin:.45rem 0 .5rem;
+    padding:10px 13px; border-radius:12px; font-size:.86rem; color:#FFE4E6;
+    background:linear-gradient(100deg, rgba(190,18,60,.55), rgba(120,10,30,.35));
+    border:1px solid rgba(255,99,132,.55); animation:pulsa 1.4s ease-in-out infinite;}
+
+  /* ---------- comparador de carros (radar SVG) ---------- */
+  .radar-wrap{display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:center;
+    border:1px solid var(--cm-border); border-radius:16px; padding:10px 14px; margin:.2rem 0 .8rem;
+    background:linear-gradient(160deg, rgba(255,255,255,.035), rgba(255,255,255,.01));}
+  .radar{width:300px; max-width:100%; height:auto;}
+  .radar-grade{fill:none; stroke:rgba(148,163,184,.18); stroke-width:1;}
+  .radar-eixo{stroke:rgba(148,163,184,.14); stroke-width:1;}
+  .radar-serie{fill-opacity:.16; stroke-width:2; stroke-linejoin:round;}
+  .radar-rotulo{fill:#94A3B8; font-family:var(--cm-font-ui); font-size:9px; font-weight:700;
+    letter-spacing:.06em; text-transform:uppercase;}
+  .radar-legenda{display:flex; flex-direction:column; gap:6px; font-family:var(--cm-font-ui); font-size:.78rem;}
+  .radar-leg{display:flex; align-items:center; gap:7px; color:#CBD5E1;}
+  .radar-leg i{width:11px; height:11px; border-radius:3px; display:inline-block;}
+
+  /* ---------- calendário (timeline do escritório) ---------- */
+  .timeline-wrap{overflow-x:auto; padding:2px 0 6px; margin-bottom:4px;}
+  .timeline{display:flex; gap:0; min-width:max-content; align-items:flex-start;}
+  .tl-item{display:flex; flex-direction:column; align-items:center; width:82px; position:relative;}
+  .tl-item::before{content:""; position:absolute; top:13px; left:0; right:0; height:2px;
+    background:rgba(148,163,184,.22); z-index:0;}
+  .tl-item:first-child::before{left:50%;} .tl-item:last-child::before{right:50%;}
+  .tl-item.done::before{background:rgba(74,222,128,.55);}
+  .tl-item.agora::before{background:linear-gradient(90deg, rgba(74,222,128,.55), rgba(224,36,68,.75));}
+  .tl-dot{position:relative; z-index:1; width:26px; height:26px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:.7rem; font-weight:700;
+    font-family:var(--cm-font-ui); background:#111827; color:#94A3B8;
+    border:1px solid rgba(148,163,184,.35); font-variant-numeric:tabular-nums;}
+  .tl-item.done .tl-dot{background:#14532D; border-color:rgba(74,222,128,.7); color:#BBF7D0;}
+  .tl-item.agora .tl-dot{background:var(--cm-red); border-color:#FF8FA0; color:#fff;
+    box-shadow:0 0 0 4px rgba(200,16,46,.20); animation:pulsa 1.6s ease-in-out infinite;}
+  .tl-gp{margin-top:6px; font-size:.62rem; line-height:1.15; text-align:center; color:#94A3B8;
+    max-width:78px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .tl-item.agora .tl-gp{color:#F8FAFC; font-weight:700;}
+  .tl-item.done .tl-gp{color:#CBD5E1;}
+  .tl-sprint{color:#FACC15; margin-left:2px;}
+
   /* ---------- responsivo (mobile / tablet) ---------- */
   @media (max-width:900px){
     .office-head .time{font-size:1.6rem;}
@@ -370,7 +412,102 @@ CSS = """
 </style>
 """
 
+# Tema claro: o jogo nasce escuro (padrão da F1 noturna). Este bloco reescreve as
+# superfícies e os textos principais quando o jogador escolhe o modo claro na
+# barra lateral — a estrutura e as fontes continuam as mesmas.
+CSS_CLARO = """
+<style>
+  :root{
+    --cm-bg:#F4F6FA; --cm-panel:#FFFFFF; --cm-text:#0F172A; --cm-muted:#5A6779;
+    --cm-border:rgba(15,23,42,.12);
+  }
+  .stApp{
+    background:
+      radial-gradient(1100px 520px at 85% -10%, rgba(200,16,46,.08), transparent 60%),
+      radial-gradient(900px 480px at -10% 0%, rgba(31,78,121,.10), transparent 55%),
+      linear-gradient(180deg,#F7F9FC 0%, #EDF1F7 100%);
+    color:#0F172A;
+  }
+  .stApp h1,.stApp h2{color:#0B1220;} .stApp h3,.stApp h4,.stApp h5{color:#1E293B;}
+  .stApp p,.stApp li,.stApp label,.stApp [data-testid="stMarkdownContainer"]{color:#1F2937;}
+  .stApp [data-testid="stCaptionContainer"],.stApp [data-testid="stCaptionContainer"] p,
+  .stApp caption,.stApp small{color:#5A6779;}
+  .stApp a{color:#B3122C !important;}
+  .hero{background:linear-gradient(115deg, rgba(200,16,46,.14), rgba(255,255,255,.96) 46%, #FFFFFF);}
+  .hero p{color:#334155;} .kicker{color:#B3122C;}
+  .chip{background:rgba(15,23,42,.05); border-color:rgba(15,23,42,.14); color:#1F2937;}
+  .chip.hot{background:rgba(200,16,46,.10); border-color:rgba(200,16,46,.35); color:#8C0E24;}
+  .page-head{border-bottom-color:var(--cm-border);} .page-head p{color:#5A6779;}
+  .painel,.news-card,.sessao-card,.race-hero,.previsao-tempo,.box-piloto,.undercut-card,
+  .overcut-card,.side-next,.proj-box,.radio-box,.badge-box,.painel-fim{
+    background:linear-gradient(165deg,#FFFFFF,#F8FAFC) !important;
+    border-color:var(--cm-border) !important; color:#1F2937 !important;
+    box-shadow:0 8px 22px rgba(15,23,42,.07) !important;
+  }
+  .painel h4,.sessao-titulo,.paddock-gp,.race-titulo,.sn-gp{color:#0B1220 !important;}
+  div[data-testid="stMetric"]{background:linear-gradient(160deg,#FFFFFF,#F6F8FC);
+    border-color:var(--cm-border); box-shadow:0 8px 20px rgba(15,23,42,.06);}
+  div[data-testid="stMetricValue"]{color:#0B1220 !important;}
+  div[data-testid="stMetric"] label{color:#5A6779 !important;}
+  div[data-testid="stExpander"]{background:#FFFFFF; border-color:var(--cm-border);}
+  div[data-testid="stDataFrame"],div[data-testid="stDataEditor"]{border-color:var(--cm-border);}
+  section[data-testid="stSidebar"]{background:linear-gradient(180deg,#FFFFFF 0%,#EEF2F8 100%);
+    border-right:1px solid var(--cm-border);}
+  section[data-testid="stSidebar"] .side-brand .b1{color:#0B1220;}
+  section[data-testid="stSidebar"] div[role="radiogroup"] label{color:#1F2937;}
+  section[data-testid="stSidebar"] div[role="radiogroup"] label:hover{background:rgba(15,23,42,.05);}
+  section[data-testid="stSidebar"] div[role="radiogroup"] label[aria-checked="true"],
+  section[data-testid="stSidebar"] div[role="radiogroup"] [data-checked="true"]{
+    background:linear-gradient(90deg, rgba(200,16,46,.14), rgba(200,16,46,.04));
+    border-color:rgba(200,16,46,.30);}
+  .side-stats .side-stat{background:#FFFFFF; border-color:var(--cm-border);}
+  .side-stat .val{color:#0B1220;} .side-stat .lab{color:#5A6779;}
+  .side-next .sn-gp{color:#0B1220;} .side-next .sn-meta{color:#5A6779;}
+  .office-meta .om{background:rgba(15,23,42,.05); border-color:rgba(15,23,42,.12); color:#1F2937;}
+  .office-head .time{color:#0B1220;}
+  .stat-top{color:#334155;} .stat-top strong{color:#0B1220;}
+  .stat-track,.gap-bar{background:rgba(15,23,42,.10); border-color:rgba(15,23,42,.10);}
+  .gap-txt{color:#5A6779;} .gap-lider{color:#8A6100;}
+  .sessao-circuito{color:#475569;} .sessao-linha{color:#334155;}
+  .tbl-viva th{background:#EEF2F8; color:#334155;}
+  .tbl-viva td{color:#1F2937; border-bottom-color:rgba(15,23,42,.08);}
+  .tbl-viva tr.meu td{background:rgba(200,16,46,.10);}
+  .tbl-viva tr.fora td{color:#8492A6;}
+  .tbl-viva tbody tr:hover td{background:rgba(15,23,42,.04);}
+  .tbl-viva td.p1{color:#8A6100;} .tbl-viva td.p2{color:#475569;} .tbl-viva td.p3{color:#8A5A2B;}
+  .tbl-viva td.mono{color:#334155;} .feed-race,.race-sub{color:#334155;}
+  .sessao-card .sessao-gp{color:#0B1220;}
+  .pausa-chip{background:#8C0E24; color:#fff;}
+  .tag-vc{background:#B3122C;}
+  ::selection{background:rgba(200,16,46,.22); color:#0B1220;}
+  ::-webkit-scrollbar-thumb{background:rgba(15,23,42,.22);}
+  .pin{filter:none;}
+  input,textarea,select,[data-baseweb="select"] div,[data-baseweb="input"] input{
+    background:#FFFFFF !important; color:#0F172A !important; border-color:rgba(15,23,42,.16) !important;}
+  [data-baseweb="tab-list"]{border-bottom-color:var(--cm-border);}
+  .stTabs [aria-selected="true"]{background:rgba(200,16,46,.10); color:#8C0E24 !important;}
+  .stButton > button{background:#FFFFFF; color:#1F2937; border:1px solid rgba(15,23,42,.16);}
+  .stButton > button[kind="primary"],.stButton > button[data-testid="stBaseButton-primary"]{
+    background:linear-gradient(135deg,#D61437,#93021C); color:#fff; border-color:transparent;}
+  hr{border-color:var(--cm-border);}
+  .bandeira-vermelha{color:#7F1023; background:linear-gradient(100deg, rgba(255,205,214,.95), rgba(255,235,238,.85));
+    border-color:rgba(190,18,60,.35);}
+  .radar-wrap{background:linear-gradient(165deg,#FFFFFF,#F7F9FC); border-color:var(--cm-border);}
+  .radar-grade{stroke:rgba(15,23,42,.14);} .radar-eixo{stroke:rgba(15,23,42,.10);}
+  .radar-rotulo{fill:#5A6779;} .radar-leg{color:#334155;}
+  .tl-item::before{background:rgba(15,23,42,.14);}
+  .tl-dot{background:#FFFFFF; color:#5A6779; border-color:rgba(15,23,42,.2);}
+  .tl-item.done .tl-dot{background:#DCFCE7; border-color:#16A34A; color:#14532D;}
+  .tl-item.done .tl-gp{color:#334155;} .tl-gp{color:#5A6779;}
+  .tl-item.agora .tl-gp{color:#8C0E24;}
+</style>
+"""
 
-def aplicar():
-    """Injeta o CSS do jogo na página (idempotente: o Streamlit só re-renderiza)."""
-    st.markdown(CSS, unsafe_allow_html=True)
+
+def aplicar(claro: bool = False) -> None:
+    """Injeta o CSS do jogo na página (idempotente: o Streamlit só re-renderiza).
+
+    `claro=True` adiciona o bloco do tema claro depois do CSS base, então as
+    regras de cor do modo claro vencem por ordem de cascata.
+    """
+    st.markdown(CSS + (CSS_CLARO if claro else ""), unsafe_allow_html=True)

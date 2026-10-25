@@ -34,8 +34,8 @@ jobs:
       - name: Lint (ruff)
         run: ruff check .
 
-      - name: Testes (pytest)
-        run: python -m pytest -q
+      - name: Testes + cobertura (piso de 75%)
+        run: python -m pytest -q --cov --cov-report=term-missing
 
   smoke:
     runs-on: ubuntu-latest

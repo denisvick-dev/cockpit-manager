@@ -94,7 +94,7 @@ PONTOS_STOCK_SPRINT = [
 PONTOS_DTM = [25, 20, 16, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
 
 PRESETS_PONTUACAO = {
-    "F1 (25-18-15… + sprint)": (_f1.PONTOS_CORRIDA, _f1.PONTOS_SPRINT),
+    "F1 (25-18-15…)": (_f1.PONTOS_CORRIDA, _f1.PONTOS_SPRINT),
     "Indy (50-40-35…, todos pontuam)": (PONTOS_INDY, PONTOS_INDY),
     "Stock Car (80 principal / 55 sprint)": (PONTOS_STOCK_PRINCIPAL, PONTOS_STOCK_SPRINT),
     "DTM (25-20-16… top 15, 2 corridas iguais)": (PONTOS_DTM, PONTOS_DTM),
@@ -252,7 +252,7 @@ def db_f1_2026():
             "ano": 2026,
             "descricao": "A DB clássica: 11 equipes, novo regulamento, Audi e Cadillac estreando, Bortoleto no grid.",
             "rotulo_fornecedor": "Motor",
-            "rotulo_corrida2": "Sprint",
+            "rotulo_corrida2": None,  # F1 com corrida única por fim de semana
             "pontos_corrida": list(_f1.PONTOS_CORRIDA),
             "pontos_corrida2": list(_f1.PONTOS_SPRINT),
             "importancia_carro_sugerida": 0.60,

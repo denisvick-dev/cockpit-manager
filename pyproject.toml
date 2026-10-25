@@ -14,6 +14,21 @@ ignore = ["E501", "E402", "E741", "E731", "E702"]
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E402"]
 
+[tool.coverage.run]
+# Mede o jogo (não os testes nem o editor de DBs, que é quase todo UI).
+source = ["."]
+omit = ["tests/*", "tools/*", ".venv/*", "minhas_dbs/*"]
+
+[tool.coverage.report]
+fail_under = 75
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"

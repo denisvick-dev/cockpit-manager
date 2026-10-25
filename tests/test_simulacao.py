@@ -57,11 +57,15 @@ def test_corrida_resultado_coerente(game, etapa):
     tabela = (game.get("meta") or {}).get("pontos_corrida") or db.PONTOS_CORRIDA
     for l in res[: len(tabela)]:
         if not l["dnf"]:
-            assert l["pontos"] == tabela[l["pos"] - 1]
+            extra = 1 if l.get("ponto_volta_rapida") else 0  # +1 da volta mais rápida
+            assert l["pontos"] == tabela[l["pos"] - 1] + extra
     assert isinstance(eventos, list) and eventos
     for m in ("dnf", "motivo", "status", "volta_dnf", "pontos"):
         assert m in res[0]
     assert any(l.get("volta_rapida") for l in res) == bool(terminaram)
+    vr = sim.volta_mais_rapida(res)
+    if vr:
+        assert vr.get("ponto_volta_rapida") is True and vr["pontos"] >= 1
     assert any("Volta mais rápida" in e for e in eventos) or not terminaram
 
 
