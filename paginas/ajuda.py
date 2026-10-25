@@ -52,6 +52,10 @@ Comande uma equipe de F1 temporada após temporada, **sem limite de anos** — e
   com a durabilidade, **Ritmo do próximo stint**, volta atual, **Trocar pneu e voltar ✓** /
   **Continuar na pista ✕** (ou **Cancelar ordem ✕**, se foi você quem chamou); dá para uma parada
   extra além das planejadas. O resultado final continua sendo o do motor.
+- **Box automático no fim do pneu**: quando a vida útil do composto chega a zero, o carro entra no box
+  sozinho na volta seguinte — o chefe de box escolhe o composto (na chuva, intermediário) e a transmissão
+  **não para**. É a opção **Box automático no fim do pneu** do Paddock (ligada por padrão); desmarque para
+  receber a janela do Pit Stop e decidir você mesmo. Os rivais fazem o mesmo.
 - **A janela abre em TODA parada planejada**: na volta do plano o muro chama no rádio e a prova
   **congela** até a resposta — *trocar de pneu?* (e qual composto) e *qual ritmo no próximo stint?*.
   Fechar a janela (X/ESC) equivale a **seguir na pista**; a janela que passar batido (aba em segundo

@@ -824,6 +824,50 @@ def pneus_esgotados(etapa, rep, lap, pits_feitas, pneus_manual=None, ritmos=None
     return esgotados
 
 
+def composto_de_troca(pneu_atual, molhado):
+    """Composto que o box calça quando o pneu acaba na pista (sem perguntar).
+
+    Na chuva vai de intermediário; no seco escolhe o próximo da rota, para não
+    repetir justamente o composto que acabou de se entregar.
+    """
+    if molhado:
+        return "Intermediário"
+    rota = ["Médio", "Macio", "Duro"]
+    if pneu_atual not in rota:
+        return "Médio"
+    return rota[(rota.index(pneu_atual) + 1) % len(rota)]
+
+
+def pit_automatico_por_desgaste(
+    etapa, rep, lap, pits_feitas, pneus_manual=None, ritmos=None, molhado=False, apenas=None
+):
+    """Box de emergência: quem chega ao fim da vida útil do pneu para na hora.
+
+    Executa a parada na própria volta (pneu novo + composto escolhido pelo box) e
+    devolve `[(piloto_id, composto)]` para o feed do rádio. `apenas` limita a
+    lista (ex.: só os pilotos do jogador que estão no modo automático).
+    """
+    pneus_manual = pneus_manual if pneus_manual is not None else {}
+    feitos = []
+    alvos = pneus_esgotados(etapa, rep, lap, pits_feitas, pneus_manual, ritmos, apenas=apenas)
+    if not alvos:
+        return feitos
+    linhas = {ln["pid"]: ln for ln in linhas_replay(rep, lap, pits_feitas, pneus_manual, ritmos)}
+    for pid in alvos:
+        executadas = [x for x in pits_feitas.get(pid) or [] if x <= lap]
+        if lap in executadas:
+            continue
+        linha = linhas.get(pid)
+        novo = composto_de_troca((linha or {}).get("pneu", "Médio"), molhado)
+        paradas = pits_feitas.setdefault(pid, [])
+        paradas.append(lap)
+        paradas.sort()
+        n = len([x for x in paradas if x <= lap])
+        pneus_manual.setdefault(pid, {})[n] = novo
+        feitos.append((pid, novo))
+    return feitos
+
+
 def estrategia_ia(game, p, etapa, molhado, rng):
     if molhado:
         return {"pneu": "Intermediário" if rng.random() < 0.8 else "Chuva extrema", "paradas": 1, "ritmo": "Normal"}

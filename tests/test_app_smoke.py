@@ -201,7 +201,7 @@ def test_corrida_janela_de_pit_pausa_e_volta(app_com_jogo, game):
     assert not app.exception
 
 
-def test_corrida_abre_pit_automatico_quando_pneu_esgota(app_com_jogo, game):
+def test_corrida_pergunta_quando_pneu_esgota_e_o_box_automatico_esta_desligado(app_com_jogo, game):
     app = app_com_jogo
     app.session_state["menu"] = "🏁 Corrida"
     app.run()
@@ -210,6 +210,8 @@ def test_corrida_abre_pit_automatico_quando_pneu_esgota(app_com_jogo, game):
 
     pid = next(iter(stt["pit_perguntar"]))
     stt["pit_perguntar"] = {piloto_id: False for piloto_id in stt["pit_perguntar"]}
+    # com o box automático desligado, o chefe decide na janela
+    stt["pit_auto_esgotado"] = {piloto_id: False for piloto_id in stt["pit_perguntar"]}
     stt["rep"]["info"][pid]["pneus"] = ["Macio"]
     stt["rep"]["info"][pid]["pits_plano"] = []
     stt["rep"]["info"][pid]["paradas"] = 0
@@ -574,3 +576,76 @@ def test_paddock_permite_rever_o_treino_sem_perder_a_grade(app_com_jogo, game):
     app.button(key="ir_corrida").click().run()
     assert any(s.key and str(s.key).startswith("pad_pneu") for s in app.selectbox)
     assert [g["piloto_id"] for g in fds["grid"]] == grade
+
+
+# ------------------------------------------ box automático no fim do pneu
+def _corrida_com_pneu_vencido(app, game, auto=True):
+    """Larga a prova e deixa o 1º piloto do jogador com o pneu no fim da vida."""
+    app.session_state["menu"] = "🏁 Corrida"
+    app.run()
+    fds = app.session_state["fds"]
+    etapa = game["calendario"][game["rodada"]]
+    fds["molhado"] = False
+    fds["grid"] = sim.simular_classificacao(game, etapa, False)
+    fds["treino"] = sim.sessao_treino(game, etapa, False, fds["grid"])
+    fds["treino"]["t0"] = 1.0
+    fds["treino"]["concluido"] = True
+    fds["treino_ok"] = True
+    fds["paddock_ok"] = True
+    app.session_state[f"pad_autoesg_{sim.titulares(game, game['equipe_jogador'])[0]['id']}_{fds['chave']}"] = auto
+    app.run()
+    app.button(key="dar_largada").click().run()
+
+    stt = fds["replay"]
+    pid = sim.titulares(game, game["equipe_jogador"])[0]["id"]
+    voltas = int(stt["rep"]["voltas"])
+    stt["rep"]["info"][pid]["pits_plano"] = []  # sem janela de pit planejada no caminho
+    stt["pit_perguntar"][pid] = False
+    stt["pneus_manual"] = {pid: {0: "Macio"}}
+    stt["ritmos"][pid] = "Normal"
+    alvo = next(v for v in range(2, voltas) if sim.vida_pneu(etapa, "Macio", v, "Normal") == 0)
+    spv = max(0.2, min(0.55, 24.0 / max(1, voltas)))
+    stt["t0"] = time.time() - spv * (alvo + 0.3)
+    stt["velocidade"] = 1
+    app.run()
+    return fds, stt, pid, alvo
+
+
+def test_pneu_no_limite_para_no_box_automaticamente(app_com_jogo, game):
+    app = app_com_jogo
+    fds, stt, pid, alvo = _corrida_com_pneu_vencido(app, game, auto=True)
+
+    assert not app.exception
+    assert alvo in stt["pits"].get(pid, []), "o carro tinha de entrar no box sozinho"
+    assert stt["pneus_manual"][pid][1] == "Duro"  # próximo composto depois do macio
+    assert stt.get("pit_aberto") is None, "no modo automático a prova não para"
+    assert any("box automático" in f for f in stt["feed"])
+
+
+def test_pneu_no_limite_ainda_pergunta_quando_o_automatico_esta_desligado(app_com_jogo, game):
+    app = app_com_jogo
+    fds, stt, pid, alvo = _corrida_com_pneu_vencido(app, game, auto=False)
+
+    assert not app.exception
+    assert stt.get("pit_aberto"), "deveria abrir a janela do Pit Stop"
+    assert stt["pit_aberto"]["pid"] == pid and stt["pit_aberto"].get("esgotado") is True
+    assert alvo not in stt["pits"].get(pid, [])
+
+
+def test_paddock_tem_a_opcao_de_box_automatico(app_com_jogo, game):
+    app = app_com_jogo
+    app.session_state["menu"] = "🏁 Corrida"
+    app.run()
+    fds = app.session_state["fds"]
+    etapa = game["calendario"][game["rodada"]]
+    fds["molhado"] = False
+    fds["grid"] = sim.simular_classificacao(game, etapa, False)
+    fds["treino"] = sim.sessao_treino(game, etapa, False, fds["grid"])
+    fds["treino"]["t0"] = 1.0
+    fds["treino"]["concluido"] = True
+    app.run()
+    app.button(key="ir_corrida").click().run()
+
+    opcoes = [c for c in app.checkbox if c.key and str(c.key).startswith("pad_autoesg_")]
+    assert opcoes, "o Paddock precisa da opção de box automático"
+    assert all(c.value is True for c in opcoes)  # ligado por padrão
