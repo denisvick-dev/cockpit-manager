@@ -43,6 +43,7 @@ def obter_fds(game, etapa):
             "treino_ok": False,
             "replay": None,
             "paddock_ok": False,
+            "passo_ui": None,
         }
     return st.session_state.fds
 
@@ -110,38 +111,6 @@ def _barra_html(pct):
 
 def _clima_txt(molhado):
     return "🌧️ Molhado" if molhado else "☀️ Ensolarado"
-
-
-def _cabecalho_treino(etapa):
-    """Cabeçalho da tela de treino (fiel ao original): Treino / circuito / GP."""
-    st.markdown(
-        f'<div class="sessao-card">'
-        f'<div class="sessao-titulo">Treino</div>'
-        f'<div class="sessao-circuito">{etapa["circuito"]}</div>'
-        f'<div class="sessao-gp">{etapa["gp"]} {bnd.img_bandeira(etapa["bandeira"], 22)}</div>'
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-
-
-def _cabecalho_corrida(game, etapa, molhado, com_checkbox=False):
-    """Cabeçalho da tela de corrida: GP — Etapa X de N, circuito e clima."""
-    rodada = game["rodada"] + 1
-    total = len(game["calendario"])
-    st.markdown(f'<div class="race-titulo">{etapa["gp"]} — Etapa {rodada} de {total}</div>', unsafe_allow_html=True)
-    st.markdown(
-        f'<div class="race-sub">{bnd.img_bandeira(etapa["bandeira"], 20)} {etapa["circuito"]}</div>',
-        unsafe_allow_html=True,
-    )
-    c1, c2 = st.columns([1, 1])
-    c1.markdown(f"**Clima:** {_clima_txt(molhado)}")
-    if com_checkbox:
-        c2.checkbox("Ver pits/pneus", key="ver_pits", help="Mostra colunas de composto e paradas na tabela ao vivo.")
-        st.caption(
-            "📻 Em **cada parada** a prova pausa e abre a janela do **Pit Stop**: trocar de "
-            "pneu (e qual composto) e o **ritmo do próximo stint**. Também dá para chamar o "
-            "box a qualquer momento com o **Pit stop!**."
-        )
 
 
 def _tyre_badge(pneu):
@@ -839,91 +808,85 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
         _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas)
 
 
-def pagina_corrida(game):
+# ======================================================================
+#  FLUXO DA CORRIDA — treino → paddock → corrida (uma etapa por vez)
+# ======================================================================
+PASSOS_CORRIDA = ["Treino", "Paddock", "Corrida", "Resultado"]
 
-    if game["rodada"] >= len(game["calendario"]):
-        painel_fim_temporada(game)
-        return
-    etapa = game["calendario"][game["rodada"]]
-    fds = obter_fds(game, etapa)
-    rep_state = fds.get("replay")
-    molhado = fds["molhado"]
-    eqj = sim.equipe(game, game["equipe_jogador"])
-    meus = sim.titulares(game, eqj["id"])
-    opcoes_pneu = sim.PNEUS_MOLHADO + sim.PNEUS_SECO if molhado else sim.PNEUS_SECO
 
+def _status_passos(fds, rep_state):
+    """Descobre em que passo o jogador está e até onde ele pode navegar.
+
+    - Treino: 0 a grade ainda está sendo definida.
+    - Paddock: 1 treino confirmado, hora de acertar pneus e dar a largada.
+    - Corrida: 2 prova em andamento (o grid está congelado: não dá para voltar).
+    - Resultado: 3 bandeirada.
+    """
+    if rep_state is not None:
+        return (3 if rep_state.get("concluido") else 2), (3 if rep_state.get("concluido") else 2)
+    liberado = 1 if (fds.get("treino_ok") or fds.get("paddock_ok")) else 0
+    passo = fds.get("passo_ui")
+    passo = liberado if passo is None else max(0, min(int(passo), liberado))
+    return passo, liberado
+
+
+def _stepper(passo, liberado):
+    """Trilha dos passos (só o passo atual aparece com destaque)."""
+    partes = []
+    for i, nome in enumerate(PASSOS_CORRIDA):
+        if i > 2:  # "Resultado" só entra na trilha depois da bandeirada
+            continue
+        classe = "agora" if i == passo else ("done" if i < passo else "")
+        partes.append(
+            f'<div class="wz-step {classe}"><span class="wz-n">{i + 1}</span>{nome}</div>'
+        )
+        if i < 2:
+            partes.append(f'<div class="wz-trilha{" done" if i < passo else ""}"></div>')
+    if passo == 3:
+        partes.append('<div class="wz-trilha done"></div>')
+        partes.append('<div class="wz-step agora"><span class="wz-n">4</span>Resultado</div>')
+    st.markdown(f'<div class="wizard">{"".join(partes)}</div>', unsafe_allow_html=True)
+
+
+def _hero_corrida(game, etapa, molhado, previsao):
+    """Cabeçalho compacto do fim de semana: GP, circuito e os números que importam."""
+    chips = [
+        f"Etapa {game['rodada'] + 1}/{len(game['calendario'])}",
+        f"{etapa['voltas']} voltas",
+        "🌧️ Molhado" if molhado else "☀️ Seco",
+        f"{sim.paradas_ideais(etapa)} parada(s) típica(s)",
+    ]
+    if etapa.get("sprint"):
+        chips.append(f"⚡ {rot_corrida2(game)} + principal")
     st.markdown(
-        f'<div class="race-hero"><div class="kicker">Etapa {game["rodada"] + 1} · {game["ano"]}</div>'
-        f"<h1>{bnd.img_bandeira(etapa['bandeira'], 36)} {etapa['gp']}</h1>"
-        f'<p style="margin:0;color:#CBD5E1">{etapa["circuito"]} · {etapa["pais"]}</p></div>',
+        f'<div class="race-hero compacto"><div class="kicker">{game["ano"]} · {etapa["pais"]}</div>'
+        f"<h1>{bnd.img_bandeira(etapa['bandeira'], 30)} {etapa['gp']}</h1>"
+        f'<p style="margin:0;color:#CBD5E1">{etapa["circuito"]}</p>'
+        f'<div class="migalha">'
+        + "".join(f"<span>{c}</span>" for c in chips)
+        + f'<span class="destaque">🌦️ {previsao}</span></div></div>',
         unsafe_allow_html=True,
     )
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Etapa", f"{game['rodada'] + 1}/{len(game['calendario'])} · {game['ano']}")
-    c2.metric("Voltas", etapa["voltas"])
-    c3.metric("Clima", "🌧️ Molhado" if molhado else "☀️ Seco")
-    c4.metric("Formato", f"⚡ {rot_corrida2(game)} + principal" if etapa["sprint"] else "Corrida única")
-    st.caption(
-        f"Características: peso do motor {etapa['potencia'] * 100:.0f}% · facilidade de ultrapassar "
-        f"{etapa['ultrap'] * 100:.0f}% · desgaste {etapa['desgaste']:.1f}/3 → estratégia típica: "
-        f"**{sim.paradas_ideais(etapa)} parada(s)**"
-    )
-    previsao = sim.previsao_texto(fds.get("clima"))
-    st.markdown(f'<div class="previsao-tempo"><b>Previsão do tempo</b> · {previsao}</div>', unsafe_allow_html=True)
 
-    # ---------------- estratégia: os ajustes ficam no Paddock (pneus/grid) e
-    # no rádio ao vivo; aqui só nasce o padrão de cada piloto.
-    estrategias = {p["id"]: {"paradas": sim.paradas_ideais(etapa), "ritmo": "Normal"} for p in meus}
 
-    # ---------------- sprint
-    if etapa["sprint"]:
-        st.divider()
-        st.subheader(f"⚡ {rot_corrida2(game)} (primeira corrida do fim de semana)")
-        if fds["sprint"] is None:
-            est_s = {}
-            colss = st.columns(len(meus))
-            for col, p in zip(colss, meus):
-                with col, st.container(border=True):
-                    st.markdown(
-                        bnd.com_bandeira(p["bandeira"], f"**#{p['numero']} {p['nome']}**"), unsafe_allow_html=True
-                    )
-                    pneu_s = st.selectbox(
-                        "Pneu de largada",
-                        opcoes_pneu,
-                        index=0 if molhado else 1,
-                        format_func=_rot_pneu,
-                        key=f"pneu_s_{p['id']}_{fds['chave']}",
-                    )
-                    est_s[p["id"]] = {
-                        "pneu": pneu_s,
-                        "paradas": sim.paradas_ideais(etapa),
-                        "ritmo": estrategias.get(p["id"], {}).get("ritmo", "Normal"),
-                    }
-            if st.button(f"▶️ Simular {rot_corrida2(game)}", width="stretch"):
-                grid_s = sim.simular_classificacao(game, etapa, molhado)
-                res_s, ev_s = sim.simular_corrida(
-                    game, etapa, grid_s, est_s, molhado, sprint=True, clima=fds.get("clima")
-                )
-                sim.aplicar_resultado(game, etapa, grid_s, res_s, molhado, sprint=True, eventos=ev_s)
-                fds["sprint"] = res_s
-                st.rerun()
-        else:
-            st.dataframe(
-                df_resultado(game, fds["sprint"]), hide_index=True, width="stretch", column_config=CFG_BANDEIRA
-            )
-            st.caption(f"Pontos da {rot_corrida2(game)} já somados ao campeonato.")
+def _detalhes_etapa(etapa, fds):
+    """O que é contexto (e não decisão) fica guardado num expander fechado."""
+    with st.expander("ℹ️ Detalhes da etapa", expanded=False):
+        st.markdown(
+            f"- **Peso do motor:** {etapa['potencia'] * 100:.0f}% · "
+            f"**facilidade de ultrapassar:** {etapa['ultrap'] * 100:.0f}% · "
+            f"**desgaste dos pneus:** {etapa['desgaste']:.1f}/3 · "
+            f"**chance de chuva:** {etapa['chuva'] * 100:.0f}%"
+        )
+        st.markdown(f"- **Previsão do tempo:** {sim.previsao_texto(fds.get('clima'))}")
 
-    # ---------------- tela de treino classificatório
-    st.divider()
-    st.subheader("⏱️ Treino classificatório")
-    bloqueado = bool(etapa["sprint"] and fds["sprint"] is None)
-    _cabecalho_treino(etapa)
+
+def _passo_treino(game, etapa, molhado, fds, bloqueado, pode_avancar):
+    """Passo 1: treino classificatório — cronômetro, grade e botão de avançar."""
     sess = fds.get("treino")
     if not sess or not sess.get("t0"):
         # cronômetro parado: grade neutra com '-' (sem spoiler do grid)
-        cm1, cm2 = st.columns([3.2, 1])
-        cm1.progress(0.0, text="⏱️ Tempo de treino restante: 60 min")
-        cm2.markdown(f"**Clima:** {_clima_txt(molhado)}")
+        st.progress(0.0, text="⏱️ Treino classificatório · 60 min")
         neutro = [
             {"piloto_id": p["id"], "equipe_id": p["equipe_id"], "pos": i + 1}
             for i, p in enumerate(
@@ -945,212 +908,283 @@ def pagina_corrida(game):
             st.rerun()
         if bloqueado:
             st.caption(f"🏁 Primeiro simule o {rot_corrida2(game)}.")
-    elif not sess.get("concluido"):
-        _frag_treino(game, etapa, molhado, fds)
-    else:
-        # sessão encerrada: grade final congelada + pole + passagem para a corrida
-        cm1, cm2 = st.columns([3.2, 1])
-        cm1.progress(1.0, text="⏱️ Tempo de treino restante: 0 min")
-        cm2.markdown(f"**Clima:** {_clima_txt(molhado)}")
-        st.markdown(_html_tabela_treino(game, fds["grid"], sess, int(sess["duracao"])), unsafe_allow_html=True)
-        pole = sim.piloto(game, fds["grid"][0]["piloto_id"])
-        st.caption(
-            f"🏆 **Pole position:** {pole['nome']} ({fmt_tempo(fds['grid'][0]['tempo'])}) · {len(fds['grid'])} no grid"
-        )
-        if not fds.get("treino_ok"):
-            if st.button("➡️ Ir para corrida!", type="primary", width="stretch", key="ir_corrida"):
-                fds["treino_ok"] = True
-                flash(
-                    "success",
-                    "Treino encerrado e grid confirmado — prepare a estratégia e dê a largada na tela abaixo!",
-                )
-                st.rerun()
-        else:
-            st.caption("✅ Treino concluído — role até a tela da corrida e aperte **Dar largada!**")
+        _detalhes_etapa(etapa, fds)
+        return
 
-    # ---------------- tela da corrida
-    st.divider()
-    _cabecalho_corrida(game, etapa, molhado, com_checkbox=bool(rep_state) and not rep_state.get("concluido"))
-    if rep_state is not None and not rep_state.get("concluido"):
-        _atalhos_corrida()
-        _frag_corrida(game, etapa, molhado, fds, meus)
-    elif rep_state is None:
-        # ---- pré-largada: grid + Paddock (pneus/grid/pit) + Dar largada! ----
-        treino_ok = bool(fds.get("treino_ok"))
-        c1, c2 = st.columns([2.3, 1], gap="medium")
-        with c1:
-            if fds.get("grid"):
-                linhas_ini = [
-                    {
-                        "pid": g["piloto_id"],
-                        "equipe_id": g["equipe_id"],
-                        "pos": g["pos"],
-                        "tempo": None,
-                        "dif_ant": None,
-                        "dif1": None,
-                        "box": False,
-                    }
-                    for g in fds["grid"]
-                ]
-                st.markdown(_html_tabela_viva(game, linhas_ini, False, {p["id"] for p in meus}), unsafe_allow_html=True)
-            else:
-                st.info("🏁 O grid de largada aparece aqui depois do treino.")
-        with c2:
+    if not sess.get("concluido"):
+        _frag_treino(game, etapa, molhado, fds)
+        return
+
+    # sessão encerrada: grade final congelada + pole + passagem para o paddock
+    st.progress(1.0, text="⏱️ Treino encerrado — grid fechado")
+    st.markdown(_html_tabela_treino(game, fds["grid"], sess, int(sess["duracao"])), unsafe_allow_html=True)
+    pole = sim.piloto(game, fds["grid"][0]["piloto_id"])
+    st.caption(
+        f"🏆 **Pole position:** {pole['nome']} ({fmt_tempo(fds['grid'][0]['tempo'])}) · {len(fds['grid'])} no grid"
+    )
+    if pode_avancar:
+        if st.button("➡️ Ir para o Paddock", type="primary", width="stretch", key="ir_corrida"):
+            fds["treino_ok"] = True
+            fds["passo_ui"] = 1
+            flash("success", "Grid fechado — acerte os pneus no Paddock e dê a largada!")
+            st.rerun()
+    with st.expander("👀 Ver detalhes da etapa", expanded=False):
+        st.markdown(
+            f"Peso do motor **{etapa['potencia'] * 100:.0f}%** · ultrapassagem "
+            f"**{etapa['ultrap'] * 100:.0f}%** · desgaste **{etapa['desgaste']:.1f}/3** — "
+            f"estratégia típica: **{sim.paradas_ideais(etapa)} parada(s)**."
+        )
+        st.markdown(f"Previsão: {sim.previsao_texto(fds.get('clima'))}")
+
+
+def _passo_paddock(game, etapa, molhado, fds, meus, estrategias, opcoes_pneu, bloqueado):
+    """Passo 2: paddock enxuto — pneus, grid e a largada."""
+    st.markdown(
+        f'<div class="paddock-head"><div class="paddock-kick">Paddock</div>'
+        f'<div class="paddock-gp">{etapa["gp"]} — {etapa["voltas"]} voltas '
+        f"{bnd.img_bandeira(etapa['bandeira'], 20)}</div></div>",
+        unsafe_allow_html=True,
+    )
+    grid_pos = {g["piloto_id"]: g["pos"] for g in (fds.get("grid") or [])}
+    pit_auto = {}
+    colsp = st.columns(len(meus))
+    for col, p in zip(colsp, meus):
+        with col, st.container(border=True):
             st.markdown(
-                f'<div class="voltas-box"><div class="lab">Voltas</div>'
-                f'<div class="n">0 / {etapa["voltas"]}</div></div>',
+                bnd.com_bandeira(
+                    p["bandeira"], f"**#{p['numero']} {p['nome']}** ({ROTULOS_PAPEL.get(p['papel'], p['papel'])})"
+                ),
                 unsafe_allow_html=True,
             )
-        # ---- Paddock (fiel ao original): pneus com durabilidade, grid e aviso de pit stop
-        st.markdown(
-            f'<div class="paddock-head"><div class="paddock-kick">Paddock</div>'
-            f'<div class="paddock-gp">{etapa["gp"]} — {etapa["voltas"]} voltas '
-            f"{bnd.img_bandeira(etapa['bandeira'], 20)}</div></div>",
-            unsafe_allow_html=True,
-        )
-        pit_auto = {}
-        grid_pos = {g["piloto_id"]: g["pos"] for g in (fds.get("grid") or [])}
-        colsp = st.columns(len(meus))
-        for col, p in zip(colsp, meus):
-            with col, st.container(border=True):
-                st.markdown(
-                    bnd.com_bandeira(
-                        p["bandeira"], f"**#{p['numero']} {p['nome']}** ({ROTULOS_PAPEL.get(p['papel'], p['papel'])})"
-                    ),
-                    unsafe_allow_html=True,
-                )
-                pneu_pad = st.selectbox(
-                    "Pneus",
-                    opcoes_pneu,
-                    index=0 if molhado else 1,
-                    format_func=_rot_pneu,
-                    key=f"pad_pneu_{p['id']}_{fds['chave']}",
-                )
-                if molhado and pneu_pad in sim.PNEUS_SECO:
-                    st.error("⚠️ Pneu slick na chuva?! Isso vai doer...")
-                if not molhado and pneu_pad in sim.PNEUS_MOLHADO:
-                    st.error("⚠️ Pneu de chuva no seco derrete em 3 voltas!")
-                estrategias.setdefault(p["id"], {"paradas": sim.paradas_ideais(etapa), "ritmo": "Normal"})
-                estrategias[p["id"]]["pneu"] = pneu_pad
-                pos = grid_pos.get(p["id"])
-                st.markdown(f"**Grid:** {f'{pos}º lugar' if pos else '—'}")
-                pit_auto[p["id"]] = st.checkbox(
-                    "Perguntar em cada pit stop",
-                    value=True,
-                    help="A cada parada planejada abre a janela do Pit Stop para você "
-                    "decidir: trocar o pneu (e qual composto) e o novo ritmo. "
-                    "Desmarque para o box fazer as paradas sozinho.",
-                    key=f"pad_perg_{p['id']}_{fds['chave']}",
-                )
-        if st.button("✅ Confirmar", type="primary", width="stretch", key="paddock_confirmar"):
+            pos = grid_pos.get(p["id"])
+            st.caption(f"Largada: **{f'{pos}º' if pos else '—'}**")
+            pneu_pad = st.selectbox(
+                "Pneus",
+                opcoes_pneu,
+                index=0 if molhado else 1,
+                format_func=_rot_pneu,
+                key=f"pad_pneu_{p['id']}_{fds['chave']}",
+                label_visibility="collapsed",
+            )
+            if molhado and pneu_pad in sim.PNEUS_SECO:
+                st.caption("⚠️ Slick na chuva — vai doer.")
+            if not molhado and pneu_pad in sim.PNEUS_MOLHADO:
+                st.caption("⚠️ Pneu de chuva no seco derrete.")
+            estrategias.setdefault(p["id"], {"paradas": sim.paradas_ideais(etapa), "ritmo": "Normal"})
+            estrategias[p["id"]]["pneu"] = pneu_pad
+            pit_auto[p["id"]] = st.checkbox(
+                "Perguntar em cada pit stop",
+                value=True,
+                help="A cada parada planejada abre a janela do Pit Stop (pneu + ritmo). "
+                "Desmarque para o box fazer as paradas sozinho.",
+                key=f"pad_perg_{p['id']}_{fds['chave']}",
+            )
+
+    with st.expander("📋 Grid de largada", expanded=not fds.get("grid")):
+        if fds.get("grid"):
+            linhas_ini = [
+                {
+                    "pid": g["piloto_id"],
+                    "equipe_id": g["equipe_id"],
+                    "pos": g["pos"],
+                    "tempo": None,
+                    "dif_ant": None,
+                    "dif1": None,
+                    "box": False,
+                }
+                for g in fds["grid"]
+            ]
+            st.markdown(_html_tabela_viva(game, linhas_ini, False, {p["id"] for p in meus}), unsafe_allow_html=True)
+        else:
+            st.info("🏁 O grid aparece aqui depois do treino.")
+
+    paddock_ok = bool(fds.get("paddock_ok"))
+    pode_largar = bool(fds.get("treino_ok")) and bool(fds.get("grid")) and not bloqueado and paddock_ok
+    if not paddock_ok:
+        # ainda escolhendo: confirmar guarda a estratégia, largar só depois
+        c1, c2 = st.columns(2)
+        if c1.button("✅ Confirmar estratégia", width="stretch", key="paddock_confirmar"):
             fds["paddock_ok"] = True
             flash("success", "Paddock confirmado — pneus e avisos de pit stop valendo. Agora é só dar a largada!")
             st.rerun()
-        if fds.get("paddock_ok"):
-            st.caption("✅ Paddock confirmado — estratégia valendo para a largada.")
-        paddock_ok = bool(fds.get("paddock_ok"))
-        pode_largar = treino_ok and bool(fds.get("grid")) and not bloqueado and paddock_ok
-        if st.button("🚦 Dar largada!", type="primary", width="stretch", key="dar_largada", disabled=not pode_largar):
-            res, ev = sim.simular_corrida(
-                game, etapa, fds["grid"], estrategias, molhado, clima=fds.get("clima")
-            )
-            fds["resumo"] = sim.aplicar_resultado(game, etapa, fds["grid"], res, molhado, eventos=ev)
-            fds["resultado"], fds["eventos"] = res, ev
-            venceu = any(l["equipe_id"] == eqj["id"] and l["pos"] == 1 and not l["dnf"] for l in res)
-            fds["replay"] = {
-                "rep": sim.montar_replay(game, etapa, fds["grid"], res, molhado, eventos=ev),
-                "t0": time.time(),
-                "pits": {},
-                "feed": [],
-                "feed_dnf": [],
-                "sc_ok": False,
-                "lap": 0,
-                "pulou": False,
-                "concluido": False,
-                "venceu": venceu,
-                "balloons_ok": False,
-                "ritmos": {pid: e.get("ritmo", "Normal") for pid, e in estrategias.items()},
-                "pneus_manual": {},
-                "pit_perguntar": pit_auto,
-                "pit_aberto": None,
-                "pits_recusados": {},
-                "clima": fds.get("clima"),
-                "clima_visto": None,
-                "pausado": False,
-                "velocidade": 1,
-            }
-            st.rerun()
-        if bloqueado:
-            st.caption(f"🏁 Simule o {rot_corrida2(game)} primeiro.")
-        elif not treino_ok:
-            st.caption("⏱️ Complete o treino para liberar a largada.")
-        elif not paddock_ok:
-            st.caption("✅ Confirme o Paddock para liberar a largada.")
+        c2.button("🚦 Dar largada!", type="primary", width="stretch", key="dar_largada", disabled=not pode_largar)
+        if not fds.get("treino_ok"):
+            st.caption("⏱️ Confirme o treino para liberar a largada.")
+        else:
+            st.caption("✅ Confirme a estratégia para liberar a largada.")
     else:
-        # ---- pós-corrida: classificação final, eventos e finanças
-        if rep_state.get("venceu") and not rep_state.get("balloons_ok"):
-            rep_state["balloons_ok"] = True
-            st.balloons()
-        st.dataframe(df_resultado(game, fds["resultado"]), hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
-        botao_csv(
-            df_resultado(game, fds["resultado"]).drop(columns=["Bandeira"], errors="ignore"),
-            f"resultado_{game['ano']}_etapa{game['rodada'] + 1}.csv",
-            key="csv_resultado_corrida",
+        if st.button("🚦 Dar largada!", type="primary", width="stretch", key="dar_largada", disabled=not pode_largar):
+            _largar(game, etapa, molhado, fds, meus, estrategias, pit_auto)
+        st.caption("✅ Estratégia confirmada — boa sorte, chefe!")
+    if not bloqueado and fds.get("passo_ui") != 0:
+        if st.button("← Revisar treino", key="voltar_treino"):
+            fds["passo_ui"] = 0
+            st.rerun()
+
+
+def _largar(game, etapa, molhado, fds, meus, estrategias, pit_auto):
+    """Cria o replay e joga o jogador no passo da corrida."""
+    eqj = sim.equipe(game, game["equipe_jogador"])
+    res, ev = sim.simular_corrida(game, etapa, fds["grid"], estrategias, molhado, clima=fds.get("clima"))
+    fds["resumo"] = sim.aplicar_resultado(game, etapa, fds["grid"], res, molhado, eventos=ev)
+    fds["resultado"], fds["eventos"] = res, ev
+    venceu = any(l["equipe_id"] == eqj["id"] and l["pos"] == 1 and not l["dnf"] for l in res)
+    fds["replay"] = {
+        "rep": sim.montar_replay(game, etapa, fds["grid"], res, molhado, eventos=ev),
+        "t0": time.time(),
+        "pits": {},
+        "feed": [],
+        "feed_dnf": [],
+        "sc_ok": False,
+        "lap": 0,
+        "pulou": False,
+        "concluido": False,
+        "venceu": venceu,
+        "balloons_ok": False,
+        "ritmos": {pid: e.get("ritmo", "Normal") for pid, e in estrategias.items()},
+        "pneus_manual": {},
+        "pit_perguntar": pit_auto,
+        "pit_aberto": None,
+        "pits_recusados": {},
+        "clima": fds.get("clima"),
+        "clima_visto": None,
+        "pausado": False,
+        "velocidade": 1,
+    }
+    st.rerun()
+
+
+def _passo_corrida(game, etapa, molhado, fds, meus):
+    """Passo 3: transmissão ao vivo, sem os blocos de preparação na tela."""
+    c1, c2 = st.columns([1, 2.4], vertical_alignment="center")
+    c1.checkbox(
+        "Ver pits/pneus",
+        key="ver_pits",
+        help="Mostra composto e número de paradas na torre de tempos.",
+    )
+    c2.caption("📻 Em cada parada a prova pausa e abre o **Pit Stop** — ou chame o box com **Pit stop!**.")
+    _atalhos_corrida()
+    _frag_corrida(game, etapa, molhado, fds, meus)
+
+
+def _passo_resultado(game, etapa, molhado, fds, meus, rep_state, eqj):
+    """Passo 4: bandeirada — classificação, volta rápida, stints e finanças."""
+    if rep_state.get("venceu") and not rep_state.get("balloons_ok"):
+        rep_state["balloons_ok"] = True
+        st.balloons()
+    st.dataframe(df_resultado(game, fds["resultado"]), hide_index=True, width="stretch", column_config=CFG_BANDEIRA)
+    botao_csv(
+        df_resultado(game, fds["resultado"]).drop(columns=["Bandeira"], errors="ignore"),
+        f"resultado_{game['ano']}_etapa{game['rodada'] + 1}.csv",
+        key="csv_resultado_corrida",
+    )
+    vr = sim.volta_mais_rapida(fds["resultado"])
+    if vr:
+        p_vr = sim.piloto(game, vr["piloto_id"])
+        st.markdown(
+            f"⚡ **Volta mais rápida:** {bnd.com_bandeira(p_vr['bandeira'], p_vr['nome'])} — "
+            f"{sim.equipe(game, vr['equipe_id'])['nome']} · +1 ponto"
         )
-        vr = sim.volta_mais_rapida(fds["resultado"])
-        if vr:
-            p_vr = sim.piloto(game, vr["piloto_id"])
-            st.markdown(
-                f"⚡ **Volta mais rápida:** {bnd.com_bandeira(p_vr['bandeira'], p_vr['nome'])} — "
-                f"{sim.equipe(game, vr['equipe_id'])['nome']} · +1 ponto"
-            )
+    with st.expander("📻 O que aconteceu na prova", expanded=False):
         for ev in fds["eventos"]:
             st.markdown(f"- {ev}")
 
-        # ---------------- gráfico de stints (degradação dos seus pilotos)
-        if rep_state.get("rep"):
-            rep_final = rep_state["rep"]
-            with st.expander("📈 Stints e degradação dos pneus", expanded=True):
-                dados = {}
-                for p in meus:
-                    stints = sim.stints_corrida(
-                        rep_final, p["id"], rep_state.get("pits"), rep_state.get("pneus_manual")
-                    )
-                    tempos = rep_final["info"][p["id"]]["tempos"][: int(rep_final["voltas"])]
-                    if tempos:
-                        dados[p["nome"]] = pd.Series(
-                            tempos, index=range(1, len(tempos) + 1)
-                        )
-                    if stints:
-                        st.caption(
-                            f"**{p['nome']}** — "
-                            + " → ".join(
-                                f"{s['pneu']} (v.{s['inicio']}-{s['fim']}, {s['tempo_medio']}s)"
-                                for s in stints
-                                if s["tempo_medio"]
-                            )
-                        )
-                if dados:
-                    st.line_chart(
-                        pd.DataFrame(dados),
-                        x_label="Volta",
-                        y_label="Tempo de volta (s)",
-                    )
+    # gráfico de stints (degradação dos seus pilotos)
+    if rep_state.get("rep"):
+        rep_final = rep_state["rep"]
+        with st.expander("📈 Stints e degradação dos pneus", expanded=True):
+            dados = {}
+            for p in meus:
+                stints = sim.stints_corrida(rep_final, p["id"], rep_state.get("pits"), rep_state.get("pneus_manual"))
+                tempos = rep_final["info"][p["id"]]["tempos"][: int(rep_final["voltas"])]
+                if tempos:
+                    dados[p["nome"]] = pd.Series(tempos, index=range(1, len(tempos) + 1))
+                if stints:
                     st.caption(
-                        "As quedas verticais são as paradas no box; a subida lenta em cada stint é a degradação."
+                        f"**{p['nome']}** — "
+                        + " → ".join(
+                            f"{s['pneu']} (v.{s['inicio']}-{s['fim']}, {s['tempo_medio']}s)"
+                            for s in stints
+                            if s["tempo_medio"]
+                        )
                     )
-        if fds["resumo"]:
-            st.markdown(
-                "**💰 Balanço do fim de semana:** "
-                + " · ".join(
-                    f"{d} {sim.fmt_dinheiro_k(v) if v >= 0 else '−' + sim.fmt_dinheiro_k(-v)}" for d, v in fds["resumo"]
-                )
-                + f" → caixa atual: **{sim.fmt_dinheiro_m(eqj['caixa'])}**"
+            if dados:
+                st.line_chart(pd.DataFrame(dados), x_label="Volta", y_label="Tempo de volta (s)")
+                st.caption("As quedas verticais são as paradas no box; a subida lenta é a degradação.")
+    if fds["resumo"]:
+        st.markdown(
+            "**💰 Balanço do fim de semana:** "
+            + " · ".join(
+                f"{d} {sim.fmt_dinheiro_k(v) if v >= 0 else '−' + sim.fmt_dinheiro_k(-v)}" for d, v in fds["resumo"]
             )
-        prox = "Encerrar a temporada 🏁" if game["rodada"] >= len(game["calendario"]) else "Continuar ▶️"
-        st.button(prox, type="primary", width="stretch", on_click=_continuar_da_corrida)
-    st.markdown(
-        f'<div class="banner-circuito"><b>{etapa["circuito"]} — {etapa["gp"]}</b><br>'
-        f"Clima: {_clima_txt(molhado)}</div>",
-        unsafe_allow_html=True,
-    )
+            + f" → caixa atual: **{sim.fmt_dinheiro_m(eqj['caixa'])}**"
+        )
+    prox = "Encerrar a temporada 🏁" if game["rodada"] >= len(game["calendario"]) else "Continuar ▶️"
+    st.button(prox, type="primary", width="stretch", on_click=_continuar_da_corrida)
+
+
+def pagina_corrida(game):
+    if game["rodada"] >= len(game["calendario"]):
+        painel_fim_temporada(game)
+        return
+    etapa = game["calendario"][game["rodada"]]
+    fds = obter_fds(game, etapa)
+    rep_state = fds.get("replay")
+    molhado = fds["molhado"]
+    eqj = sim.equipe(game, game["equipe_jogador"])
+    meus = sim.titulares(game, eqj["id"])
+    opcoes_pneu = sim.PNEUS_MOLHADO + sim.PNEUS_SECO if molhado else sim.PNEUS_SECO
+    bloqueado = bool(etapa.get("sprint") and fds.get("sprint") is None)
+    passo, liberado = _status_passos(fds, rep_state)
+
+    # estratégia padrão de cada piloto (o Paddock sobrescreve os pneus)
+    estrategias = {p["id"]: {"paradas": sim.paradas_ideais(etapa), "ritmo": "Normal"} for p in meus}
+
+    _hero_corrida(game, etapa, molhado, sim.previsao_texto(fds.get("clima")))
+    _stepper(passo, liberado)
+
+    # a primeira corrida do fim de semana (Stock Car, DTM, F1 Academy) vem antes do treino
+    if etapa.get("sprint") and passo == 0:
+        if fds.get("sprint") is None:
+            est_s = {}
+            colss = st.columns(len(meus))
+            for col, p in zip(colss, meus):
+                with col, st.container(border=True):
+                    st.markdown(
+                        bnd.com_bandeira(p["bandeira"], f"**#{p['numero']} {p['nome']}**"), unsafe_allow_html=True
+                    )
+                    pneu_s = st.selectbox(
+                        "Pneu de largada",
+                        opcoes_pneu,
+                        index=0 if molhado else 1,
+                        format_func=_rot_pneu,
+                        key=f"pneu_s_{p['id']}_{fds['chave']}",
+                    )
+                    est_s[p["id"]] = {
+                        "pneu": pneu_s,
+                        "paradas": sim.paradas_ideais(etapa),
+                        "ritmo": estrategias.get(p["id"], {}).get("ritmo", "Normal"),
+                    }
+            if st.button(f"▶️ Simular {rot_corrida2(game)}", width="stretch", key="simular_sprint"):
+                grid_s = sim.simular_classificacao(game, etapa, molhado)
+                res_s, ev_s = sim.simular_corrida(
+                    game, etapa, grid_s, est_s, molhado, sprint=True, clima=fds.get("clima")
+                )
+                sim.aplicar_resultado(game, etapa, grid_s, res_s, molhado, sprint=True, eventos=ev_s)
+                fds["sprint"] = res_s
+                st.rerun()
+        else:
+            st.dataframe(
+                df_resultado(game, fds["sprint"]), hide_index=True, width="stretch", column_config=CFG_BANDEIRA
+            )
+            st.caption(f"Pontos da {rot_corrida2(game)} já somados ao campeonato.")
+        st.divider()
+
+    if passo == 0:
+        _passo_treino(game, etapa, molhado, fds, bloqueado, pode_avancar=True)
+    elif passo == 1:
+        _passo_paddock(game, etapa, molhado, fds, meus, estrategias, opcoes_pneu, bloqueado)
+    elif passo == 2:
+        _passo_corrida(game, etapa, molhado, fds, meus)
+    else:
+        _passo_resultado(game, etapa, molhado, fds, meus, rep_state, eqj)

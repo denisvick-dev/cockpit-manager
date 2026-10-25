@@ -500,6 +500,7 @@ def test_pos_corrida_mostra_volta_rapida_e_stints(app_com_jogo, game):
         "red_ok": True,
     }
     fds["treino"] = sim.sessao_treino(game, etapa, False, fds["grid"])
+    fds["treino"]["t0"] = 1.0  # cronômetro já rodou (0.0 é tratado como "não iniciado")
     fds["treino"]["concluido"] = True
     fds["treino_ok"] = True
     fds["paddock_ok"] = True
@@ -511,3 +512,66 @@ def test_pos_corrida_mostra_volta_rapida_e_stints(app_com_jogo, game):
     assert any("Stints e degradação" in str(e.label) for e in app.expander)
     # botão de CSV do resultado (download_button não entra em app.button)
     assert any("Exportar CSV" in str(d.label) for d in app.get("download_button"))
+
+
+# ------------------------------------------------- fluxo guiado da corrida
+def _treino_pronto(app, game, fds):
+    """Deixa o treino concluído sem esperar o cronômetro."""
+    etapa = game["calendario"][game["rodada"]]
+    fds["molhado"] = False
+    fds["grid"] = sim.simular_classificacao(game, etapa, False)
+    fds["treino"] = sim.sessao_treino(game, etapa, False, fds["grid"])
+    fds["treino"]["t0"] = 1.0  # cronômetro já rodou (0.0 é tratado como "não iniciado")
+    fds["treino"]["concluido"] = True
+    app.run()
+
+
+def test_fluxo_da_corrida_mostra_um_passo_por_vez(app_com_jogo, game):
+    app = app_com_jogo
+    app.session_state["menu"] = "🏁 Corrida"
+    app.run()
+    fds = app.session_state["fds"]
+
+    # passo 1: só treino (nenhum seletor de pneu do Paddock na tela)
+    html = "\n".join(str(m.value) for m in app.markdown)
+    assert 'class="wizard"' in html and "wz-step agora" in html
+    assert not any(s.key and str(s.key).startswith("pad_pneu") for s in app.selectbox)
+    assert any(b.key == "iniciar_treino" for b in app.button)
+
+    # passo 2: paddock, sem a tabela do treino
+    _treino_pronto(app, game, fds)
+    app.button(key="ir_corrida").click().run()
+    assert not app.exception
+    html = "\n".join(str(m.value) for m in app.markdown)
+    assert "Paddock" in html and "wz-step done" in html
+    assert any(s.key and str(s.key).startswith("pad_pneu") for s in app.selectbox)
+    assert any(e.label == "📋 Grid de largada" for e in app.expander)
+    assert not any(b.key == "iniciar_treino" for b in app.button)
+
+    # passo 3: transmissão — os blocos de preparação saem da tela
+    app.button(key="paddock_confirmar").click().run()
+    app.button(key="dar_largada").click().run()
+    assert not app.exception
+    assert any(b.key == "concluir_corrida" for b in app.button)
+    assert not any(s.key and str(s.key).startswith("pad_pneu") for s in app.selectbox)
+    assert not any(b.key in ("iniciar_treino", "paddock_confirmar", "dar_largada") for b in app.button)
+
+
+def test_paddock_permite_rever_o_treino_sem_perder_a_grade(app_com_jogo, game):
+    app = app_com_jogo
+    app.session_state["menu"] = "🏁 Corrida"
+    app.run()
+    fds = app.session_state["fds"]
+    _treino_pronto(app, game, fds)
+    grade = [g["piloto_id"] for g in fds["grid"]]
+
+    app.button(key="ir_corrida").click().run()
+    app.button(key="voltar_treino").click().run()
+    assert not app.exception
+    assert any(b.key == "ir_corrida" for b in app.button)
+    assert [g["piloto_id"] for g in fds["grid"]] == grade
+
+    # e volta para o paddock com a mesma grade
+    app.button(key="ir_corrida").click().run()
+    assert any(s.key and str(s.key).startswith("pad_pneu") for s in app.selectbox)
+    assert [g["piloto_id"] for g in fds["grid"]] == grade
