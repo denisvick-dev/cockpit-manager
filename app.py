@@ -81,9 +81,7 @@ else:
             text=f"Temporada {game['ano']} · {game['rodada']}/{total_etapas} etapas concluídas",
         )
         tabela_p = sim.tabela_pilotos(game)
-        pos_piloto = next(
-            (i + 1 for i, p in enumerate(tabela_p) if p["equipe_id"] == eqj["id"]), None
-        )
+        pos_piloto = next((i + 1 for i, p in enumerate(tabela_p) if p["equipe_id"] == eqj["id"]), None)
         st.markdown(
             '<div class="side-stats">'
             f'<div class="side-stat"><div class="lab">Caixa</div>'

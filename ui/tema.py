@@ -8,6 +8,7 @@ O CSS do jogo mora aqui (e não no app.py) para manter a interface legível:
 
 Uso: `from ui import tema` e `tema.aplicar()` uma vez por execução.
 """
+
 import streamlit as st
 
 CSS = """

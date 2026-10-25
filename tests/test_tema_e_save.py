@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Testes do tema/interface estática (ui/tema.py) e do save em JSON."""
+
 import json
 import re
 
@@ -57,8 +58,7 @@ def test_fontes_registradas_no_tema_batem_com_os_arquivos():
 def test_save_json_ida_e_volta(game, etapa):
     """Salvar (.json) e carregar de volta preserva o estado essencial."""
     grid = sim.simular_classificacao(game, etapa, False)
-    res, ev = sim.simular_corrida(game, etapa, grid, {}, False,
-                                  clima=sim.plano_clima(game, etapa, False))
+    res, ev = sim.simular_corrida(game, etapa, grid, {}, False, clima=sim.plano_clima(game, etapa, False))
     sim.aplicar_resultado(game, etapa, grid, res, False, eventos=ev)
 
     texto = json.dumps(game, ensure_ascii=False)
@@ -84,8 +84,7 @@ def test_ultimas_corridas_e_forma_texto(game):
     for _ in range(3):
         etapa = game["calendario"][game["rodada"]]
         grid = sim.simular_classificacao(game, etapa, False)
-        res, ev = sim.simular_corrida(game, etapa, grid, {}, False,
-                                      clima=sim.plano_clima(game, etapa, False))
+        res, ev = sim.simular_corrida(game, etapa, grid, {}, False, clima=sim.plano_clima(game, etapa, False))
         sim.aplicar_resultado(game, etapa, grid, res, False, eventos=ev)
         game["rodada"] += 1
 

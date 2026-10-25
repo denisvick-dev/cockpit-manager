@@ -163,7 +163,11 @@ def _html_tabela_viva(game, linhas, mostrar_pits=False, meus_ids=(), grids=None,
             classes.append("fora")
         if pos == 1 and not l.get("fora"):
             classes.append("lider")
-        tr = f'<tr class="{" ".join(classes)}" style="--eq:{eq["cor"]}">' if classes else f'<tr style="--eq:{eq["cor"]}">'
+        tr = (
+            f'<tr class="{" ".join(classes)}" style="--eq:{eq["cor"]}">'
+            if classes
+            else f'<tr style="--eq:{eq["cor"]}">'
+        )
 
         cls_pos = "pos" + (" p1" if pos == 1 else " p2" if pos == 2 else " p3" if pos == 3 else "")
         delta = _delta_pos(pos, grids.get(l["pid"])) if mostra_delta and not l.get("fora") else ""
@@ -187,8 +191,7 @@ def _html_tabela_viva(game, linhas, mostrar_pits=False, meus_ids=(), grids=None,
 
         extra = ""
         if mostrar_pits:
-            extra = (f'<td>{_tyre_badge(l.get("pneu", "—"))}</td>'
-                     f'<td>{l.get("pits", 0)}/{l.get("paradas", 0)}</td>')
+            extra = f"<td>{_tyre_badge(l.get('pneu', '—'))}</td><td>{l.get('pits', 0)}/{l.get('paradas', 0)}</td>"
 
         corpo.append(
             f'{tr}<td class="{cls_pos}"><span class="pos-n">{pos}</span>{delta}</td>'
@@ -223,7 +226,11 @@ def _html_tabela_treino(game, grid, sessao, minuto):
             classes.append("meu")
         if i == 0:
             classes.append("lider")
-        tr = f'<tr class="{" ".join(classes)}" style="--eq:{eq["cor"]}">' if classes else f'<tr style="--eq:{eq["cor"]}">'
+        tr = (
+            f'<tr class="{" ".join(classes)}" style="--eq:{eq["cor"]}">'
+            if classes
+            else f'<tr style="--eq:{eq["cor"]}">'
+        )
         pos = i + 1
         cls_pos = "pos" + (" p1" if pos == 1 else " p2" if pos == 2 else " p3" if pos == 3 else "")
         tempo_txt = fmt_tempo(t) if t is not None else "—"
@@ -234,7 +241,7 @@ def _html_tabela_treino(game, grid, sessao, minuto):
         corpo.append(
             f'{tr}<td class="{cls_pos}"><span class="pos-n">{pos}</span></td>'
             f'<td class="nome-cel">{p["nome"]}{eu}</td>'
-            f"<td>{_chip_equipe(eq)}</td><td class=\"mono\">{tempo_txt}{gap}</td></tr>"
+            f'<td>{_chip_equipe(eq)}</td><td class="mono">{tempo_txt}{gap}</td></tr>'
         )
     cab = "<th>Pos.</th><th>Nome</th><th>Equipe</th><th>Melhor tempo</th>"
     return (
@@ -522,9 +529,7 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
             recusas_esgotado = stt.setdefault("pneus_esgotados_recusados", {})
             pneus_man = stt.get("pneus_manual", {})
             ritmos = stt.get("ritmos", {})
-            for pid_esgotado in sim.pneus_esgotados(
-                etapa, rep, lap, stt["pits"], pneus_man, ritmos, apenas=meus_ids
-            ):
+            for pid_esgotado in sim.pneus_esgotados(etapa, rep, lap, stt["pits"], pneus_man, ritmos, apenas=meus_ids):
                 feitos = [x for x in stt["pits"].get(pid_esgotado, []) if x <= lap]
                 if recusas_esgotado.get(pid_esgotado) == len(feitos):
                     continue
@@ -606,13 +611,13 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
     janela_overcut = 3
     for pid in list(overcut):
         d = overcut[pid]
-        piorou = any(volta_pit and d["volta"] <= volta_pit <= d["volta"] + janela_overcut
-                     for volta_pit in (stt["pits"].get(pid) or []))
+        piorou = any(
+            volta_pit and d["volta"] <= volta_pit <= d["volta"] + janela_overcut
+            for volta_pit in (stt["pits"].get(pid) or [])
+        )
         if piorou:
             overcut.pop(pid, None)
-            feed.append(
-                f"🔧 **{sim.piloto(game, pid)['nome']}** foi ao box — overcut abandonado."
-            )
+            feed.append(f"🔧 **{sim.piloto(game, pid)['nome']}** foi ao box — overcut abandonado.")
         elif lap - int(d["volta"]) > janela_overcut:
             overcut.pop(pid, None)
             atual = next((ln["pos"] for ln in linhas if ln["pid"] == pid), None)
@@ -633,8 +638,9 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
     grids_rep = {pid: d["grid"] for pid, d in rep["info"].items()}
     c1, c2 = st.columns([2.3, 1], gap="medium")
     with c1:
-        st.markdown(_html_tabela_viva(game, linhas, mostrar, meus_ids, grids_rep, mostra_delta=True),
-                    unsafe_allow_html=True)
+        st.markdown(
+            _html_tabela_viva(game, linhas, mostrar, meus_ids, grids_rep, mostra_delta=True), unsafe_allow_html=True
+        )
     with c2:
         st.markdown(
             f'<div class="voltas-box"><div class="lab">Voltas</div><div class="n">{lap} / {voltas}</div></div>',
@@ -736,9 +742,7 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
                 rk_oc = f"ritmo_vivo_{p['id']}_{fds['chave']}"
                 st.session_state[rk_oc] = "Atacar"
                 ritmos[p["id"]] = "Atacar"
-                feed.append(
-                    f"🔥 **{p['nome']}** fica na pista e ataca (overcut) na volta {lap}."
-                )
+                feed.append(f"🔥 **{p['nome']}** fica na pista e ataca (overcut) na volta {lap}.")
                 st.rerun()
             if uc_html and st.button(
                 "⚡ Responder agora",
@@ -790,12 +794,15 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
             if nxt and nxt > lap:
                 proximas.append(nxt)
         alvo_pit = min(proximas) if proximas else None
-        if st.button(
-            f"⏩ Próxima parada (volta {alvo_pit})" if alvo_pit else "⏩ Sem paradas previstas",
-            key="proxima_parada",
-            disabled=alvo_pit is None,
-            help="Avança a transmissão até a próxima parada planejada dos seus pilotos.",
-        ) and alvo_pit is not None:
+        if (
+            st.button(
+                f"⏩ Próxima parada (volta {alvo_pit})" if alvo_pit else "⏩ Sem paradas previstas",
+                key="proxima_parada",
+                disabled=alvo_pit is None,
+                help="Avança a transmissão até a próxima parada planejada dos seus pilotos.",
+            )
+            and alvo_pit is not None
+        ):
             spv = max(0.2, min(0.55, 24.0 / max(1, voltas)))
             stt["pausado"] = False
             stt["t0"] = time.time() - spv * alvo_pit / max(1, velocidade)
@@ -837,9 +844,7 @@ def _stepper(passo, liberado):
         if i > 2:  # "Resultado" só entra na trilha depois da bandeirada
             continue
         classe = "agora" if i == passo else ("done" if i < passo else "")
-        partes.append(
-            f'<div class="wz-step {classe}"><span class="wz-n">{i + 1}</span>{nome}</div>'
-        )
+        partes.append(f'<div class="wz-step {classe}"><span class="wz-n">{i + 1}</span>{nome}</div>')
         if i < 2:
             partes.append(f'<div class="wz-trilha{" done" if i < passo else ""}"></div>')
     if passo == 3:

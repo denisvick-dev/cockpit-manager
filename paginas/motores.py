@@ -8,6 +8,7 @@ import simulacao as sim
 
 from .comum import flash, rot_fornecedor, titulo_pagina
 
+
 def pagina_motores(game):
     eqj = sim.equipe(game, game["equipe_jogador"])
     titulo_pagina(

@@ -137,9 +137,7 @@ def migrar_save(dados: dict) -> tuple[dict, list[str]]:
     if versao < 4:
         quantas = _remover_sprint_f1(dados)
         if quantas:
-            avisos.append(
-                f"A F1 não tem mais corrida sprint: {quantas} etapa(s) do calendário viraram corrida única."
-            )
+            avisos.append(f"A F1 não tem mais corrida sprint: {quantas} etapa(s) do calendário viraram corrida única.")
 
     padroes = _padroes()
     faltando = []
@@ -232,9 +230,7 @@ def listar_saves() -> list[dict]:
             info["ano"] = dados.get("ano", "—")
             info["rodada"] = int(dados.get("rodada", 0)) + 1
             eq_id = dados.get("equipe_jogador")
-            info["equipe"] = next(
-                (e.get("nome", "—") for e in dados.get("equipes", []) if e.get("id") == eq_id), "—"
-            )
+            info["equipe"] = next((e.get("nome", "—") for e in dados.get("equipes", []) if e.get("id") == eq_id), "—")
             info["versao"] = dados.get("versao", 1)
         except (OSError, ValueError):
             info["equipe"] = "arquivo ilegível"
@@ -260,8 +256,15 @@ def auto_save_info() -> dict | None:
     caminho = caminho_slot(NOME_AUTOSAVE)
     if not os.path.exists(caminho):
         return None
-    info = {"nome": NOME_AUTOSAVE, "caminho": caminho, "auto": True, "ano": "—", "rodada": "—",
-            "equipe": "—", "versao": 1}
+    info = {
+        "nome": NOME_AUTOSAVE,
+        "caminho": caminho,
+        "auto": True,
+        "ano": "—",
+        "rodada": "—",
+        "equipe": "—",
+        "versao": 1,
+    }
     try:
         with open(caminho, encoding="utf-8") as fh:
             dados = json.load(fh)

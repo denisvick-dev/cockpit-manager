@@ -85,8 +85,7 @@ def _salva_e_corre(app, game, n=1):
     for _ in range(n):
         etapa = game["calendario"][game["rodada"]]
         grid = sim.simular_classificacao(game, etapa, False)
-        res, ev = sim.simular_corrida(game, etapa, grid, {}, False,
-                                      clima=sim.plano_clima(game, etapa, False))
+        res, ev = sim.simular_corrida(game, etapa, grid, {}, False, clima=sim.plano_clima(game, etapa, False))
         sim.aplicar_resultado(game, etapa, grid, res, False, eventos=ev)
         game["rodada"] += 1
     app.session_state["game"] = game
@@ -115,9 +114,7 @@ def test_financas_filtra_extrato_por_temporada(app_com_jogo, game):
     app = app_com_jogo
     _salva_e_corre(app, game, 1)
     # lançamento de uma temporada anterior para o filtro ter o que separar
-    game["extrato"].append(
-        {"temporada": game["ano"] - 1, "etapa": 0, "descricao": "Prêmio antigo", "valor": 1200.0}
-    )
+    game["extrato"].append({"temporada": game["ano"] - 1, "etapa": 0, "descricao": "Prêmio antigo", "valor": 1200.0})
     app.session_state["game"] = game
     app.session_state["menu"] = "💰 Patrocinadores & Finanças"
     app.run()
@@ -146,7 +143,7 @@ def test_sidebar_mostra_stats_e_atalho_para_a_corrida(app_com_jogo, game):
     prox = game["calendario"][game["rodada"]]
     html = "\n".join(m.value for m in app.markdown if "side-" in str(m.value))
     assert "side-stats" in html and "side-next" in html
-    assert prox["gp"] in html and f'{prox["voltas"]} voltas' in html
+    assert prox["gp"] in html and f"{prox['voltas']} voltas" in html
     for lab in ("Caixa", "Construtores", "Melhor piloto", "Etapa"):
         assert lab in html, f"stat {lab} sumiu da barra lateral"
 
@@ -285,8 +282,12 @@ def _posicoes_antes(app, stt):
     lap = int(stt["lap"])
     pits_antes = {k: [x for x in (v or []) if x < lap] for k, v in stt["pits"].items()}
     linhas = sim.linhas_replay(
-        stt["rep"], max(1, lap - 1), pits_antes,
-        stt.get("pneus_manual") or {}, stt.get("ritmos") or {}, stt.get("overcut_ativo"),
+        stt["rep"],
+        max(1, lap - 1),
+        pits_antes,
+        stt.get("pneus_manual") or {},
+        stt.get("ritmos") or {},
+        stt.get("overcut_ativo"),
     )
     return {ln["pid"]: ln["pos"] for ln in linhas if not ln.get("fora")}
 
@@ -426,9 +427,7 @@ def test_pilotos_mostra_contraproposta_e_fecha_acordo(app_com_jogo, game):
     app.session_state["menu"] = "👨‍✈️ Pilotos & Contratos"
     eqj = game["equipe_jogador"]
     # o seletor da página lista os pilotos por overall: usamos o primeiro da lista
-    alvo = sorted(
-        [p for p in game["pilotos"] if not p["aposentado"]], key=lambda p: -sim.overall(p)
-    )[0]
+    alvo = sorted([p for p in game["pilotos"] if not p["aposentado"]], key=lambda p: -sim.overall(p))[0]
     assert alvo["equipe_id"] != eqj
     game["negociacoes"] = {
         alvo["id"]: {

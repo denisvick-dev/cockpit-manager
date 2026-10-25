@@ -10,6 +10,7 @@ import simulacao as sim
 
 from .comum import CFG_BANDEIRA, ROTULOS_PAPEL, botao_csv, df_pilotos_equipe, flash, titulo_pagina
 
+
 def pagina_pilotos(game):
     eqj = sim.equipe(game, game["equipe_jogador"])
     titulo_pagina("Mercado", "Pilotos & Contratos", "Seus pilotos de hoje — e as negociações que desenham o amanhã.")
@@ -22,9 +23,7 @@ def pagina_pilotos(game):
             width="stretch",
             column_config={
                 **CFG_BANDEIRA,
-                "Overall": st.column_config.ProgressColumn(
-                    "Overall", min_value=0, max_value=100, format="%d"
-                ),
+                "Overall": st.column_config.ProgressColumn("Overall", min_value=0, max_value=100, format="%d"),
                 "Salário": st.column_config.NumberColumn("Salário/corrida", format="US$ %d mil"),
                 "Contrato": st.column_config.NumberColumn(
                     "Contrato", help="Anos restantes (0 = renova ou sai na virada)", format="%d ano(s)"
@@ -34,7 +33,8 @@ def pagina_pilotos(game):
         total_sal = sum(p["salario_corrida"] for p in game["pilotos"] if p["equipe_id"] == eqj["id"])
         st.caption(f"Custo total de salários: {sim.fmt_dinheiro_k(total_sal)} por corrida.")
         expirando = [
-            p for p in game["pilotos"]
+            p
+            for p in game["pilotos"]
             if p["equipe_id"] == eqj["id"] and not p["aposentado"] and int(p.get("contrato_anos", 0)) <= 1
         ]
         if expirando and not game["contratos_proxima"]:

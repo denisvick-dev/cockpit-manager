@@ -9,8 +9,19 @@ import armazenamento
 import bandeiras as bnd
 import simulacao as sim
 
-from .comum import _fmt_k_bruto, _painel, _painel_fim, _painel_ini, _plinha, ir_para, painel_fim_temporada, rot_corrida2, rot_fornecedor
+from .comum import (
+    _fmt_k_bruto,
+    _painel,
+    _painel_fim,
+    _painel_ini,
+    _plinha,
+    ir_para,
+    painel_fim_temporada,
+    rot_corrida2,
+    rot_fornecedor,
+)
 from .corrida import obter_fds
+
 
 def linha_tempo(game):
     """Timeline horizontal do calendário: etapas concluídas, a próxima e as futuras."""
