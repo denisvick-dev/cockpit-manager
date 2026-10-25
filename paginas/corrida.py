@@ -522,8 +522,28 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
             recusas_esgotado = stt.setdefault("pneus_esgotados_recusados", {})
             pneus_man = stt.get("pneus_manual", {})
             ritmos = stt.get("ritmos", {})
+            auto_esg = stt.setdefault("pit_auto_esgotado", {})
+            molhado_agora = sim.condicao_pista(stt.get("clima") or fds.get("clima"), lap) == "molhado"
+
+            # rivais: pneu no fim da vida = box na hora (sem aviso, para não poluir o rádio)
+            rivais = [pid for pid in rep["info"] if pid not in meus_ids]
+            sim.pit_automatico_por_desgaste(
+                etapa, rep, lap, stt["pits"], pneus_man, ritmos, molhado_agora, apenas=rivais
+            )
+
+            # pilotos do jogador que estão no modo automático: o box decide sozinho
+            ids_auto = {pid for pid in meus_ids if auto_esg.get(pid, True)}
+            for pid_auto, composto in sim.pit_automatico_por_desgaste(
+                etapa, rep, lap, stt["pits"], pneus_man, ritmos, molhado_agora, apenas=ids_auto
+            ):
+                feed.append(
+                    f"🛠️ Pneu de **{sim.piloto(game, pid_auto)['nome']}** chegou ao fim da vida útil — "
+                    f"box automático na volta {lap}: pneu **{composto}**."
+                )
+
+            # quem desligou o automático continua decidindo na janela (ou segue na pista)
             for pid_esgotado in sim.pneus_esgotados(
-                etapa, rep, lap, stt["pits"], pneus_man, ritmos, apenas=meus_ids
+                etapa, rep, lap, stt["pits"], pneus_man, ritmos, apenas=meus_ids - ids_auto
             ):
                 feitos = [x for x in stt["pits"].get(pid_esgotado, []) if x <= lap]
                 if recusas_esgotado.get(pid_esgotado) == len(feitos):
@@ -946,7 +966,7 @@ def _passo_paddock(game, etapa, molhado, fds, meus, estrategias, opcoes_pneu, bl
         unsafe_allow_html=True,
     )
     grid_pos = {g["piloto_id"]: g["pos"] for g in (fds.get("grid") or [])}
-    pit_auto = {}
+    pit_auto, auto_esg = {}, {}
     colsp = st.columns(len(meus))
     for col, p in zip(colsp, meus):
         with col, st.container(border=True):
@@ -978,6 +998,14 @@ def _passo_paddock(game, etapa, molhado, fds, meus, estrategias, opcoes_pneu, bl
                 help="A cada parada planejada abre a janela do Pit Stop (pneu + ritmo). "
                 "Desmarque para o box fazer as paradas sozinho.",
                 key=f"pad_perg_{p['id']}_{fds['chave']}",
+            )
+            auto_esg[p["id"]] = st.checkbox(
+                "Box automático no fim do pneu",
+                value=True,
+                help="Quando a vida útil do pneu chega a zero, o carro entra no box na volta "
+                "seguinte e o chefe de box escolhe o composto — sem parar a transmissão. "
+                "Desmarque para decidir você mesmo na janela do Pit Stop.",
+                key=f"pad_autoesg_{p['id']}_{fds['chave']}",
             )
 
     with st.expander("📋 Grid de largada", expanded=not fds.get("grid")):
@@ -1014,7 +1042,7 @@ def _passo_paddock(game, etapa, molhado, fds, meus, estrategias, opcoes_pneu, bl
             st.caption("✅ Confirme a estratégia para liberar a largada.")
     else:
         if st.button("🚦 Dar largada!", type="primary", width="stretch", key="dar_largada", disabled=not pode_largar):
-            _largar(game, etapa, molhado, fds, meus, estrategias, pit_auto)
+            _largar(game, etapa, molhado, fds, meus, estrategias, pit_auto, auto_esg)
         st.caption("✅ Estratégia confirmada — boa sorte, chefe!")
     if not bloqueado and fds.get("passo_ui") != 0:
         if st.button("← Revisar treino", key="voltar_treino"):
@@ -1022,7 +1050,7 @@ def _passo_paddock(game, etapa, molhado, fds, meus, estrategias, opcoes_pneu, bl
             st.rerun()
 
 
-def _largar(game, etapa, molhado, fds, meus, estrategias, pit_auto):
+def _largar(game, etapa, molhado, fds, meus, estrategias, pit_auto, auto_esg=None):
     """Cria o replay e joga o jogador no passo da corrida."""
     eqj = sim.equipe(game, game["equipe_jogador"])
     res, ev = sim.simular_corrida(game, etapa, fds["grid"], estrategias, molhado, clima=fds.get("clima"))
@@ -1044,6 +1072,7 @@ def _largar(game, etapa, molhado, fds, meus, estrategias, pit_auto):
         "ritmos": {pid: e.get("ritmo", "Normal") for pid, e in estrategias.items()},
         "pneus_manual": {},
         "pit_perguntar": pit_auto,
+        "pit_auto_esgotado": dict(auto_esg or {}),
         "pit_aberto": None,
         "pits_recusados": {},
         "clima": fds.get("clima"),

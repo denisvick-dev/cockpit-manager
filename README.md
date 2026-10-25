@@ -37,7 +37,7 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 ```bash
 pip install -r requirements.txt -r requirements-dev.txt
 ruff check .      # lint (config em pyproject.toml)
-python -m pytest --cov  # 73 testes + cobertura (piso de 75%)
+python -m pytest --cov  # 91 testes + cobertura (piso de 75%)
 ```
 
 O **GitHub Actions** (`.github/workflows/ci.yml`) roda ruff + pytest em Python 3.12/3.13
@@ -61,13 +61,17 @@ pedem **Python 3.12+**).
 | `saves/` | (criada ao salvar) Slots e o `_autosave.json` da sua carreira — fora do Git |
 | `minhas_dbs/` | (criada ao salvar) Suas DBs personalizadas em `.json` viram opções permanentes na lista de DBs |
 | `.streamlit/config.toml` | Tema escuro profissional (design system do jogo) |
-| `tests/` | Suíte **pytest** (73 testes): determinismo e pontuação do motor, replay/pits (janela, automático, recusa, clima, undercut/overcut), tema/save em JSON e smoke test de todas as telas com `AppTest` |
+| `tests/` | Suíte **pytest** (91 testes): determinismo e pontuação do motor, replay/pits (janela, automático, box por fim de pneu, recusa, clima, undercut/overcut), tema/save em JSON e smoke test de todas as telas com `AppTest` |
 | `requirements.txt` / `requirements-dev.txt` | `streamlit` + `pandas` / `pytest` + `ruff` |
 | `pyproject.toml` | Configuração do **ruff** (lint) e do **pytest** |
 | `.github/workflows/ci.yml` | CI: lint + testes com **cobertura (piso de 75%)** em Python 3.12/3.13 + smoke do servidor Streamlit |
 
 ## 🆕 Últimas melhorias (v3)
 
+- **Pit stop automático no fim do pneu** — quando o composto chega ao fim da vida útil o carro entra no
+  box sozinho (o box escolhe o composto; na chuva vai de intermediário) e a prova segue sem parar. É uma
+  opção do Paddock por piloto, ligada por padrão; desligada, volta a abrir a janela de decisão. Os rivais
+  também param quando o pneu acaba.
 - **Fluxo guiado no fim de semana** — a tela de corrida virou uma sequência de passos (**Treino → Paddock →
   Corrida → Resultado**): cada etapa mostra só o que importa, o cabeçalho virou uma faixa compacta, os
   detalhes da etapa ficam num expander e a preparação sai da tela quando a transmissão começa.

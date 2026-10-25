@@ -288,3 +288,59 @@ def test_timeline_marca_concluidas_atual_e_futuras(game):
     assert html.count("tl-item done") == 3
     assert html.count("tl-item agora") == 1
     assert html.count("tl-item futuro") == len(game["calendario"]) - 4
+
+
+# ------------------------------------------- pit automático por pneu gasto
+def test_composto_de_troca_nao_repete_o_pneu_que_acabou():
+    assert sim.composto_de_troca("Macio", False) == "Duro"
+    assert sim.composto_de_troca("Duro", False) == "Médio"
+    assert sim.composto_de_troca("Médio", False) == "Macio"
+    # composto desconhecido (ex.: pneu de chuva no seco) cai no médio
+    assert sim.composto_de_troca("Chuva extrema", False) == "Médio"
+    # na chuva o box calça intermediário
+    assert sim.composto_de_troca("Macio", True) == "Intermediário"
+
+
+def _rep_uma_volta(voltas=30, pneu="Macio"):
+    info = {
+        "a": {
+            "equipe_id": "e1",
+            "grid": 1,
+            "final_pos": 1,
+            "dnf": False,
+            "volta_dnf": voltas,
+            "motivo": "",
+            "gap_final": 0.0,
+            "pneus": [pneu, "Duro"],
+            "paradas": 1,
+            "pits_plano": [],
+            "ruido": [0.0] * (voltas + 2),
+            "tempos": [80.0] * (voltas + 2),
+        }
+    }
+    return {"voltas": voltas, "info": info, "sc_lap": None, "red_lap": None}
+
+
+def test_pit_automatico_quando_o_pneu_acaba(etapa_seca):
+    rep = _rep_uma_volta()
+    volta_morta = next(v for v in range(1, 30) if sim.vida_pneu(etapa_seca, "Macio", v) == 0)
+    pits, manuais = {}, {}
+    feitos = sim.pit_automatico_por_desgaste(etapa_seca, rep, volta_morta, pits, manuais)
+    assert feitos == [("a", "Duro")]
+    assert pits["a"] == [volta_morta]
+    assert manuais["a"][1] == "Duro"
+    # com pneu novo, ele sai da lista de esgotados
+    assert "a" not in sim.pneus_esgotados(etapa_seca, rep, volta_morta, pits, manuais)
+    # rodar de novo na mesma volta não duplica a parada
+    assert sim.pit_automatico_por_desgaste(etapa_seca, rep, volta_morta, pits, manuais) == []
+
+
+def test_pit_automatico_respeita_o_filtro_de_pilotos(etapa_seca):
+    rep = _rep_uma_volta()
+    volta_morta = next(v for v in range(1, 30) if sim.vida_pneu(etapa_seca, "Macio", v) == 0)
+    pits, manuais = {}, {}
+    assert sim.pit_automatico_por_desgaste(etapa_seca, rep, volta_morta, pits, manuais, apenas={"outro"}) == []
+    assert pits == {}
+    # na chuva o composto automático é o intermediário
+    feitos = sim.pit_automatico_por_desgaste(etapa_seca, rep, volta_morta, pits, manuais, molhado=True)
+    assert feitos == [("a", "Intermediário")]
