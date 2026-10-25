@@ -10,6 +10,7 @@ import simulacao as sim
 from .comum import CFG_BANDEIRA, botao_csv, rot_corrida2, titulo_pagina
 from .corrida import df_resultado
 
+
 def pagina_campeonato(game):
     titulo_pagina(
         "Classificação",
@@ -54,7 +55,8 @@ def pagina_campeonato(game):
                     "Gap", help="Pontos atrás do líder (vazio = líder)", format="%d atrás"
                 ),
                 "Últimas 5": st.column_config.TextColumn(
-                    "Últimas 5", help="Posições nas últimas 5 corridas (D = abandono), da mais antiga para a mais recente"
+                    "Últimas 5",
+                    help="Posições nas últimas 5 corridas (D = abandono), da mais antiga para a mais recente",
                 ),
             },
         )

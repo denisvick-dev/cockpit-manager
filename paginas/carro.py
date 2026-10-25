@@ -36,7 +36,10 @@ def radar_svg(series, tamanho=300):
         r = raio * max(0.0, min(100.0, valor)) / 100.0
         return cx + r * math.cos(ang), cy + r * math.sin(ang)
 
-    partes = ['<svg viewBox="0 0 %d %d" class="radar" role="img" aria-label="Comparação dos eixos do carro">' % (tamanho, tamanho)]
+    partes = [
+        '<svg viewBox="0 0 %d %d" class="radar" role="img" aria-label="Comparação dos eixos do carro">'
+        % (tamanho, tamanho)
+    ]
     # grade (5 anéis) + eixos
     for anel in (20, 40, 60, 80, 100):
         pts = " ".join(f"{ponto(i, anel)[0]:.1f},{ponto(i, anel)[1]:.1f}" for i in range(n))
@@ -153,7 +156,11 @@ def pagina_carro(game):
     st.caption("Escolha uma rival e veja, eixo por eixo, onde o seu carro ganha e onde perde tempo.")
     rivais = {e["nome"]: e for e in game["equipes"] if e["id"] != eqj["id"]}
     sugestao = next(
-        (e["nome"] for e in sorted(game["equipes"], key=lambda x: -sim.desempenho_carro(game, x)) if e["id"] != eqj["id"]),
+        (
+            e["nome"]
+            for e in sorted(game["equipes"], key=lambda x: -sim.desempenho_carro(game, x))
+            if e["id"] != eqj["id"]
+        ),
         None,
     )
     nomes = list(rivais)

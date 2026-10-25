@@ -6,6 +6,7 @@ import streamlit as st
 
 from .comum import titulo_pagina
 
+
 def pagina_ajuda():
     titulo_pagina("Manual", "Como Jogar", "Tudo o que um chefe de equipe precisa saber antes da primeira largada.")
     st.markdown("""

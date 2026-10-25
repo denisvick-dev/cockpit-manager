@@ -9,6 +9,7 @@ import simulacao as sim
 
 from .comum import CFG_BANDEIRA, botao_csv, flash, titulo_pagina
 
+
 def pagina_financas(game):
     eqj = sim.equipe(game, game["equipe_jogador"])
     titulo_pagina(

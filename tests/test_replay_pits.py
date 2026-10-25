@@ -205,8 +205,9 @@ def test_clima_no_motor_muda_o_resultado(game):
 
     etapa = game["calendario"][1]
     grid = sim.simular_classificacao(game, etapa, False)
-    ests = {p["id"]: {"pneu": "Médio", "paradas": 1, "ritmo": "Normal"}
-            for p in sim.titulares(game, game["equipe_jogador"])}
+    ests = {
+        p["id"]: {"pneu": "Médio", "paradas": 1, "ritmo": "Normal"} for p in sim.titulares(game, game["equipe_jogador"])
+    }
 
     seco = {"inicio": "seco", "virada_volta": None, "virada_para": None}
     chuva = {"inicio": "seco", "virada_volta": 20, "virada_para": "molhado"}

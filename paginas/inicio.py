@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Tela inicial: escolha da DB, da equipe e do tamanho do grid (e o editor de DBs)."""
 
-
 import pandas as pd
 import streamlit as st
 
@@ -12,6 +11,7 @@ import editor_db
 import simulacao as sim
 
 from .comum import CFG_BANDEIRA, MENUS, cabecalho_inicial, flash
+
 
 def dbs_disponiveis():
     """DBs embutidas + personalizadas salvas em minhas_dbs/ + validadas no editor."""
@@ -272,7 +272,9 @@ def tela_inicial():
         else:
             nomes = [s["nome"] for s in slots]
             rotulos = {
-                s["nome"]: f"{'(auto) ' if s['auto'] else ''}{s['nome']} — {s['equipe']}, {s['ano']} · etapa {s['rodada']}"
+                s[
+                    "nome"
+                ]: f"{'(auto) ' if s['auto'] else ''}{s['nome']} — {s['equipe']}, {s['ano']} · etapa {s['rodada']}"
                 for s in slots
             }
             escolha = st.selectbox("Slot", nomes, key="inicio_slot", format_func=lambda n: rotulos.get(n, n))

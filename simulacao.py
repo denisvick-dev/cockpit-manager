@@ -1002,9 +1002,7 @@ def simular_corrida(game, etapa, grid, estrategias_jogador, molhado, sprint=Fals
     elif vsc:
         eventos.append("🟨 Virtual Safety Car: o pelotão se aproximou e quem estava no box ganhou tempo.")
     if bandeira_vermelha:
-        eventos.append(
-            "🟥 Bandeira vermelha com a pista alagada: prova interrompida e relargada com o pelotão colado!"
-        )
+        eventos.append("🟥 Bandeira vermelha com a pista alagada: prova interrompida e relargada com o pelotão colado!")
     if molhado:
         eventos.append("🌧️ Corrida com pista molhada — quem nasceu para a chuva brilhou (e quem errou o pneu, chorou).")
     if clima and clima.get("virada_volta"):
@@ -1250,9 +1248,7 @@ def simular_etapas(game, quantas=1, estrategia=None):
         resumo = {"ano": game["ano"], "rodada": game["rodada"] + 1, "gp": etapa["gp"], "sprint": None}
         if etapa.get("sprint"):
             grid_s = simular_classificacao(game, etapa, molhado)
-            res_s, ev_s = simular_corrida(
-                game, etapa, grid_s, est, molhado, sprint=True, clima=clima
-            )
+            res_s, ev_s = simular_corrida(game, etapa, grid_s, est, molhado, sprint=True, clima=clima)
             aplicar_resultado(game, etapa, grid_s, res_s, molhado, sprint=True, eventos=ev_s)
             resumo["sprint"] = res_s
         grid = simular_classificacao(game, etapa, molhado)
@@ -1283,13 +1279,15 @@ def ultimas_corridas(game, piloto_id, n=5):
             continue
         for l in r.get("resultado") or []:
             if l["piloto_id"] == piloto_id:
-                hist.append({
-                    "rodada": int(r.get("rodada") or 0),
-                    "pos": int(l.get("pos") or 0),
-                    "dnf": bool(l.get("dnf")),
-                    "pontos": int(l.get("pontos") or 0),
-                    "gp": r.get("gp") or "",
-                })
+                hist.append(
+                    {
+                        "rodada": int(r.get("rodada") or 0),
+                        "pos": int(l.get("pos") or 0),
+                        "dnf": bool(l.get("dnf")),
+                        "pontos": int(l.get("pontos") or 0),
+                        "gp": r.get("gp") or "",
+                    }
+                )
                 break
     hist.sort(key=lambda h: h["rodada"])
     return hist[-n:]
@@ -1352,9 +1350,7 @@ def _fechar_contrato(game, p, papel, salario, anos):
         f"✍️ **{p['nome']}** fechou com a {eqj['nome']} para {game['ano'] + 1} "
         f"({papel}, {fmt_dinheiro_k(salario)}/corrida, {anos} ano(s)).",
     )
-    _rot = {"P1": "1º piloto", "P2": "2º piloto", "P3": "3º piloto", "P4": "4º piloto"}.get(
-        papel, "piloto de testes"
-    )
+    _rot = {"P1": "1º piloto", "P2": "2º piloto", "P3": "3º piloto", "P4": "4º piloto"}.get(papel, "piloto de testes")
     return f"{p['nome']} aceitou! Contrato assinado para {game['ano'] + 1} como {_rot}."
 
 

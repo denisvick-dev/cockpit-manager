@@ -9,6 +9,7 @@ import dados2026 as db
 
 from .comum import CFG_BANDEIRA, titulo_pagina
 
+
 def pagina_hall(game):
     titulo_pagina("Legado", "Hall da Fama & Conquistas", "As lendas da categoria — e as suas 10 conquistas para caçar.")
     tab1, tab2 = st.tabs(["🌟 Hall da Fama", "🎖️ Conquistas (10)"])

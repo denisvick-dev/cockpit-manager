@@ -41,6 +41,7 @@ def etapa_seca(etapa):
     e["ultrap"] = 0.5
     return e
 
+
 @pytest.fixture(autouse=True)
 def saves_isolados(tmp_path, monkeypatch):
     """Nenhum teste escreve em saves/ de verdade: cada um ganha sua pasta."""
