@@ -54,7 +54,7 @@ pedem **Python 3.12+**).
 | `ui/tema.py` | **Design system**: todo o CSS do jogo (tokens `--cm-font-*`, painéis, tabelas ao vivo, cartões de undercut/overcut, barra lateral, responsivo e acessibilidade) + `aplicar()` chamado uma vez no início do app |
 | `simulacao.py` | Motor do jogo: classificação, corrida, estratégia, desenvolvimento, finanças, mercado, evolução e virada de temporada |
 | `dados2026.py` | A DB F1 2026: 11 equipes, 49 pilotos, 10 motores, calendário de 24 etapas |
-| `dbs.py` | Sistema de DBs: **F1 2026**, **F1 Academy** (18 Tatuus idênticos, grade real de 2026), **F1 Legends** (Schumacher, Senna, Fangio… nos circuitos clássicos), **F1 Históricas** (8 temporadas âncora: 1950·1960·…·2020 com grids, motores e calendários reais da época), **Fórmula Indy** (25 carros, 18 etapas, Indy 500), **Indy Legends** (Foyt, Unser, Mario Andretti nos ovais históricos), **Stock Car** (34 SUVs V8, sprint+principal), **DTM** (GT3, 2 corridas/etapa) + validação de DBs personalizadas |
+| `dbs.py` | Sistema de DBs: **F1 2026** (corrida única por fim de semana, sem Sprint), **F1 Academy** (18 Tatuus idênticos, grade real de 2026), **F1 Legends** (Schumacher, Senna, Fangio… nos circuitos clássicos), **F1 Históricas** (8 temporadas âncora: 1950·1960·…·2020 com grids, motores e calendários reais da época), **Fórmula Indy** (25 carros, 18 etapas, Indy 500), **Indy Legends** (Foyt, Unser, Mario Andretti nos ovais históricos), **Stock Car** (34 SUVs V8, sprint+principal), **DTM** (GT3, 2 corridas/etapa) + validação de DBs personalizadas |
 | `editor_db.py` | Editor de DBs na tela inicial: edite equipes/pilotos/calendário/fornecedores, valide, baixe/compartilhe o `.json` e jogue na hora |
 | `bandeiras.py` + `assets/bandeiras/` | Bandeiras dos países como **imagens PNG locais** (o Windows não renderiza emoji de bandeira!) — 45 países padronizados em 96×72 px, fonte: flagcdn.com / flag-icons (domínio público) |
 | `tools/padronizar_bandeiras.py` | Regenera/atualiza as bandeiras: baixa do flagcdn e encaixa todas no mesmo tamanho, sem distorcer (`python tools/padronizar_bandeiras.py`) |
@@ -75,7 +75,7 @@ pedem **Python 3.12+**).
 - **Gráfico de stints e degradação** no pós-corrida (tempo de volta × volta, com as quedas das paradas).
 - **Negociação de contratos em até 3 rodadas**, com **contraproposta** de salário/anos.
 - **Comparador de carros** (radar SVG dos 6 eixos seu time × rival, sem dependências novas).
-- **Linha do tempo do calendário** no Escritório (concluídas, próxima, sprints).
+- **Linha do tempo do calendário** no Escritório (concluídas, próxima e as etapas com duas corridas).
 - **⏩ Simular etapas em lote** para quem quer temporadas longas sem transmissão.
 - **Exportação CSV** das tabelas (Excel pt-BR: `;` + BOM) no Campeonato, Finanças, Pilotos e resultado.
 - **Tema claro** (☀️ na barra lateral) usando os mesmos tokens do design system.
@@ -196,7 +196,8 @@ pedem **Python 3.12+**).
   Aqui o piloto evolui até o auge, permanece anos no topo e só depois declina aos poucos.
 - **Perfil "rápido e destruidor"**: Velocidade (volta rápida) e Concentração (não bater) atuam
   separadamente na simulação, permitindo equilibrar pilotos velozes mas erráticos.
-- **Fins de semana Sprint**, gráficos de evolução do campeonato e do caixa, save/load em JSON.
+- **Gráficos de evolução do campeonato e do caixa**, save/load em JSON e saves em slots com auto-save.
+  A **F1 agora tem corrida única por fim de semana** (sem Sprint); Stock Car, DTM e F1 Academy mantêm as duas corridas.
 
 ## 💾 Salvando
 

@@ -146,7 +146,7 @@ def _db_legado_f1():
             "categoria": "Fórmula 1",
             "ano": 2026,
             "rotulo_fornecedor": "Motor",
-            "rotulo_corrida2": "Sprint",
+            "rotulo_corrida2": None,  # F1: corrida única por fim de semana
             "pontos_corrida": list(db.PONTOS_CORRIDA),
             "pontos_corrida2": list(db.PONTOS_SPRINT),
             "importancia_carro_sugerida": 0.60,

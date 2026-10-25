@@ -15,9 +15,10 @@ Comande uma equipe de F1 temporada após temporada, **sem limite de anos** — e
 1. **Escritório** — confira caixa, carro, pilotos, notícias, a **linha do tempo do calendário** e a próxima
    corrida. Sem tempo para transmitir? Use **⏩ Simular etapas em lote** para rodar várias etapas de uma vez.
    Clique em **Continuar** para a próxima prova.
-2. **Corrida** — dispute a Sprint (se houver — com o próprio **pneu de largada**) e a classificação; depois
-   confirme o **Paddock** (pneus, grid e **Perguntar em cada pit stop**) e **durante a corrida** ajuste o
-   ritmo no rádio ao vivo e responda a janela do **Pit Stop** a cada parada (trocar o pneu? qual ritmo?).
+2. **Corrida** — na F1 é **uma corrida por fim de semana** (sem Sprint): treino classificatório, **Paddock**
+   (pneus, grid e **Perguntar em cada pit stop**) e, **durante a corrida**, ritmo no rádio ao vivo e a janela
+   do **Pit Stop** a cada parada (trocar o pneu? qual ritmo?). Nas DBs com **duas corridas por etapa**
+   (Stock Car, DTM e F1 Academy) a primeira delas abre o fim de semana, com o próprio **pneu de largada**.
 3. **Entre corridas** — o carro evolui sozinho conforme seu **investimento por corrida** e o **Acerto**
    (feedback) dos pilotos. Ajuste em *Carro & Investimentos*.
 4. **Durante o ano inteiro** — negocie em *Pilotos & Contratos*, *Motores* e *Patrocinadores* pensando

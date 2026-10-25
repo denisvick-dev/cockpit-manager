@@ -19,7 +19,7 @@ import os
 import re
 import time
 
-VERSAO_SAVE = 3
+VERSAO_SAVE = 4
 PASTA_SAVES = "saves"
 NOME_AUTOSAVE = "_autosave"
 
@@ -85,6 +85,23 @@ def _padroes() -> dict:
     }
 
 
+def _remover_sprint_f1(dados: dict) -> int:
+    """Zera o sprint das etapas de saves da F1 (Stock Car, DTM e F1 Academy mantêm
+    suas duas corridas por fim de semana). Devolve quantas etapas mudaram."""
+    meta = dados.get("meta") or {}
+    categoria = str(meta.get("categoria") or "")
+    db_id = str(dados.get("db_id") or meta.get("id") or "")
+    if not (categoria.strip().lower() == "fórmula 1" or db_id == "f1_2026"):
+        return 0
+    quantas = 0
+    for chave in ("calendario", "calendario_base"):
+        for etapa in dados.get(chave) or []:
+            if etapa.get("sprint"):
+                etapa["sprint"] = False
+                quantas += 1
+    return quantas
+
+
 def migrar_save(dados: dict) -> tuple[dict, list[str]]:
     """Deixa um save de qualquer versão no formato atual.
 
@@ -116,6 +133,13 @@ def migrar_save(dados: dict) -> tuple[dict, list[str]]:
     # v2 -> v3: negociações em rodadas e voltas rápidas
     if versao < 3:
         dados.setdefault("negociacoes", {})
+    # v3 -> v4: a F1 não tem mais corrida sprint (fim de semana de corrida única)
+    if versao < 4:
+        quantas = _remover_sprint_f1(dados)
+        if quantas:
+            avisos.append(
+                f"A F1 não tem mais corrida sprint: {quantas} etapa(s) do calendário viraram corrida única."
+            )
 
     padroes = _padroes()
     faltando = []
