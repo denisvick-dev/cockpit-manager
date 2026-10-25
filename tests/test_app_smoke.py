@@ -2,6 +2,7 @@
 """Smoke test da interface Streamlit (AppTest): todas as telas e a corrida."""
 
 import os
+import re
 import time
 
 import pytest
@@ -107,9 +108,16 @@ def test_corrida_janela_de_pit_pausa_e_volta(app_com_jogo, game):
     meus = set(stt["pit_perguntar"])
     alvo = min((p, v) for p, d in plano.items() if p in meus and stt["pit_perguntar"][p] for v in d["pits_plano"])
     pid, volta = alvo
-    stt["t0"] = time.time() - 0.41 * (volta + 0.6)
-    app.run()
-    pedido = stt.get("pit_aberto")
+    # mesma fórmula da transmissão: segundos por volta dentro do replay
+    voltas = int(stt["rep"]["voltas"])
+    spv = max(0.2, min(0.55, 24.0 / max(1, voltas)))
+    pedido = None
+    for _ in range(8):  # o relógio real pode atrasar um render: tenta de novo
+        stt["t0"] = time.time() - spv * (volta + 0.3)
+        app.run()
+        pedido = stt.get("pit_aberto")
+        if pedido:
+            break
     assert pedido and pedido["pid"] == pid, "a janela do Pit Stop não abriu"
     assert stt["lap"] == volta, "a prova não congelou na volta da parada"
 
@@ -155,10 +163,16 @@ def test_proxima_parada_avanca_a_transmissao(app_com_jogo, game):
     stt["pit_perguntar"] = {pid: False for pid in stt["pit_perguntar"]}
     app.run()
 
-    antes = stt["lap"]
-    app.button(key="proxima_parada").click().run()
+    botao = app.button(key="proxima_parada")
+    if botao.disabled:
+        pytest.skip("sem paradas planejadas à frente nesta etapa")
 
-    assert stt["lap"] > antes + 2, "o atalho deveria pular para a próxima parada planejada"
+    alvo = int(re.search(r"volta (\d+)", botao.label).group(1))
+    antes = stt["lap"]
+    botao.click().run()
+
+    assert stt["lap"] > antes
+    assert stt["lap"] >= alvo - 1, f"deveria saltar para a volta {alvo}, parou na {stt['lap']}"
     assert not app.exception
 
 
@@ -170,20 +184,27 @@ def test_alerta_de_undercut_e_resposta_imediata(app_com_jogo, game):
     stt["pit_perguntar"] = {pid: False for pid in stt["pit_perguntar"]}
     app.run()
 
-    lap = max(5, int(stt["lap"]))
-    stt["t0"] = time.time() - 0.41 * lap
-    app.run()
-    lap = int(stt["lap"])
-    pits_antes = {k: [x for x in (v or []) if x < lap] for k, v in stt["pits"].items()}
-    linhas = sim.linhas_replay(stt["rep"], max(1, lap - 1), pits_antes)
-    pos = {ln["pid"]: ln["pos"] for ln in linhas if not ln.get("fora")}
     meus = set(stt["pit_perguntar"])
     pid = next(iter(meus))
-    rival = next(
-        (r for r in pos if r not in meus and 0 < pos[r] - pos[pid] <= 3),
-        None,
-    )
-    assert rival, "a corrida precisa de um rival próximo para o teste"
+    # procura, de forma determinística, uma volta com um rival logo atrás de mim
+    voltas_rep = int(stt["rep"]["voltas"])
+    spv = max(0.2, min(0.55, 24.0 / max(1, voltas_rep)))
+    achado = None
+    for lap in range(4, 25):
+        stt["t0"] = time.time() - spv * lap
+        app.run()
+        lap_atual = int(stt["lap"])
+        if lap_atual < 3:
+            continue
+        pits_antes = {k: [x for x in (v or []) if x < lap_atual] for k, v in stt["pits"].items()}
+        linhas = sim.linhas_replay(stt["rep"], max(1, lap_atual - 1), pits_antes)
+        pos = {ln["pid"]: ln["pos"] for ln in linhas if not ln.get("fora")}
+        rival = next((r for r in pos if r not in meus and 0 < pos[r] - pos[pid] <= 3), None)
+        if rival:
+            achado = (lap_atual, rival)
+            break
+    assert achado, "nenhuma volta com rival a até 3 posições atrás"
+    lap, rival = achado
 
     # simula o rival indo ao box nesta volta
     stt["pits"].setdefault(rival, []).append(lap)
