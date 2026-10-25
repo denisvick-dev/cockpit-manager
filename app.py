@@ -294,6 +294,9 @@ st.markdown(
     margin:2px 0 6px; font-size:.82rem; color:#DDE7F3; background:rgba(255,255,255,.035);}
   .proj-delta{margin-left:6px; font-size:.72rem; font-weight:800; letter-spacing:.06em;
     text-transform:uppercase; color:#FCD34D;}
+  .overcut-card{margin-top:7px; border:1px solid rgba(56,189,248,.55); border-radius:9px;
+    padding:6px 9px; font-size:.76rem; line-height:1.4; color:#BAE6FD;
+    background:linear-gradient(120deg, rgba(56,189,248,.20), rgba(16,21,30,.85));}
   .undercut-card{margin-top:7px; border:1px solid rgba(245,158,11,.55); border-radius:9px;
     padding:6px 9px; font-size:.76rem; line-height:1.4; color:#FDE68A;
     background:linear-gradient(120deg, rgba(245,158,11,.22), rgba(16,21,30,.85));}
@@ -1434,11 +1437,12 @@ def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
     # projeção de posição: quanto custa parar agora
     pneus_man = stt.get("pneus_manual") or {}
     rit_stt = stt.get("ritmos") or {}
-    linhas_agora = sim.linhas_replay(stt["rep"], lap, stt["pits"], pneus_man, rit_stt)
+    overcut_stt = stt.get("overcut_ativo") or {}
+    linhas_agora = sim.linhas_replay(stt["rep"], lap, stt["pits"], pneus_man, rit_stt, overcut_stt)
     pos_agora = next((ln["pos"] for ln in linhas_agora if ln["pid"] == pid), None)
     pits_novo = {k: list(v) for k, v in stt["pits"].items()}
     pits_novo[pid] = sorted(set(pits_novo.get(pid, []) + [volta_pit]))
-    linhas_depois = sim.linhas_replay(stt["rep"], lap, pits_novo, pneus_man, rit_stt)
+    linhas_depois = sim.linhas_replay(stt["rep"], lap, pits_novo, pneus_man, rit_stt, overcut_stt)
     pos_depois = next((ln["pos"] for ln in linhas_depois if ln["pid"] == pid), None)
     if pos_agora and pos_depois:
         delta = pos_depois - pos_agora
@@ -1552,7 +1556,7 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
         "ritmos", {l["piloto_id"]: l["estrategia"].get("ritmo", "Normal") for l in (fds.get("resultado") or [])}
     )
     pneus_man = stt.setdefault("pneus_manual", {})
-    linhas = sim.linhas_replay(rep, lap, stt["pits"], pneus_man, ritmos)
+    linhas = sim.linhas_replay(rep, lap, stt["pits"], pneus_man, ritmos, stt.get("overcut_ativo"))
     plano_clima = stt.get("clima") or fds.get("clima")
     cond = sim.condicao_pista(plano_clima, lap)
     cond_ant = stt.get("clima_visto")
@@ -1581,6 +1585,35 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
         feed.append(
             f"⚔️ **{sim.piloto(game, rival)['nome']}** (P{pr}) foi ao box na volta {lap} — "
             f"undercut sobre **{sim.piloto(game, pid)['nome']}** (P{pm})!"
+        )
+
+    # ---- overcut: rival À FRENTE parou — ficar na pista e atacar devolve a posição
+    overcut = stt.setdefault("overcut_ativo", {})
+    janela_overcut = 3
+    for pid in list(overcut):
+        d = overcut[pid]
+        piorou = any(volta_pit and d["volta"] <= volta_pit <= d["volta"] + janela_overcut
+                     for volta_pit in (stt["pits"].get(pid) or []))
+        if piorou:
+            overcut.pop(pid, None)
+            feed.append(
+                f"🔧 **{sim.piloto(game, pid)['nome']}** foi ao box — overcut abandonado."
+            )
+        elif lap - int(d["volta"]) > janela_overcut:
+            overcut.pop(pid, None)
+            atual = next((ln["pos"] for ln in linhas if ln["pid"] == pid), None)
+            ganho = (d.get("pos") or atual or 0) - (atual or 0)
+            feed.append(
+                f"🔧 Overcut concluído para **{sim.piloto(game, pid)['nome']}**: "
+                + (f"ganhou {ganho} posição(ões) na pista!" if ganho > 0 else "posição mantida.")
+            )
+    for pid, rival, pr, pm in sim.overcut_disponivel(lap, stt["pits"], meus_ids, pos_antes):
+        if overcut.get(pid, {}).get("rival") == rival and overcut[pid].get("volta") == lap:
+            continue
+        overcut[pid] = {"rival": rival, "volta": lap, "pos": pm, "laps": janela_overcut}
+        feed.append(
+            f"🔧 **{sim.piloto(game, rival)['nome']}** (P{pr}) parou na volta {lap} — "
+            f"overcut: **{sim.piloto(game, pid)['nome']}** (P{pm}) pode ficar na pista e atacar!"
         )
 
     grids_rep = {pid: d["grid"] for pid, d in rep["info"].items()}
@@ -1640,6 +1673,14 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
                 prox_txt = f"Próxima parada: volta {proxima}"
             else:
                 prox_txt = "Sem paradas previstas no plano"
+            oc = overcut.get(p["id"])
+            oc_html = ""
+            if oc and lap - int(oc["volta"]) <= janela_overcut:
+                rival_oc = sim.piloto(game, oc["rival"])["nome"]
+                oc_html = (
+                    f'<div class="overcut-card">🔧 <b>{rival_oc}</b> parou — fique na pista e '
+                    f"ataque para devolver a posição.</div>"
+                )
             uc = ativo.get(p["id"])
             uc_html = ""
             if uc and lap - int(uc["volta"]) <= 2:
@@ -1655,9 +1696,22 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
                 f"Pit: {'pergunta' if pergunta_ok else 'automático'}</div>"
                 f"{_barra_html(vida)}"
                 f'<div class="mini">Vida do pneu: {vida * 100:.0f}%</div>'
-                f'<div class="mini">{prox_txt}</div>{alerta}{uc_html}</div>',
+                f'<div class="mini">{prox_txt}</div>{alerta}{uc_html}{oc_html}</div>',
                 unsafe_allow_html=True,
             )
+            if oc_html and st.button(
+                "🔥 Ficar e atacar",
+                key=f"oc_{p['id']}_{fds['chave']}",
+                width="stretch",
+                help="Overcut: mantém o piloto na pista com ritmo Atacar para ganhar a posição na saída do rival.",
+            ):
+                rk_oc = f"ritmo_vivo_{p['id']}_{fds['chave']}"
+                st.session_state[rk_oc] = "Atacar"
+                ritmos[p["id"]] = "Atacar"
+                feed.append(
+                    f"🔥 **{p['nome']}** fica na pista e ataca (overcut) na volta {lap}."
+                )
+                st.rerun()
             if uc_html and st.button(
                 "⚡ Responder agora",
                 key=f"uc_{p['id']}_{fds['chave']}",
@@ -1788,7 +1842,9 @@ def pagina_corrida(game):
                     }
             if st.button(f"▶️ Simular {rot_corrida2(game)}", width="stretch"):
                 grid_s = sim.simular_classificacao(game, etapa, molhado)
-                res_s, ev_s = sim.simular_corrida(game, etapa, grid_s, est_s, molhado, sprint=True)
+                res_s, ev_s = sim.simular_corrida(
+                    game, etapa, grid_s, est_s, molhado, sprint=True, clima=fds.get("clima")
+                )
                 sim.aplicar_resultado(game, etapa, grid_s, res_s, molhado, sprint=True, eventos=ev_s)
                 fds["sprint"] = res_s
                 st.rerun()
@@ -1936,7 +1992,9 @@ def pagina_corrida(game):
         paddock_ok = bool(fds.get("paddock_ok"))
         pode_largar = treino_ok and bool(fds.get("grid")) and not bloqueado and paddock_ok
         if st.button("🚦 Dar largada!", type="primary", width="stretch", key="dar_largada", disabled=not pode_largar):
-            res, ev = sim.simular_corrida(game, etapa, fds["grid"], estrategias, molhado)
+            res, ev = sim.simular_corrida(
+                game, etapa, fds["grid"], estrategias, molhado, clima=fds.get("clima")
+            )
             fds["resumo"] = sim.aplicar_resultado(game, etapa, fds["grid"], res, molhado, eventos=ev)
             fds["resultado"], fds["eventos"] = res, ev
             venceu = any(l["equipe_id"] == eqj["id"] and l["pos"] == 1 and not l["dnf"] for l in res)
@@ -2543,10 +2601,15 @@ Comande uma equipe de F1 temporada após temporada, **sem limite de anos** — e
 - **Transmissão**: use **⏩ Próxima parada** para pular direto ao próximo box planejado, **⏸ Pausar** para
   pensar e **1×/2×/4×** para acelerar. A torre de tempos mostra setas de posições versus o grid, composto
   colorido e barra de diferença para o líder.
+- **Overcut**: rival que estava **à frente** vai ao box e aparece o botão **🔥 Ficar e atacar** — manter o
+  piloto na pista com ritmo `Atacar` devolve a posição na saída dele (o ganho aparece na torre de tempos).
+  Se você parar dentro da janela, o overcut é abortado.
 - **Clima ao vivo**: a tela mostra a **previsão do tempo** da prova — largada seca ou molhada e, às vezes,
   *"a chuva chega por volta de X"* ou *"a pista deve secar por volta de X"*. Durante a corrida, o chip de
   **pista** acompanha a condição real, avisa no feed quando vira e destaca no painel do piloto quando o
-  composto está errado para a pista (slick na chuva, chuva no seco). O resultado final continua sendo o do motor.
+  composto está errado para a pista (slick na chuva, chuva no seco). **E o clima pesa no resultado de
+  verdade**: talento de chuva, composto de largada certo e número de paradas contam pontos no motor —
+  a previsão que você leu antes da largada decide a prova.
 - **Controle da transmissão**: **⏸ Pausar / ▶ Retomar** congela a prova para pensar e **1× / 2× / 4×**
   acelera a transmissão. Atalhos de teclado: **espaço** pausa/retoma, **1/2/4** mudam a velocidade e
   **P / O** abrem o Pit Stop do 1º e do 2º piloto.

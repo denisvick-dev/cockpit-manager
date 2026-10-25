@@ -88,16 +88,22 @@ pedem **Python 3.12+**).
 - **Tela de treino classificatório** (como no original): relógio de 60 min com barra, clima, tabela
   de Pos./Nome/Equipe/**Melhor tempo** se enchendo aos poucos e o grid final fiel ao motor;
   botões **Iniciar treino** e **Ir para corrida!**
-- **Clima ao vivo com previsão**: cada GP sorteia um **plano de clima** (largada seca/molhada e, às vezes,
-  virada no meio da prova). A previsão aparece antes da largada ("a chuva chega por volta de X"), o chip de
-  **pista** durante a corrida acompanha a condição real, o feed avisa quando o tempo vira e o composto errado
-  é destacado no painel do piloto — e o diálogo do Pit Stop já abre com os pneus certos para aquela volta.
+- **Clima ao vivo com previsão (e consequência real)**: cada GP sorteia um **plano de clima** (largada
+  seca/molhada e, às vezes, virada no meio da prova). A previsão aparece antes da largada ("a chuva chega por
+  volta de X"), o chip de **pista** acompanha a condição real, o feed avisa quando o tempo vira e o composto
+  errado é destacado no painel do piloto — e o diálogo do Pit Stop já abre com os pneus certos para aquela
+  volta. **Isso agora muda o resultado do motor** (`sim.ajuste_clima`): talento de chuva pesa conforme a
+  fração molhada, o composto de largada certo para a condição inicial vale posição e apostar em menos paradas
+  numa prova que vira cobra caro. Quem previu o tempo errado **perde a corrida no escritório, não na tela**.
 - **Transmissão controlável**: **Pausar/Retomar** (congela a prova), **1× / 2× / 4×** de velocidade e
   **atalhos de teclado** (espaço, 1/2/4, P/O para o box dos dois pilotos) via `static/atalhos.html`.
 - **Torre de tempos da transmissão**: faixa na **cor da equipe** em cada linha, **setas ▲▼** de posições
   ganhas/perdidas em relação ao grid, composto como **bolinha colorida** (S/M/H/I/W), **barra de diferença**
   para o líder, cabeçalho fixo, destaque vermelho com a tag **VC** para os seus carros e badge pulsante de
   **BOX** — no treino e na corrida.
+- **Overcut**: quando um rival **à frente** vai ao box, o rádio avisa e o botão **🔥 Ficar e atacar** mantém o
+  piloto na pista com ritmo `Atacar` — ele recupera a posição na saída do rival, com o ganho aparecendo na torre
+  de tempos. Se você parar dentro da janela, o overcut é abortado (e o feed diz isso).
 - **Undercut com resposta imediata**: quando um rival que estava até 3 posições atrás vai ao box, o rádio
   avisa ("⚔️ Alonso (P10) foi ao box — undercut sobre Norris (P7)") e aparece o botão **⚡ Responder agora**,
   que abre o box na hora (a prova congela enquanto você decide).

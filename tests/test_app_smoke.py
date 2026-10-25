@@ -219,3 +219,43 @@ def test_alerta_de_undercut_e_resposta_imediata(app_com_jogo, game):
     aberto = stt.get("pit_aberto")
     assert aberto and aberto["pid"] == pid and not aberto["planejada"]
     assert not app.exception
+
+
+def test_overcut_na_transmissao_avisa_e_permite_atacar(app_com_jogo, game):
+    app = app_com_jogo
+    app.session_state["menu"] = "🏁 Corrida"
+    app.run()
+    stt = _largo(app, game, app.session_state["fds"])
+    stt["pit_perguntar"] = {pid: False for pid in stt["pit_perguntar"]}
+    app.run()
+
+    meus = set(stt["pit_perguntar"])
+    pid = next(iter(meus))
+    spv = max(0.2, min(0.55, 24.0 / max(1, int(stt["rep"]["voltas"]))))
+    achado = None
+    for lap in range(4, 25):
+        stt["t0"] = time.time() - spv * lap
+        app.run()
+        lap_atual = int(stt["lap"])
+        pits_antes = {k: [x for x in (v or []) if x < lap_atual] for k, v in stt["pits"].items()}
+        linhas = sim.linhas_replay(stt["rep"], max(1, lap_atual - 1), pits_antes)
+        pos = {ln["pid"]: ln["pos"] for ln in linhas if not ln.get("fora")}
+        rival = next((r for r in pos if r not in meus and 0 < pos[pid] - pos[r] <= 3), None)
+        if rival:
+            achado = (lap_atual, rival)
+            break
+    assert achado, "nenhuma volta com rival à frente a até 3 posições"
+    lap, rival = achado
+
+    stt["pits"].setdefault(rival, []).append(lap)
+    app.run()
+
+    assert stt["overcut_ativo"].get(pid), "o alerta de overcut não foi registrado"
+    assert any("overcut" in f for f in stt["feed"])
+
+    botao = [b for b in app.button if b.label == "🔥 Ficar e atacar"]
+    assert botao, "o botão de overcut não apareceu"
+    botao[0].click().run()
+
+    assert stt["ritmos"][pid] == "Atacar"
+    assert not app.exception

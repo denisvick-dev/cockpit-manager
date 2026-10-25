@@ -156,3 +156,72 @@ def test_undercut_detecta_rival_logo_atras_que_parou():
     assert sim.undercut_nesta_volta(21, pits, {"eu"}, posicoes) == []
     # rivais que também são "meus" (parceiro de equipe) não entram
     assert sim.undercut_nesta_volta(20, pits, {"eu", "rival"}, posicoes) == []
+
+
+def test_overcut_disponivel_pega_rival_da_frente():
+    posicoes = {"eu": 8, "frente": 6, "longe_frente": 2, "atras": 10}
+    pits = {"frente": [30], "longe_frente": [30], "atras": [30]}
+
+    assert sim.overcut_disponivel(30, pits, {"eu"}, posicoes) == [("eu", "frente", 6, 8)]
+    nomes = {r for _, r, _, _ in sim.overcut_disponivel(30, pits, {"eu"}, posicoes, janela=7)}
+    assert nomes == {"frente", "longe_frente"}
+    assert sim.overcut_disponivel(31, pits, {"eu"}, posicoes) == []
+    assert sim.overcut_disponivel(30, pits, {"eu", "frente"}, posicoes) == []
+
+
+def test_overcut_melhora_posicao_na_janela_e_zera_no_fim(game, etapa):
+    grid = sim.simular_classificacao(game, etapa, False)
+    res, eventos = sim.simular_corrida(game, etapa, grid, {}, False)
+    rep = sim.montar_replay(game, etapa, grid, res, False, eventos=eventos)
+    pid = next(p for p, d in rep["info"].items() if not d["dnf"])
+
+    voltas = int(rep["voltas"])
+    overcut = {pid: {"volta": 10, "laps": 3}}
+    # dentro da janela o piloto aparece à frente de onde apareceria sem overcut
+    pior = next(l["pos"] for l in sim.linhas_replay(rep, 11, {}) if l["pid"] == pid)
+    melhor = next(l["pos"] for l in sim.linhas_replay(rep, 11, {}, overcut=overcut) if l["pid"] == pid)
+    assert melhor <= pior
+    # fora da janela (e na bandeirada) nada muda: o resultado do motor manda
+    fim_sem = [(l["pid"], l["pos"]) for l in sim.linhas_replay(rep, voltas, {})]
+    fim_com = [(l["pid"], l["pos"]) for l in sim.linhas_replay(rep, voltas, {}, overcut=overcut)]
+    assert fim_sem == fim_com
+
+
+def test_clima_no_motor_muda_o_resultado(game):
+    import copy
+
+    etapa = game["calendario"][1]
+    grid = sim.simular_classificacao(game, etapa, False)
+    ests = {p["id"]: {"pneu": "Médio", "paradas": 1, "ritmo": "Normal"}
+            for p in sim.titulares(game, game["equipe_jogador"])}
+
+    seco = {"inicio": "seco", "virada_volta": None, "virada_para": None}
+    chuva = {"inicio": "seco", "virada_volta": 20, "virada_para": "molhado"}
+
+    sem_plano, _ = sim.simular_corrida(copy.deepcopy(game), etapa, grid, ests, False)
+    com_seco, _ = sim.simular_corrida(copy.deepcopy(game), etapa, grid, ests, False, clima=seco)
+    com_chuva, eventos = sim.simular_corrida(copy.deepcopy(game), etapa, grid, ests, False, clima=chuva)
+
+    ordem = lambda res: [l["piloto_id"] for l in res]  # noqa: E731
+    # plano seco sem virada não altera nada (invariante de balanceamento)
+    assert ordem(sem_plano) == ordem(com_seco)
+    # chuva chegando no meio muda o resultado e é anunciada
+    assert ordem(com_chuva) != ordem(com_seco)
+    assert any("volta 20" in e for e in eventos)
+    assert [l["pos"] for l in com_chuva] == list(range(1, len(com_chuva) + 1))
+
+
+def test_clima_fracao_e_ajuste_por_composto():
+    assert sim.clima_fracao({"inicio": "seco"}, 50) == (0.0, None)
+    assert sim.clima_fracao({"inicio": "molhado"}, 50) == (1.0, None)
+    frac, v = sim.clima_fracao({"inicio": "seco", "virada_volta": 40, "virada_para": "molhado"}, 50)
+    assert v == 40 and 0.0 < frac < 0.3
+
+    etapa = {"voltas": 50, "desgaste": 2.0, "ultrap": 0.5, "potencia": 0.6}
+    piloto = {"atributos": {"chuva": 95, "fisico": 80}}
+    molhado = {"inicio": "molhado", "virada_volta": None, "virada_para": None}
+    certo = sim.ajuste_clima(molhado, etapa, {"pneu": "Intermediário", "paradas": 1}, piloto)
+    errado = sim.ajuste_clima(molhado, etapa, {"pneu": "Macio", "paradas": 1}, piloto)
+    assert certo > errado
+    # sem plano, nenhum ajuste
+    assert sim.ajuste_clima(None, etapa, {"pneu": "Macio", "paradas": 1}, piloto) == 0.0
