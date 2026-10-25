@@ -1065,6 +1065,35 @@ def tabela_pilotos(game):
     return sorted(titulares(game), key=lambda p: (-p["pontos"], -p["vitorias"], -p["podios"]))
 
 
+def ultimas_corridas(game, piloto_id, n=5):
+    """Resultados recentes do piloto (mais antigo → mais recente), como
+    [{"rodada": i, "pos": p, "dnf": bool, "pontos": pts, "gp": nome}]."""
+    hist = []
+    for r in game.get("resultados") or []:
+        if r.get("sprint"):
+            continue
+        for l in r.get("resultado") or []:
+            if l["piloto_id"] == piloto_id:
+                hist.append({
+                    "rodada": int(r.get("rodada") or 0),
+                    "pos": int(l.get("pos") or 0),
+                    "dnf": bool(l.get("dnf")),
+                    "pontos": int(l.get("pontos") or 0),
+                    "gp": r.get("gp") or "",
+                })
+                break
+    hist.sort(key=lambda h: h["rodada"])
+    return hist[-n:]
+
+
+def forma_texto(hist, n=5):
+    """Resumo visual da forma recente: '1·3·2·5·D' (D = abandono)."""
+    if not hist:
+        return "—"
+    marcas = ["D" if h["dnf"] else str(h["pos"]) for h in hist[-n:]]
+    return "·".join(marcas)
+
+
 def tabela_construtores(game):
     return sorted(game["equipes"], key=lambda e: (-e["pontos"], -e["vitorias"], -e["podios"]))
 
