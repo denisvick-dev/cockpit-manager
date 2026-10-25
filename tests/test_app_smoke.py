@@ -144,3 +144,57 @@ def test_pausa_e_velocidade_congelam_a_prova(app_com_jogo, game):
     app.button(key="vel_4").click().run()
     assert stt["velocidade"] == 4
     assert not app.exception
+
+
+def test_proxima_parada_avanca_a_transmissao(app_com_jogo, game):
+    app = app_com_jogo
+    app.session_state["menu"] = "🏁 Corrida"
+    app.run()
+    stt = _largo(app, game, app.session_state["fds"])
+    # desliga as janelas automáticas para a corrida andar sozinha
+    stt["pit_perguntar"] = {pid: False for pid in stt["pit_perguntar"]}
+    app.run()
+
+    antes = stt["lap"]
+    app.button(key="proxima_parada").click().run()
+
+    assert stt["lap"] > antes + 2, "o atalho deveria pular para a próxima parada planejada"
+    assert not app.exception
+
+
+def test_alerta_de_undercut_e_resposta_imediata(app_com_jogo, game):
+    app = app_com_jogo
+    app.session_state["menu"] = "🏁 Corrida"
+    app.run()
+    stt = _largo(app, game, app.session_state["fds"])
+    stt["pit_perguntar"] = {pid: False for pid in stt["pit_perguntar"]}
+    app.run()
+
+    lap = max(5, int(stt["lap"]))
+    stt["t0"] = time.time() - 0.41 * lap
+    app.run()
+    lap = int(stt["lap"])
+    pits_antes = {k: [x for x in (v or []) if x < lap] for k, v in stt["pits"].items()}
+    linhas = sim.linhas_replay(stt["rep"], max(1, lap - 1), pits_antes)
+    pos = {ln["pid"]: ln["pos"] for ln in linhas if not ln.get("fora")}
+    meus = set(stt["pit_perguntar"])
+    pid = next(iter(meus))
+    rival = next(
+        (r for r in pos if r not in meus and 0 < pos[r] - pos[pid] <= 3),
+        None,
+    )
+    assert rival, "a corrida precisa de um rival próximo para o teste"
+
+    # simula o rival indo ao box nesta volta
+    stt["pits"].setdefault(rival, []).append(lap)
+    app.run()
+
+    assert stt["undercut_ativo"].get(pid), "o alerta de undercut não foi registrado"
+    assert any("undercut" in f for f in stt["feed"])
+    botao = [b for b in app.button if b.label == "⚡ Responder agora"]
+    assert botao, "o botão de resposta imediata não apareceu"
+
+    botao[0].click().run()
+    aberto = stt.get("pit_aberto")
+    assert aberto and aberto["pid"] == pid and not aberto["planejada"]
+    assert not app.exception

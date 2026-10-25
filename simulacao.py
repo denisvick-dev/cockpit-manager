@@ -614,6 +614,26 @@ def pits_pendentes(rep, lap, pits_feitas, recusadas=None, perguntar=None, apenas
     return pend
 
 
+def undercut_nesta_volta(lap, pits_feitas, meus_ids, posicoes, janela=3):
+    """Rivais que estavam até `janela` posições atrás de um piloto do jogador e
+    foram ao box nesta volta — o clássico undercut. `posicoes` = {pid: pos}
+    ANTES dos boxes desta volta. Devolve [(meu_pid, rival_pid, pos_rival, pos_minha)]."""
+    alertas = []
+    for rival, voltas in (pits_feitas or {}).items():
+        if rival in meus_ids or lap not in (voltas or []):
+            continue
+        pr = (posicoes or {}).get(rival)
+        if pr is None:
+            continue
+        for pid in meus_ids:
+            pm = posicoes.get(pid)
+            if pm is None:
+                continue
+            if 0 < pr - pm <= janela:
+                alertas.append((pid, rival, pr, pm))
+    return alertas
+
+
 def vida_pneu(etapa, pneu, laps_no_pneu, ritmo=None):
     """Fração de vida restante do composto (0..1) para a barra da tela.
     `ritmo` projeta o desgaste: Atacar consome mais, Conservar menos."""

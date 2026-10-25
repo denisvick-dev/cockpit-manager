@@ -141,3 +141,18 @@ def test_clima_muda_o_ritmo_pelo_menos_em_uma_etapa(game):
                 viradas += 1
     game["rodada"] = 0
     assert viradas > 0
+
+
+def test_undercut_detecta_rival_logo_atras_que_parou():
+    posicoes = {"eu": 5, "rival": 7, "longe": 12, "frente": 3}
+    pits = {"rival": [20], "longe": [20], "frente": [20]}
+    alertas = sim.undercut_nesta_volta(20, pits, {"eu"}, posicoes)
+
+    assert alertas == [("eu", "rival", 7, 5)], "só o rival até 3 posições atrás deve alertar"
+    # janela maior pega também quem estava mais longe
+    nomes = {r for _, r, _, _ in sim.undercut_nesta_volta(20, pits, {"eu"}, posicoes, janela=8)}
+    assert nomes == {"rival", "longe"}
+    # quem está à frente não é undercut, e outra volta não gera alerta
+    assert sim.undercut_nesta_volta(21, pits, {"eu"}, posicoes) == []
+    # rivais que também são "meus" (parceiro de equipe) não entram
+    assert sim.undercut_nesta_volta(20, pits, {"eu", "rival"}, posicoes) == []

@@ -94,6 +94,19 @@ pedem **Python 3.12+**).
   é destacado no painel do piloto — e o diálogo do Pit Stop já abre com os pneus certos para aquela volta.
 - **Transmissão controlável**: **Pausar/Retomar** (congela a prova), **1× / 2× / 4×** de velocidade e
   **atalhos de teclado** (espaço, 1/2/4, P/O para o box dos dois pilotos) via `static/atalhos.html`.
+- **Torre de tempos da transmissão**: faixa na **cor da equipe** em cada linha, **setas ▲▼** de posições
+  ganhas/perdidas em relação ao grid, composto como **bolinha colorida** (S/M/H/I/W), **barra de diferença**
+  para o líder, cabeçalho fixo, destaque vermelho com a tag **VC** para os seus carros e badge pulsante de
+  **BOX** — no treino e na corrida.
+- **Undercut com resposta imediata**: quando um rival que estava até 3 posições atrás vai ao box, o rádio
+  avisa ("⚔️ Alonso (P10) foi ao box — undercut sobre Norris (P7)") e aparece o botão **⚡ Responder agora**,
+  que abre o box na hora (a prova congela enquanto você decide).
+- **Box com projeção de posição**: o diálogo do Pit Stop mostra **"P9 agora → P11 saindo do box (perde 2)"**,
+  para você pesar a parada antes de confirmar.
+- **Atalho de transmissão**: **⏩ Próxima parada (volta N)** salta direto para a próxima parada planejada,
+  além de **⏸ Pausar/Retomar**, **1×/2×/4×** e **⏭️ Concluir corrida agora**.
+- **Escritório com o campeonato à vista**: chips de **posição no construtores**, pontos, vitórias e caixa no
+  cabeçalho, e o painel da próxima corrida com **clima sorteado**, **previsão do tempo** e a estratégia típica.
 - **Tela de corrida ao vivo**: título do GP com "Etapa X de N", contador de **Voltas k / N**,
   tabela posição a posição (últ. volta, dif. ant., dif 1º), painel dos seus dois pilotos com
   paradas, pneu, **barra de vida**, **próxima parada** e **Pit stop!** manual (ou a janela de box
@@ -130,6 +143,8 @@ pedem **Python 3.12+**).
 - **Pré-contrato** no mercado de pilotos: pague um **sinal de 3 corridas do salário** e feche o
   acordo na hora — sem chance de recusa. Cancelar não devolve o sinal (e um piloto que se aposentar
   antes da virada deixa o acordo no vazio, com aviso no feed).
+- **Polimento de interação** — cartões com hover suave, botões com leve elevação, anel de foco visível,
+  barras de rolagem finas e respeito a `prefers-reduced-motion` (acessibilidade).
 - **Tipografia em todo o projeto** — três famílias auto-hospedadas em `static/fonts/` e aplicadas por
   componente (tokens `--cm-font-*` no `app.py` + `[[theme.fontFaces]]` no `.streamlit/config.toml`):
 

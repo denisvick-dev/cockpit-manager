@@ -215,6 +215,38 @@ st.markdown(
   .tbl-viva tr.fora td{color:#7B8798;}
   .tbl-viva td.pos{font-weight:800; width:38px;}
   .tbl-viva td.p1{color:#FFD966;} .tbl-viva td.p2{color:#D7DEE9;} .tbl-viva td.p3{color:#E0A96D;}
+
+  /* ---------- torre de tempos (transmissão) ---------- */
+  .tabela-wrap{max-height:66vh; overflow:auto; scrollbar-width:thin;}
+  .tabela-wrap::-webkit-scrollbar{width:9px; height:9px;}
+  .tabela-wrap::-webkit-scrollbar-thumb{background:rgba(148,163,184,.28); border-radius:99px;}
+  .tbl-viva thead th{position:sticky; top:0; z-index:2; backdrop-filter:blur(6px);}
+  .tbl-viva tbody tr{position:relative; transition:background .12s ease;}
+  .tbl-viva tbody tr td:first-child{box-shadow:inset 3px 0 0 var(--eq, transparent); padding-left:12px;}
+  .tbl-viva tbody tr:hover td{background:rgba(255,255,255,.045);}
+  .tbl-viva tr.meu td{background:linear-gradient(90deg, rgba(200,16,46,.22), rgba(200,16,46,.07) 55%, transparent);}
+  .tbl-viva tr.meu td:first-child{box-shadow:inset 3px 0 0 var(--cm-red2);}
+  .tbl-viva tr.lider td:first-child{box-shadow:inset 3px 0 0 #FFD966;}
+  .tbl-viva tr.fora{opacity:.62;}
+  .tbl-viva .pos-n{font-family:var(--cm-font-brand); font-size:.98rem; letter-spacing:.02em;}
+  .dpos{margin-left:4px; font-size:.64rem; font-weight:700; vertical-align:1px;}
+  .dpos.up{color:#4ADE80;} .dpos.dn{color:#F87171;} .dpos.eq{color:#64748B;}
+  .tag-vc{margin-left:6px; padding:1px 5px; border-radius:5px; font-size:.58rem; font-weight:800;
+    letter-spacing:.1em; color:#fff; background:var(--cm-red); vertical-align:1.5px;}
+  .nome-cel{font-weight:600;}
+  .tbl-viva td.mono{font-variant-numeric:tabular-nums; color:#CBD5E1;}
+  .badge-box{display:inline-block; padding:1px 6px; border-radius:5px; font-size:.6rem; font-weight:800;
+    letter-spacing:.09em; color:#0B0F14; background:#F59E0B; animation:pulsa 1.1s ease-in-out infinite;}
+  @keyframes pulsa{0%,100%{opacity:1} 50%{opacity:.45}}
+  .gap-bar{height:3px; width:60px; margin-top:3px; border-radius:99px; background:rgba(255,255,255,.07); overflow:hidden;}
+  .gap-bar i{display:block; height:100%; border-radius:99px;
+    background:linear-gradient(90deg, rgba(74,222,128,.85), rgba(250,204,21,.85) 55%, rgba(248,113,113,.9));}
+  .gap-lider{font-size:.6rem; font-weight:800; letter-spacing:.1em; color:#FFD966;}
+  .gap-txt{font-size:.66rem; color:#94A3B8; margin-top:1px;}
+  .tyre{display:inline-flex; align-items:center; gap:5px; font-size:.72rem; font-weight:800;
+    font-variant-numeric:tabular-nums; color:#E7ECF3;}
+  .tyre i{width:11px; height:11px; border-radius:50%; display:inline-block;
+    background:var(--t); box-shadow:0 0 0 2px rgba(0,0,0,.45), 0 0 8px color-mix(in srgb, var(--t) 55%, transparent);}
   .eq-chip{display:inline-block; min-width:82px; text-align:center; border-radius:6px;
     padding:2.5px 9px; font-weight:700; font-size:.79rem; text-shadow:0 1px 2px rgba(0,0,0,.4);}
   .voltas-box{border:1px solid rgba(224,36,68,.75); border-radius:14px; text-align:center;
@@ -258,6 +290,13 @@ st.markdown(
   .pista-chip.seco{background:rgba(250,204,21,.16); color:#FDE68A;}
   .pista-chip.molhado{background:rgba(56,189,248,.18); color:#BAE6FD;}
   .box-piloto .alerta{font-size:.76rem; margin-top:4px; color:#FCA5A5; font-weight:700;}
+  .proj-box{border:1px solid rgba(148,163,184,.28); border-radius:10px; padding:7px 10px;
+    margin:2px 0 6px; font-size:.82rem; color:#DDE7F3; background:rgba(255,255,255,.035);}
+  .proj-delta{margin-left:6px; font-size:.72rem; font-weight:800; letter-spacing:.06em;
+    text-transform:uppercase; color:#FCD34D;}
+  .undercut-card{margin-top:7px; border:1px solid rgba(245,158,11,.55); border-radius:9px;
+    padding:6px 9px; font-size:.76rem; line-height:1.4; color:#FDE68A;
+    background:linear-gradient(120deg, rgba(245,158,11,.22), rgba(16,21,30,.85));}
   .pausa-chip{border:1px solid rgba(250,204,21,.5); border-radius:10px; padding:5px 10px;
     margin:0 0 6px; font-size:.76rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
     color:#FDE68A; background:rgba(250,204,21,.13); text-align:center;}
@@ -266,6 +305,12 @@ st.markdown(
   .office-head{text-align:center; margin:.3rem 0 1rem;}
   .office-head .quem{font-size:.95rem; color:#CBD5E1; letter-spacing:.05em;}
   .office-head .time{font-size:2.05rem; font-weight:800; font-style:italic; line-height:1.15; margin-top:.08rem;}
+  .office-meta{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center;
+    margin-top:.55rem;}
+  .office-meta .om{display:inline-flex; gap:5px; align-items:baseline; border-radius:999px;
+    padding:3px 11px; font-size:.76rem; color:#CBD5E1; border:1px solid var(--cm-border);
+    background:linear-gradient(145deg, rgba(255,255,255,.06), rgba(255,255,255,.015));}
+  .office-meta .om b{font-family:var(--cm-font-brand); font-size:.86rem; color:#F8FAFC;}
   .painel{border:1px solid var(--cm-border); border-radius:14px; overflow:hidden;
     background:linear-gradient(165deg, rgba(255,255,255,.05), rgba(255,255,255,.015));
     margin-bottom:12px; box-shadow:0 12px 26px rgba(0,0,0,.18);}
@@ -292,6 +337,20 @@ st.markdown(
   .side-stat .lab{font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--cm-muted)}
   .side-stat .val{font-size:1rem; font-weight:600; margin-top:3px; white-space:nowrap}
   .flag-img{box-shadow:0 1px 4px rgba(0,0,0,.35)}
+
+  /* ---------- polimento de interação ---------- */
+  .painel{transition:border-color .15s ease, transform .15s ease, box-shadow .15s ease;}
+  .painel:hover{border-color:rgba(224,36,68,.35); box-shadow:0 16px 34px rgba(0,0,0,.26);}
+  .stButton > button, [data-testid^="stBaseButton"]{transition:transform .12s ease, filter .12s ease,
+    box-shadow .12s ease; border-radius:11px;}
+  .stButton > button:hover, [data-testid^="stBaseButton"]:hover{transform:translateY(-1px); filter:brightness(1.07);}
+  [data-testid^="stBaseButton"]:active{transform:translateY(0);}
+  *:focus-visible{outline:2px solid rgba(224,36,68,.75); outline-offset:2px; border-radius:8px;}
+  html{scrollbar-width:thin; scrollbar-color:rgba(148,163,184,.32) transparent;}
+  ::-webkit-scrollbar{width:10px; height:10px;}
+  ::-webkit-scrollbar-thumb{background:rgba(148,163,184,.28); border-radius:99px;}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(148,163,184,.45);}
+  @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important;}}
 </style>
 """,
     unsafe_allow_html=True,
@@ -841,10 +900,15 @@ def pagina_escritorio(game):
     gerente = str(game.get("gerente", "") or "").strip()
     etapa_n = min(game["rodada"] + 1, len(game["calendario"]))
     quem = f"{gerente} " if gerente else ""
+    pos_eq = sim.posicao_equipe(game, eqj["id"])
     st.markdown(
         f'<div class="office-head"><div class="quem">{quem}{game["ano"]}, {etapa_n}ª etapa</div>'
         f'<div class="time">{eqj["nome"]}</div>'
-        f'<div class="fl">{bnd.img_bandeira(eqj["bandeira"], 30)}</div></div>',
+        f'<div class="office-meta">{bnd.img_bandeira(eqj["bandeira"], 22)}'
+        f'<span class="om"><b>{pos_eq}º</b> construtores</span>'
+        f'<span class="om"><b>{eqj["pontos"]}</b> pts</span>'
+        f'<span class="om"><b>{eqj["vitorias"]}</b> vitórias</span>'
+        f'<span class="om"><b>{sim.fmt_dinheiro_m(eqj["caixa"])}</b> caixa</span></div></div>',
         unsafe_allow_html=True,
     )
     if fim:
@@ -938,13 +1002,22 @@ def pagina_escritorio(game):
         _painel_fim()
 
         etapa = game["calendario"][game["rodada"]]
+        fds_prox = obter_fds(game, etapa)
+        clima_txt = "🌧️ Molhado" if fds_prox["molhado"] else "☀️ Seco"
         _painel_ini("Próxima corrida")
         st.markdown(
             _plinha("Circuito", etapa["circuito"])
             + _plinha("Grande Prêmio", f"{bnd.img_bandeira(etapa['bandeira'], 16)} {etapa['gp']}")
             + _plinha("Data", etapa["data"])
             + _plinha("Voltas", str(etapa["voltas"]))
+            + _plinha("Clima", clima_txt)
+            + _plinha("Estratégia típica", f"{sim.paradas_ideais(etapa)} parada(s)")
             + (_plinha("Formato", f"⚡ {rot_corrida2(game)} + principal") if etapa["sprint"] else ""),
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div class="previsao-tempo" style="margin:8px 0 6px">'
+            f"<b>Previsão</b> · {sim.previsao_texto(fds_prox.get('clima'))}</div>",
             unsafe_allow_html=True,
         )
         st.button(
@@ -1080,45 +1153,92 @@ def _cabecalho_corrida(game, etapa, molhado, com_checkbox=False):
         )
 
 
-def _html_tabela_viva(game, linhas, mostrar_pits=False, meus_ids=()):
-    """Tabela ao vivo (treino/corrida) com chip colorido da equipe por linha."""
+def _tyre_badge(pneu):
+    """Composto como bolinha colorida + letra (S/M/H/I/W), com tooltip."""
+    cores = {
+        "Macio": ("#E02444", "S"),
+        "Médio": ("#EAB308", "M"),
+        "Duro": ("#E5E7EB", "H"),
+        "Intermediário": ("#22C55E", "I"),
+        "Chuva extrema": ("#3B82F6", "W"),
+    }
+    cor, letra = cores.get(pneu, ("#94A3B8", "?"))
+    return f'<span class="tyre" title="{pneu}" style="--t:{cor}"><i></i>{letra}</span>'
+
+
+def _delta_pos(atual, grid):
+    """Seta de posições ganhas/perdidas em relação ao grid."""
+    if not grid:
+        return '<span class="dpos eq">•</span>'
+    d = int(grid) - int(atual)
+    if d > 0:
+        return f'<span class="dpos up">▲{d}</span>'
+    if d < 0:
+        return f'<span class="dpos dn">▼{abs(d)}</span>'
+    return '<span class="dpos eq">=</span>'
+
+
+def _html_tabela_viva(game, linhas, mostrar_pits=False, meus_ids=(), grids=None, mostra_delta=False):
+    """Torre de tempos da transmissão: faixa na cor da equipe, setas de
+    posição, composto como bolinha colorida, barra de diferença e destaque
+    para os seus carros."""
+    grids = grids or {}
     th = ["Pos.", "Nome", "Equipe", "Últ. volta", "Dif. ant.", "Dif 1º"]
     if mostrar_pits:
         th += ["Pneu", "Paradas"]
     cab = "".join(f"<th>{t}</th>" for t in th)
+
+    validos = [l for l in linhas if not l.get("fora") and l.get("dif1") is not None]
+    max_gap = max((l["dif1"] for l in validos), default=0.0) or 1.0
+
     corpo = []
     for l in linhas:
         p = sim.piloto(game, l["pid"])
         eq = sim.equipe(game, l["equipe_id"])
+        pos = l["pos"]
         classes = []
         if l["pid"] in meus_ids:
             classes.append("meu")
         if l.get("fora"):
             classes.append("fora")
-        tr = f'<tr class="{" ".join(classes)}">' if classes else "<tr>"
-        pos = l["pos"]
+        if pos == 1 and not l.get("fora"):
+            classes.append("lider")
+        tr = f'<tr class="{" ".join(classes)}" style="--eq:{eq["cor"]}">' if classes else f'<tr style="--eq:{eq["cor"]}">'
+
         cls_pos = "pos" + (" p1" if pos == 1 else " p2" if pos == 2 else " p3" if pos == 3 else "")
+        delta = _delta_pos(pos, grids.get(l["pid"])) if mostra_delta and not l.get("fora") else ""
+        eu = '<span class="tag-vc">VC</span>' if l["pid"] in meus_ids else ""
+
         if l.get("fora"):
             ult = f"💥 {l['fora']}"
         elif l.get("box"):
-            ult = f'<b style="color:#F59E0B">BOX</b> {fmt_tempo(l["tempo"])}'
+            ult = f'<span class="badge-box">BOX</span> {fmt_tempo(l["tempo"])}'
         else:
             ult = fmt_tempo(l["tempo"]) if l.get("tempo") is not None else "—"
+
         dif_ant = "—" if l.get("dif_ant") is None else f"+{l['dif_ant']:.1f}"
         if l.get("dif1") is None or pos == 1:
-            dif1 = "—"
+            dif1 = "—" if l.get("dif1") is None else '<span class="gap-lider">LÍDER</span>'
+            barra = ""
         else:
+            pct = max(2.0, min(100.0, l["dif1"] / max_gap * 100))
             dif1 = f"+{l['dif1']:.1f}"
-        extra = (
-            f"<td>{l.get('pneu', '—')}</td><td>{l.get('pits', 0)}/{l.get('paradas', 0)}</td>" if mostrar_pits else ""
-        )
+            barra = f'<div class="gap-bar"><i style="width:{pct:.0f}%"></i></div>'
+
+        extra = ""
+        if mostrar_pits:
+            extra = (f'<td>{_tyre_badge(l.get("pneu", "—"))}</td>'
+                     f'<td>{l.get("pits", 0)}/{l.get("paradas", 0)}</td>')
+
         corpo.append(
-            f'{tr}<td class="{cls_pos}">{pos}º</td><td>{p["nome"]}</td>'
-            f"<td>{_chip_equipe(eq)}</td><td>{ult}</td>"
-            f"<td>{dif_ant}</td><td>{dif1}</td>{extra}</tr>"
+            f'{tr}<td class="{cls_pos}"><span class="pos-n">{pos}</span>{delta}</td>'
+            f'<td class="nome-cel">{p["nome"]}{eu}</td>'
+            f'<td>{_chip_equipe(eq)}</td><td class="mono">{ult}</td>'
+            f'<td class="mono">{dif_ant}</td>'
+            f'<td class="mono">{dif1}{barra}</td>{extra}</tr>'
         )
     return (
-        f'<div class="sessao-card" style="padding-top:8px">'
+        '<div class="sessao-card tabela-wrap" style="padding-top:8px">'
         f'<table class="tbl-viva"><thead><tr>{cab}</tr></thead>'
         f"<tbody>{''.join(corpo)}</tbody></table></div>"
     )
@@ -1133,20 +1253,32 @@ def _html_tabela_treino(game, grid, sessao, minuto):
         entries.append((g, t))
     entries.sort(key=lambda e: (e[1] is None, e[1] if e[1] is not None else 0.0, e[0]["pos"]))
     corpo = []
+    lider = entries[0][1] if entries and entries[0][1] is not None else None
     for i, (g, t) in enumerate(entries):
         p = sim.piloto(game, g["piloto_id"])
         eq = sim.equipe(game, g["equipe_id"])
-        tr = '<tr class="meu">' if g["equipe_id"] == game["equipe_jogador"] else "<tr>"
+        meu = g["equipe_id"] == game["equipe_jogador"]
+        classes = []
+        if meu:
+            classes.append("meu")
+        if i == 0:
+            classes.append("lider")
+        tr = f'<tr class="{" ".join(classes)}" style="--eq:{eq["cor"]}">' if classes else f'<tr style="--eq:{eq["cor"]}">'
         pos = i + 1
         cls_pos = "pos" + (" p1" if pos == 1 else " p2" if pos == 2 else " p3" if pos == 3 else "")
         tempo_txt = fmt_tempo(t) if t is not None else "—"
+        gap = ""
+        if t is not None and lider is not None and i > 0:
+            gap = f'<div class="gap-txt">+{t - lider:.3f}</div>'
+        eu = '<span class="tag-vc">VC</span>' if meu else ""
         corpo.append(
-            f'{tr}<td class="{cls_pos}">{pos}º</td><td>{p["nome"]}</td>'
-            f"<td>{_chip_equipe(eq)}</td><td>{tempo_txt}</td></tr>"
+            f'{tr}<td class="{cls_pos}"><span class="pos-n">{pos}</span></td>'
+            f'<td class="nome-cel">{p["nome"]}{eu}</td>'
+            f"<td>{_chip_equipe(eq)}</td><td class=\"mono\">{tempo_txt}{gap}</td></tr>"
         )
     cab = "<th>Pos.</th><th>Nome</th><th>Equipe</th><th>Melhor tempo</th>"
     return (
-        f'<div class="sessao-card" style="padding-top:8px">'
+        '<div class="sessao-card tabela-wrap" style="padding-top:8px">'
         f'<table class="tbl-viva"><thead><tr>{cab}</tr></thead>'
         f"<tbody>{''.join(corpo)}</tbody></table></div>"
     )
@@ -1299,6 +1431,23 @@ def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
         help="Atacar = voltas mais rápidas e mais desgaste; Conservar = protege o pneu novo e o carro.",
         key=f"dlg_ritmo_{pid}_{fds['chave']}",
     )
+    # projeção de posição: quanto custa parar agora
+    pneus_man = stt.get("pneus_manual") or {}
+    rit_stt = stt.get("ritmos") or {}
+    linhas_agora = sim.linhas_replay(stt["rep"], lap, stt["pits"], pneus_man, rit_stt)
+    pos_agora = next((ln["pos"] for ln in linhas_agora if ln["pid"] == pid), None)
+    pits_novo = {k: list(v) for k, v in stt["pits"].items()}
+    pits_novo[pid] = sorted(set(pits_novo.get(pid, []) + [volta_pit]))
+    linhas_depois = sim.linhas_replay(stt["rep"], lap, pits_novo, pneus_man, rit_stt)
+    pos_depois = next((ln["pos"] for ln in linhas_depois if ln["pid"] == pid), None)
+    if pos_agora and pos_depois:
+        delta = pos_depois - pos_agora
+        txt = "mantém a posição" if delta == 0 else (f"perde {delta}" if delta > 0 else f"ganha {abs(delta)}")
+        st.markdown(
+            f'<div class="proj-box"><b>Posição:</b> P{pos_agora} agora → '
+            f'<b>P{pos_depois}</b> saindo do box <span class="proj-delta">{txt}</span></div>',
+            unsafe_allow_html=True,
+        )
     st.caption(f"Volta atual: **{lap} / {voltas}** · pneu no carro: **{prox}** · ritmo atual: **{ritmo_atual}**")
     if st.button("Trocar pneu e voltar ✓", type="primary", width="stretch", key=f"dlg_confirma_{pid}_{fds['chave']}"):
         feitas = stt["pits"].setdefault(pid, [])
@@ -1308,6 +1457,7 @@ def _pit_dialog(game, etapa, molhado, fds, meus, lap, voltas):
         n = len([x for x in feitas if x <= volta_pit])
         stt.setdefault("pneus_manual", {}).setdefault(pid, {})[n] = pneu
         stt.setdefault("ritmos", {})[pid] = ritmo
+        stt.setdefault("undercut_ativo", {}).pop(pid, None)
         stt.setdefault("feed", []).append(
             f"🛠️ Box para **{p['nome']}** na volta {volta_pit} → pneu **{pneu}** · ritmo **{ritmo}**."
         )
@@ -1413,9 +1563,31 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
             else "☀️ **A pista está secando!** Hora de voltar para o slick."
         )
     stt["clima_visto"] = cond
+
+    # ---- undercut: rival que estava logo atrás parou agora
+    # (as posições são as de ANTES dos boxes desta volta — é ali que a ameaça nasce)
+    ativo = stt.setdefault("undercut_ativo", {})
+    pits_antes = {k: [x for x in (v or []) if x < lap] for k, v in stt["pits"].items()}
+    linhas_antes = sim.linhas_replay(rep, max(1, lap - 1), pits_antes, pneus_man, ritmos)
+    pos_antes = {ln["pid"]: ln["pos"] for ln in linhas_antes if ln.get("pos") and not ln.get("fora")}
+    for pid in meus_ids:
+        uc = ativo.get(pid)
+        if uc and lap - int(uc["volta"]) > 2:
+            ativo.pop(pid, None)
+    for pid, rival, pr, pm in sim.undercut_nesta_volta(lap, stt["pits"], meus_ids, pos_antes):
+        if ativo.get(pid, {}).get("rival") == rival and ativo[pid].get("volta") == lap:
+            continue
+        ativo[pid] = {"rival": rival, "volta": lap}
+        feed.append(
+            f"⚔️ **{sim.piloto(game, rival)['nome']}** (P{pr}) foi ao box na volta {lap} — "
+            f"undercut sobre **{sim.piloto(game, pid)['nome']}** (P{pm})!"
+        )
+
+    grids_rep = {pid: d["grid"] for pid, d in rep["info"].items()}
     c1, c2 = st.columns([2.3, 1], gap="medium")
     with c1:
-        st.markdown(_html_tabela_viva(game, linhas, mostrar, meus_ids), unsafe_allow_html=True)
+        st.markdown(_html_tabela_viva(game, linhas, mostrar, meus_ids, grids_rep, mostra_delta=True),
+                    unsafe_allow_html=True)
     with c2:
         st.markdown(
             f'<div class="voltas-box"><div class="lab">Voltas</div><div class="n">{lap} / {voltas}</div></div>',
@@ -1468,6 +1640,14 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
                 prox_txt = f"Próxima parada: volta {proxima}"
             else:
                 prox_txt = "Sem paradas previstas no plano"
+            uc = ativo.get(p["id"])
+            uc_html = ""
+            if uc and lap - int(uc["volta"]) <= 2:
+                nome_rival = sim.piloto(game, uc["rival"])["nome"]
+                uc_html = (
+                    f'<div class="undercut-card">⚔️ <b>{nome_rival}</b> parou na volta '
+                    f"{uc['volta']} — responda ou perde a posição.</div>"
+                )
             st.markdown(
                 f'<div class="box-piloto"><div class="papel">{papel}</div>'
                 f'<div class="nome">{bnd.img_bandeira(p["bandeira"], 18)} {p["nome"]}</div>'
@@ -1475,9 +1655,21 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
                 f"Pit: {'pergunta' if pergunta_ok else 'automático'}</div>"
                 f"{_barra_html(vida)}"
                 f'<div class="mini">Vida do pneu: {vida * 100:.0f}%</div>'
-                f'<div class="mini">{prox_txt}</div>{alerta}</div>',
+                f'<div class="mini">{prox_txt}</div>{alerta}{uc_html}</div>',
                 unsafe_allow_html=True,
             )
+            if uc_html and st.button(
+                "⚡ Responder agora",
+                key=f"uc_{p['id']}_{fds['chave']}",
+                type="primary",
+                width="stretch",
+                help="Undercut do rival: abrir o box imediatamente para devolver a posição.",
+            ):
+                stt["pit_aberto"] = {"pid": p["id"], "volta": lap, "planejada": False}
+                stt["pausa_t0"] = time.time()
+                st.session_state.pop(f"dlg_pneu_{p['id']}_{fds['chave']}", None)
+                st.session_state.pop(f"dlg_ritmo_{p['id']}_{fds['chave']}", None)
+                st.rerun()
             # ---- estratégia ao vivo: ritmo e chamada de box ----
             rk = f"ritmo_vivo_{p['id']}_{fds['chave']}"
             if rk not in st.session_state or st.session_state[rk] != ritmo:
@@ -1505,6 +1697,27 @@ def _frag_corrida(game, etapa, molhado, fds, meus):
                 st.session_state.pop(f"dlg_ritmo_{p['id']}_{fds['chave']}", None)
         if feed:
             st.markdown('<div class="feed-race">' + "<br>".join(feed[-4:]) + "</div>", unsafe_allow_html=True)
+        proximas = []
+        for p in meus:
+            exec_p = [x for x in stt["pits"].get(p["id"], []) if x <= lap]
+            rec_p = recusadas.get(p["id"]) or []
+            nxt = next(
+                (x for x in rep["info"][p["id"]]["pits_plano"] if x not in exec_p and x not in rec_p),
+                None,
+            )
+            if nxt and nxt > lap:
+                proximas.append(nxt)
+        alvo_pit = min(proximas) if proximas else None
+        if st.button(
+            f"⏩ Próxima parada (volta {alvo_pit})" if alvo_pit else "⏩ Sem paradas previstas",
+            key="proxima_parada",
+            disabled=alvo_pit is None,
+            help="Avança a transmissão até a próxima parada planejada dos seus pilotos.",
+        ):
+            spv = max(0.2, min(0.55, 24.0 / max(1, voltas)))
+            stt["pausado"] = False
+            stt["t0"] = time.time() - spv * alvo_pit / max(1, velocidade)
+            st.rerun()
         if st.button("⏭️ Concluir corrida agora", key="concluir_corrida"):
             stt["pit_aberto"] = None
             stt["pulou"] = True
@@ -2324,6 +2537,12 @@ Comande uma equipe de F1 temporada após temporada, **sem limite de anos** — e
 - **Paddock (antes da largada)**: por piloto, **Pneus** com a durabilidade exata ("Duro (33 voltas)"),
   a posição no **Grid** e o **Perguntar em cada pit stop** — desmarque para o box executar as paradas
   planejadas sozinho, sem janela. O **Confirmar** do Paddock libera a **largada**.
+- **Undercut**: rival que estava logo atrás e vai ao box aparece no rádio com o botão **⚡ Responder agora** —
+  pare na volta seguinte ou aceite perder a posição. O diálogo do box mostra a **posição projetada na saída**
+  ("P9 agora → P11 saindo do box"), então dá para pesar antes de confirmar.
+- **Transmissão**: use **⏩ Próxima parada** para pular direto ao próximo box planejado, **⏸ Pausar** para
+  pensar e **1×/2×/4×** para acelerar. A torre de tempos mostra setas de posições versus o grid, composto
+  colorido e barra de diferença para o líder.
 - **Clima ao vivo**: a tela mostra a **previsão do tempo** da prova — largada seca ou molhada e, às vezes,
   *"a chuva chega por volta de X"* ou *"a pista deve secar por volta de X"*. Durante a corrida, o chip de
   **pista** acompanha a condição real, avisa no feed quando vira e destaca no painel do piloto quando o
