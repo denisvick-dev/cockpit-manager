@@ -8,6 +8,7 @@ as letrinhas ("GB", "AU", "MX"...). Então o jogo usa arquivos PNG locais
 convertendo o emoji guardado nas DBs (par de indicadores regionais) em
 código ISO do país e daí para a imagem.
 """
+
 import base64
 import re
 from functools import lru_cache
@@ -55,8 +56,7 @@ def img_bandeira(emoji, altura=15):
     if isinstance(altura, str):
         altura = TAMANHOS.get(altura, 15)
     src = url_bandeira(emoji)
-    return (f'<img class="flag-img" src="{src}" alt="{codigo.upper()}" '
-            f'style="height:{int(altura)}px;width:auto;">')
+    return f'<img class="flag-img" src="{src}" alt="{codigo.upper()}" style="height:{int(altura)}px;width:auto;">'
 
 
 def com_bandeira(emoji, texto, altura=15):

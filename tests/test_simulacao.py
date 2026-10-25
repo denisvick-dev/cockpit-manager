@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Testes do motor: determinismo, pontuação, abandonos e tabelas."""
+
 import copy
 
 import pytest
@@ -12,8 +13,9 @@ ORDEM_PAPEIS = ("P1", "P2", "P3", "P4")
 
 
 def _estrategias(game, etapa, pneu="Médio", paradas=1, ritmo="Normal"):
-    return {p["id"]: {"pneu": pneu, "paradas": paradas, "ritmo": ritmo}
-            for p in sim.titulares(game, game["equipe_jogador"])}
+    return {
+        p["id"]: {"pneu": pneu, "paradas": paradas, "ritmo": ritmo} for p in sim.titulares(game, game["equipe_jogador"])
+    }
 
 
 def test_criar_jogo_estrutura_basica(game):
@@ -53,7 +55,7 @@ def test_corrida_resultado_coerente(game, etapa):
 
     # pontos = tabela oficial da categoria, atribuídos em ordem
     tabela = (game.get("meta") or {}).get("pontos_corrida") or db.PONTOS_CORRIDA
-    for l in res[:len(tabela)]:
+    for l in res[: len(tabela)]:
         if not l["dnf"]:
             assert l["pontos"] == tabela[l["pos"] - 1]
     assert isinstance(eventos, list) and eventos
@@ -102,12 +104,15 @@ def test_titulares_batem_com_as_vagas(game):
         assert len({p["id"] for p in tits}) == len(tits)
 
 
-@pytest.mark.parametrize("desgaste,ultrap,esperado", [
-    (1.2, 0.5, 1),
-    (1.8, 0.2, 1),
-    (1.8, 0.6, 2),
-    (2.8, 0.6, 2),
-])
+@pytest.mark.parametrize(
+    "desgaste,ultrap,esperado",
+    [
+        (1.2, 0.5, 1),
+        (1.8, 0.2, 1),
+        (1.8, 0.6, 2),
+        (2.8, 0.6, 2),
+    ],
+)
 def test_paradas_ideais(desgaste, ultrap, esperado):
     etapa = {"desgaste": desgaste, "ultrap": ultrap}
     assert sim.paradas_ideais(etapa) == esperado
