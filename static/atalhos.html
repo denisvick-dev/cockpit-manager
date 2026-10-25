@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Atalhos da corrida — Cockpit Manager</title>
+  <style>html,body{margin:0;padding:0;background:transparent;}</style>
+</head>
+<body>
+<script>
+/* Atalhos de teclado da corrida do Cockpit Manager.
+   Roda dentro do iframe do Streamlit e clica nos botões reais da página:
+     espaço -> pausar/retomar       1 / 2 / 4 -> velocidade da prova
+     p / o  -> Pit stop do 1º/2º piloto
+   Tudo em try/catch: se o navegador bloquear o acesso ao documento pai,
+   os botões continuam funcionando normalmente. */
+(function () {
+  try {
+    var p = window.parent;
+    if (!p || !p.document || p.__cmAtalhos) { return; }
+    p.__cmAtalhos = true;
+
+    var botao = function (txt) {
+      var bs = p.document.querySelectorAll('button');
+      for (var i = 0; i < bs.length; i++) {
+        if ((bs[i].innerText || '').trim().indexOf(txt) >= 0) { return bs[i]; }
+      }
+      return null;
+    };
+    var pits = function () {
+      var todos = p.document.querySelectorAll('button');
+      var lista = [];
+      for (var i = 0; i < todos.length; i++) {
+        if ((todos[i].innerText || '').trim().indexOf('Pit stop!') >= 0 && !todos[i].disabled) {
+          lista.push(todos[i]);
+        }
+      }
+      return lista;
+    };
+    var clicar = function (b, e) { if (b) { e.preventDefault(); b.click(); } };
+
+    p.document.addEventListener('keydown', function (e) {
+      var alvo = e.target || {};
+      var tag = (alvo.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || alvo.isContentEditable) { return; }
+      if (e.ctrlKey || e.metaKey || e.altKey) { return; }
+      var k = (e.key || '').toLowerCase();
+      if (k === ' ' || k === 'spacebar') {
+        clicar(botao('⏸ Pausar') || botao('▶ Retomar'), e);
+      } else if (k === '1' || k === '2' || k === '4') {
+        clicar(botao(k + '×'), e);
+      } else if (k === 'p' || k === 'o') {
+        clicar(pits()[k === 'p' ? 0 : 1], e);
+      }
+    }, true);
+  } catch (err) {
+    /* atalhos são opcionais */
+  }
+})();
+</script>
+</body>
+</html>

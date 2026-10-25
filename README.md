@@ -13,10 +13,12 @@ de pneus e paradas e jogue **temporadas sem limite**: pilotos envelhecem, evolue
 jovens sobem da base e lendas entram para o Hall da Fama. Você ainda pode **criar e compartilhar
 suas próprias DBs** e escolher **quantos pilotos terá o grid (a partir de 22)**.
 
-Visual com fontes locais: **Inter** na interface, **Orbitron** nos títulos e indicadores de corrida e
-**Roboto** em tabelas e telemetria. **Formula1 Display** permanece nas marcas e **IBM Plex Mono** nos
-blocos de código. Os arquivos e licenças OFL das três novas fontes ficam em `static/fonts/`; o tema é
-configurado em `.streamlit/config.toml`.
+Visual com três fontes locais aplicadas **no projeto inteiro**: **Formula1 Display** (a fonte da F1)
+nos títulos, marcas e indicadores de corrida; **Manrope** na interface (botões, campos, abas, sidebar,
+tabelas ao vivo e métricas); **Inter** na leitura (parágrafos, manuais e dataframes). **IBM Plex Mono**
+fica nos blocos de código. Os arquivos e as licenças OFL ficam em `static/fonts/` (incluindo
+`Manrope-OFL.txt`); o tema é configurado em `.streamlit/config.toml` e os tokens de fonte
+(`--cm-font-brand`, `--cm-font-ui`, `--cm-font-text`, `--cm-font-mono`) no `<style>` do `app.py`.
 
 ## ▶️ Como rodar
 
@@ -29,6 +31,18 @@ streamlit run app.py
 
 Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 [Streamlit Community Cloud](https://streamlit.io/cloud) apontando para `app.py`.
+
+### 🧪 Testes e lint
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+ruff check .      # lint (config em pyproject.toml)
+python -m pytest  # 30 testes: motor, replay/pits e smoke test das telas
+```
+
+O **GitHub Actions** (`.github/workflows/ci.yml`) roda ruff + pytest em Python 3.12/3.13
+e um job de *smoke* que sobe o Streamlit e checa `/_stcore/health` (as dependências fixadas
+pedem **Python 3.12+**).
 
 ## 📁 Estrutura
 
@@ -43,7 +57,10 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 | `tools/padronizar_bandeiras.py` | Regenera/atualiza as bandeiras: baixa do flagcdn e encaixa todas no mesmo tamanho, sem distorcer (`python tools/padronizar_bandeiras.py`) |
 | `minhas_dbs/` | (criada ao salvar) Suas DBs personalizadas em `.json` viram opções permanentes na lista de DBs |
 | `.streamlit/config.toml` | Tema escuro profissional (design system do jogo) |
-| `requirements.txt` | `streamlit` + `pandas` |
+| `tests/` | Suíte **pytest**: determinismo e pontuação do motor, replay/pits (janela, automático, recusa, clima) e smoke test das 10 telas com `AppTest` |
+| `requirements.txt` / `requirements-dev.txt` | `streamlit` + `pandas` / `pytest` + `ruff` |
+| `pyproject.toml` | Configuração do **ruff** (lint) e do **pytest** |
+| `.github/workflows/ci.yml` | CI: lint + testes (3.11/3.12) + smoke do servidor Streamlit |
 
 ## 🎮 O que foi recriado do original
 
@@ -71,6 +88,12 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 - **Tela de treino classificatório** (como no original): relógio de 60 min com barra, clima, tabela
   de Pos./Nome/Equipe/**Melhor tempo** se enchendo aos poucos e o grid final fiel ao motor;
   botões **Iniciar treino** e **Ir para corrida!**
+- **Clima ao vivo com previsão**: cada GP sorteia um **plano de clima** (largada seca/molhada e, às vezes,
+  virada no meio da prova). A previsão aparece antes da largada ("a chuva chega por volta de X"), o chip de
+  **pista** durante a corrida acompanha a condição real, o feed avisa quando o tempo vira e o composto errado
+  é destacado no painel do piloto — e o diálogo do Pit Stop já abre com os pneus certos para aquela volta.
+- **Transmissão controlável**: **Pausar/Retomar** (congela a prova), **1× / 2× / 4×** de velocidade e
+  **atalhos de teclado** (espaço, 1/2/4, P/O para o box dos dois pilotos) via `static/atalhos.html`.
 - **Tela de corrida ao vivo**: título do GP com "Etapa X de N", contador de **Voltas k / N**,
   tabela posição a posição (últ. volta, dif. ant., dif 1º), painel dos seus dois pilotos com
   paradas, pneu, **barra de vida**, **próxima parada** e **Pit stop!** manual (ou a janela de box
@@ -107,9 +130,18 @@ Abre em `http://localhost:8501`. Para publicar de graça, suba a pasta no
 - **Pré-contrato** no mercado de pilotos: pague um **sinal de 3 corridas do salário** e feche o
   acordo na hora — sem chance de recusa. Cancelar não devolve o sinal (e um piloto que se aposentar
   antes da virada deixa o acordo no vazio, com aviso no feed).
-- **Tipografia da interface** — Inter (texto), Orbitron (títulos e indicadores) e Roboto (tabelas e
-  telemetria), auto-hospedadas em `static/fonts/` e configuradas em `.streamlit/config.toml`.
-  As fontes novas estão sob licença OFL; Formula1 Display permanece nas marcas do projeto.
+- **Tipografia em todo o projeto** — três famílias auto-hospedadas em `static/fonts/` e aplicadas por
+  componente (tokens `--cm-font-*` no `app.py` + `[[theme.fontFaces]]` no `.streamlit/config.toml`):
+
+  | Fonte | Onde aparece |
+  |---|---|
+  | **Formula1 Display** | H1–H6, kickers, marcas/logo, cabeçalhos de corrida/treino, placar de voltas, título do Pit Stop, Paddock, métricas e valores de destaque |
+  | **Manrope** | Interface inteira: botões, campos, selects, radios, checkboxes, sliders, abas, sidebar, tabelas ao vivo, chips de equipe, feed e rótulos — além da `font` padrão do tema (dataframes/canvas) |
+  | **Inter** | Leitura: parágrafos do markdown, manuais, listas, tabelas markdown e dataframes |
+  | **IBM Plex Mono** | Blocos de código e campos `code` |
+
+  Números usam `font-variant-numeric: tabular-nums` (tabelas, voltas, métricas) e os ícones mantêm a
+  fonte Material Symbols. Manrope está sob licença OFL (`static/fonts/Manrope-OFL.txt`).
 - **Tamanho do grid configurável**: slider na criação do jogo, **a partir de 22 pilotos** — equipes
   podem inscrever 3º e 4º carros (grid da F1 vai até 44!), e o mercado mantém o grid cheio
   virada após virada.

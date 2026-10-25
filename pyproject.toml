@@ -1,0 +1,24 @@
+# Ferramentas de qualidade do Cockpit Manager (ruff + pytest).
+# Instalação: pip install -r requirements.txt -r requirements-dev.txt
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+exclude = [".venv", "minhas_dbs", "__pycache__"]
+
+[tool.ruff.lint]
+# Regras essenciais (E/F/W) sem exigir refatoração cosmética do app de 1 arquivo
+select = ["E", "F", "W"]
+ignore = ["E501", "E402", "E741", "E731", "E702"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::UserWarning",
+]
