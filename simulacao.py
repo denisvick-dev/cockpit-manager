@@ -355,6 +355,53 @@ def condicao_pista(plano, lap):
     return plano.get("inicio", "seco")
 
 
+def clima_fracao(plano, voltas):
+    """Quanto da prova é molhada, dado o plano de clima. Devolve
+    (fração molhada, volta da virada ou None)."""
+    voltas = max(1, int(voltas))
+    if not plano:
+        return 0.0, None
+    inicio_molhado = plano.get("inicio") == "molhado"
+    virada = plano.get("virada_volta")
+    if not virada:
+        return (1.0 if inicio_molhado else 0.0), None
+    v = max(1, min(int(virada), voltas))
+    fim_molhado = plano.get("virada_para") == "molhado"
+    molhadas = (v - 1) * (1.0 if inicio_molhado else 0.0) + (voltas - v + 1) * (1.0 if fim_molhado else 0.0)
+    return max(0.0, min(1.0, molhadas / voltas)), v
+
+
+def ajuste_clima(plano, etapa, est, p):
+    """Efeito do clima REAL da prova no resultado: talento de chuva pesa
+    conforme a fração molhada, o composto de largada certo para a condição
+    inicial vale posição e apostar em poucas paradas numa prova que vira
+    cobra caro. `plano` é o mesmo da tela (`plano_clima`)."""
+    if not plano:
+        return 0.0
+    voltas = int(etapa.get("voltas", 50))
+    frac_molhada, virada = clima_fracao(plano, voltas)
+    inicio_molhado = plano.get("inicio") == "molhado"
+    pneu = (est or {}).get("pneu", "Médio")
+
+    b = 0.0
+    # 1) quem anda bem na chuva ganha quando o asfalto está molhado
+    b += (float(p["atributos"].get("chuva", 75)) - 72.0) * 0.075 * frac_molhada
+    # 2) composto de largada x condição inicial (constante para quem acerta,
+    #    só o erro pesa de verdade)
+    if (pneu in PNEUS_MOLHADO) != inicio_molhado:
+        b -= 1.6 if frac_molhada in (0.0, 1.0) else 1.0
+    else:
+        b += 0.9
+    # 3) prova que vira no meio: quem planejou menos paradas paga o pit extra
+    if virada is not None:
+        paradas = int((est or {}).get("paradas", 1) or 0)
+        b -= 0.85 * max(0, 2 - paradas)
+        # quem já vinha no composto certo para o final da prova leva vantagem
+        final_molhado = plano.get("virada_para") == "molhado"
+        b += 0.55 if (pneu in PNEUS_MOLHADO) == final_molhado else -0.55
+    return b
+
+
 def previsao_texto(plano):
     """Frase de previsão do tempo para o paddock/estratégia."""
     if not plano:
@@ -507,7 +554,7 @@ def montar_replay(game, etapa, grid, resultado, molhado, eventos=None, sprint=Fa
     return {"voltas": voltas, "info": info, "sc_lap": int(voltas * 0.55) if "Safety Car" in texto_ev else None}
 
 
-def linhas_replay(rep, lap, pits_feitas, pneus_manual=None, ritmos=None):
+def linhas_replay(rep, lap, pits_feitas, pneus_manual=None, ritmos=None, overcut=None):
     """Estado do replay na volta `lap` (1-based). `pits_feitas` = {pid: [voltas]}
     das paradas já executadas (manuais via 'Pit stop!' ou automáticas);
     `pneus_manual` = {pid: {nº da parada: pneu}} escolhidos na tela e
@@ -529,6 +576,7 @@ def linhas_replay(rep, lap, pits_feitas, pneus_manual=None, ritmos=None):
             + (3.4 if box_hoje else 0.0)
             + RITMO_POSICAO.get(ritmo, 0.0) * fase
         )
+        s += _offset_overcut(overcut, pid, lap)
         pneu = d["pneus"][min(n_pit, len(d["pneus"]) - 1)]
         if pneus_manual:
             pneu = pneus_manual.get(pid, {}).get(n_pit, pneu)
@@ -614,6 +662,61 @@ def pits_pendentes(rep, lap, pits_feitas, recusadas=None, perguntar=None, apenas
     return pend
 
 
+def undercut_nesta_volta(lap, pits_feitas, meus_ids, posicoes, janela=3):
+    """Rivais que estavam até `janela` posições atrás de um piloto do jogador e
+    foram ao box nesta volta — o clássico undercut. `posicoes` = {pid: pos}
+    ANTES dos boxes desta volta. Devolve [(meu_pid, rival_pid, pos_rival, pos_minha)]."""
+    alertas = []
+    for rival, voltas in (pits_feitas or {}).items():
+        if rival in meus_ids or lap not in (voltas or []):
+            continue
+        pr = (posicoes or {}).get(rival)
+        if pr is None:
+            continue
+        for pid in meus_ids:
+            pm = posicoes.get(pid)
+            if pm is None:
+                continue
+            if 0 < pr - pm <= janela:
+                alertas.append((pid, rival, pr, pm))
+    return alertas
+
+
+def overcut_disponivel(lap, pits_feitas, meus_ids, posicoes, janela=3):
+    """Rivais que estavam À FRENTE de um piloto do jogador e foram ao box nesta
+    volta: ficar na pista e atacar (overcut) pode devolver a posição na saída
+    deles. `posicoes` = {pid: pos} ANTES dos boxes desta volta.
+    Devolve [(meu_pid, rival_pid, pos_rival, pos_minha)]."""
+    alertas = []
+    for rival, voltas in (pits_feitas or {}).items():
+        if rival in meus_ids or lap not in (voltas or []):
+            continue
+        pr = (posicoes or {}).get(rival)
+        if pr is None:
+            continue
+        for pid in meus_ids:
+            pm = (posicoes or {}).get(pid)
+            if pm is None:
+                continue
+            if 0 < pm - pr <= janela:
+                alertas.append((pid, rival, pr, pm))
+    return alertas
+
+
+def _offset_overcut(overcut, pid, lap):
+    """Ganho de posição (em "s", negativo = melhor) enquanto a janela de
+    overcut está aberta. Some por completo ao fim da janela, então não mexe
+    no resultado final do motor."""
+    d = (overcut or {}).get(pid)
+    if not d:
+        return 0.0
+    inicio = int(d.get("volta", 0))
+    dur = max(1, int(d.get("laps", 3)))
+    if lap < inicio or lap > inicio + dur:
+        return 0.0
+    return -0.85 * (1.0 - (lap - inicio) / (dur + 1.0))
+
+
 def vida_pneu(etapa, pneu, laps_no_pneu, ritmo=None):
     """Fração de vida restante do composto (0..1) para a barra da tela.
     `ritmo` projeta o desgaste: Atacar consome mais, Conservar menos."""
@@ -689,7 +792,7 @@ def _prob_abandono(eq, p, est, molhado):
 MOTIVOS_DNF = ["Motor", "Câmbio", "Batida", "Rodada", "Hidráulica", "Freios", "Suspensão", "Elétrica"]
 
 
-def simular_corrida(game, etapa, grid, estrategias_jogador, molhado, sprint=False):
+def simular_corrida(game, etapa, grid, estrategias_jogador, molhado, sprint=False, clima=None):
     rng = _rng(game)
     imp = game["importancia_carro"]
     pos_grid = {g["piloto_id"]: g["pos"] for g in grid}
@@ -714,6 +817,8 @@ def simular_corrida(game, etapa, grid, estrategias_jogador, molhado, sprint=Fals
         score += (p["atributos"]["largada"] - 85) * 0.035
         # em pistas travadas (Mônaco, Singapura) quem larga na frente fica na frente
         score += (len(grid) - pos_grid[p["id"]]) * 0.16 * peso_grid
+        # clima real do fim de semana (previsão que se confirma ou trai)
+        score += ajuste_clima(clima, etapa, est, p)
         dnf = rng.random() < _prob_abandono(eq, p, est, molhado)
         linhas.append(
             {
@@ -757,6 +862,13 @@ def simular_corrida(game, etapa, grid, estrategias_jogador, molhado, sprint=Fals
         eventos.append("🟨 Safety Car no meio da prova agrupou todo o pelotão e embaralhou as estratégias!")
     if molhado:
         eventos.append("🌧️ Corrida com pista molhada — quem nasceu para a chuva brilhou (e quem errou o pneu, chorou).")
+    if clima and clima.get("virada_volta"):
+        virou_para_chuva = clima.get("virada_para") == "molhado"
+        eventos.append(
+            f"🌦️ {'A chuva chegou' if virou_para_chuva else 'A pista secou'} na volta "
+            f"{clima['virada_volta']} — quem tinha o composto certo para a segunda metade "
+            f"{'subiu no pelotão' if virou_para_chuva else 'ganhou a prova de estratégia'}."
+        )
     for l in abandonaram[:4]:
         eventos.append(
             f"💥 {piloto(game, l['piloto_id'])['nome']} abandonou: {l['motivo'].lower()} na volta {l['volta_dnf']}."
