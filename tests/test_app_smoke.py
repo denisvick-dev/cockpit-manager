@@ -2,6 +2,7 @@
 """Smoke test da interface Streamlit (AppTest): todas as telas e a corrida."""
 
 import os
+import re
 import time
 
 import pytest
@@ -107,9 +108,16 @@ def test_corrida_janela_de_pit_pausa_e_volta(app_com_jogo, game):
     meus = set(stt["pit_perguntar"])
     alvo = min((p, v) for p, d in plano.items() if p in meus and stt["pit_perguntar"][p] for v in d["pits_plano"])
     pid, volta = alvo
-    stt["t0"] = time.time() - 0.41 * (volta + 0.6)
-    app.run()
-    pedido = stt.get("pit_aberto")
+    # mesma fórmula da transmissão: segundos por volta dentro do replay
+    voltas = int(stt["rep"]["voltas"])
+    spv = max(0.2, min(0.55, 24.0 / max(1, voltas)))
+    pedido = None
+    for _ in range(8):  # o relógio real pode atrasar um render: tenta de novo
+        stt["t0"] = time.time() - spv * (volta + 0.3)
+        app.run()
+        pedido = stt.get("pit_aberto")
+        if pedido:
+            break
     assert pedido and pedido["pid"] == pid, "a janela do Pit Stop não abriu"
     assert stt["lap"] == volta, "a prova não congelou na volta da parada"
 
@@ -143,4 +151,111 @@ def test_pausa_e_velocidade_congelam_a_prova(app_com_jogo, game):
 
     app.button(key="vel_4").click().run()
     assert stt["velocidade"] == 4
+    assert not app.exception
+
+
+def test_proxima_parada_avanca_a_transmissao(app_com_jogo, game):
+    app = app_com_jogo
+    app.session_state["menu"] = "🏁 Corrida"
+    app.run()
+    stt = _largo(app, game, app.session_state["fds"])
+    # desliga as janelas automáticas para a corrida andar sozinha
+    stt["pit_perguntar"] = {pid: False for pid in stt["pit_perguntar"]}
+    app.run()
+
+    botao = app.button(key="proxima_parada")
+    if botao.disabled:
+        pytest.skip("sem paradas planejadas à frente nesta etapa")
+
+    alvo = int(re.search(r"volta (\d+)", botao.label).group(1))
+    antes = stt["lap"]
+    botao.click().run()
+
+    assert stt["lap"] > antes
+    assert stt["lap"] >= alvo - 1, f"deveria saltar para a volta {alvo}, parou na {stt['lap']}"
+    assert not app.exception
+
+
+def test_alerta_de_undercut_e_resposta_imediata(app_com_jogo, game):
+    app = app_com_jogo
+    app.session_state["menu"] = "🏁 Corrida"
+    app.run()
+    stt = _largo(app, game, app.session_state["fds"])
+    stt["pit_perguntar"] = {pid: False for pid in stt["pit_perguntar"]}
+    app.run()
+
+    meus = set(stt["pit_perguntar"])
+    pid = next(iter(meus))
+    # procura, de forma determinística, uma volta com um rival logo atrás de mim
+    voltas_rep = int(stt["rep"]["voltas"])
+    spv = max(0.2, min(0.55, 24.0 / max(1, voltas_rep)))
+    achado = None
+    for lap in range(4, 25):
+        stt["t0"] = time.time() - spv * lap
+        app.run()
+        lap_atual = int(stt["lap"])
+        if lap_atual < 3:
+            continue
+        pits_antes = {k: [x for x in (v or []) if x < lap_atual] for k, v in stt["pits"].items()}
+        linhas = sim.linhas_replay(stt["rep"], max(1, lap_atual - 1), pits_antes)
+        pos = {ln["pid"]: ln["pos"] for ln in linhas if not ln.get("fora")}
+        rival = next((r for r in pos if r not in meus and 0 < pos[r] - pos[pid] <= 3), None)
+        if rival:
+            achado = (lap_atual, rival)
+            break
+    assert achado, "nenhuma volta com rival a até 3 posições atrás"
+    lap, rival = achado
+
+    # simula o rival indo ao box nesta volta
+    stt["pits"].setdefault(rival, []).append(lap)
+    app.run()
+
+    assert stt["undercut_ativo"].get(pid), "o alerta de undercut não foi registrado"
+    assert any("undercut" in f for f in stt["feed"])
+    botao = [b for b in app.button if b.label == "⚡ Responder agora"]
+    assert botao, "o botão de resposta imediata não apareceu"
+
+    botao[0].click().run()
+    aberto = stt.get("pit_aberto")
+    assert aberto and aberto["pid"] == pid and not aberto["planejada"]
+    assert not app.exception
+
+
+def test_overcut_na_transmissao_avisa_e_permite_atacar(app_com_jogo, game):
+    app = app_com_jogo
+    app.session_state["menu"] = "🏁 Corrida"
+    app.run()
+    stt = _largo(app, game, app.session_state["fds"])
+    stt["pit_perguntar"] = {pid: False for pid in stt["pit_perguntar"]}
+    app.run()
+
+    meus = set(stt["pit_perguntar"])
+    pid = next(iter(meus))
+    spv = max(0.2, min(0.55, 24.0 / max(1, int(stt["rep"]["voltas"]))))
+    achado = None
+    for lap in range(4, 25):
+        stt["t0"] = time.time() - spv * lap
+        app.run()
+        lap_atual = int(stt["lap"])
+        pits_antes = {k: [x for x in (v or []) if x < lap_atual] for k, v in stt["pits"].items()}
+        linhas = sim.linhas_replay(stt["rep"], max(1, lap_atual - 1), pits_antes)
+        pos = {ln["pid"]: ln["pos"] for ln in linhas if not ln.get("fora")}
+        rival = next((r for r in pos if r not in meus and 0 < pos[pid] - pos[r] <= 3), None)
+        if rival:
+            achado = (lap_atual, rival)
+            break
+    assert achado, "nenhuma volta com rival à frente a até 3 posições"
+    lap, rival = achado
+
+    stt["pits"].setdefault(rival, []).append(lap)
+    app.run()
+
+    assert stt["overcut_ativo"].get(pid), "o alerta de overcut não foi registrado"
+    assert any("overcut" in f for f in stt["feed"])
+
+    botao = [b for b in app.button if b.label == "🔥 Ficar e atacar"]
+    assert botao, "o botão de overcut não apareceu"
+    botao[0].click().run()
+
+    assert stt["ritmos"][pid] == "Atacar"
     assert not app.exception
