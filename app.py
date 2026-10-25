@@ -1282,22 +1282,10 @@ def pagina_corrida(game):
     st.markdown(f'<div class="previsao-tempo"><b>Previsão do tempo</b> · {previsao}</div>',
                 unsafe_allow_html=True)
 
-    # ---------------- estratégia dos seus dois pilotos (antes da corrida)
-    estrategias = {}
-    if rep_state is None:
-        st.subheader("🎯 Sua estratégia (paradas e ritmo — pneus e grid no Paddock abaixo)")
-        cols = st.columns(len(meus))
-        for col, p in zip(cols, meus):
-            with col, st.container(border=True):
-                st.markdown(bnd.com_bandeira(p['bandeira'], f"**#{p['numero']} {p['nome']}** ({ROTULOS_PAPEL.get(p['papel'], p['papel'])})"), unsafe_allow_html=True)
-                paradas = st.radio("Paradas nos boxes", [1, 2, 3],
-                                   index=[1, 2, 3].index(sim.paradas_ideais(etapa)),
-                                   horizontal=True, key=f"par_{p['id']}_{fds['chave']}")
-                ritmo = st.radio("Ritmo", sim.RITMOS, index=1, horizontal=True,
-                                 help="Atacar = mais rápido, desgasta pneu e aumenta risco de batida/quebra. "
-                                      "Conservar = protege carro e pneus. Depois da largada dá pra ajustar ao vivo.",
-                                 key=f"rit_{p['id']}_{fds['chave']}")
-                estrategias[p["id"]] = {"paradas": paradas, "ritmo": ritmo}
+    # ---------------- estratégia: os ajustes ficam no Paddock (pneus/grid) e
+    # no rádio ao vivo; aqui só nasce o padrão de cada piloto.
+    estrategias = {p["id"]: {"paradas": sim.paradas_ideais(etapa), "ritmo": "Normal"}
+                   for p in meus}
 
     # ---------------- sprint
     if etapa["sprint"]:
@@ -1797,10 +1785,9 @@ Comande uma equipe de F1 temporada após temporada, **sem limite de anos** — e
 
 ### 🔁 O ciclo do jogo
 1. **Escritório** — confira caixa, carro, pilotos, notícias e a próxima corrida. Clique em **Continuar**.
-2. **Corrida** — monte a **estratégia de cada piloto** (paradas e ritmo), dispute a Sprint (se houver —
-   com o próprio **pneu de largada**) e a classificação; depois confirme o **Paddock** (pneus, grid e
-   **Perguntar em cada pit stop**) e **durante a corrida** ajuste o ritmo ao vivo e responda a janela do
-   **Pit Stop** a cada parada (trocar o pneu? qual ritmo?).
+2. **Corrida** — dispute a Sprint (se houver — com o próprio **pneu de largada**) e a classificação; depois
+   confirme o **Paddock** (pneus, grid e **Perguntar em cada pit stop**) e **durante a corrida** ajuste o
+   ritmo no rádio ao vivo e responda a janela do **Pit Stop** a cada parada (trocar o pneu? qual ritmo?).
 3. **Entre corridas** — o carro evolui sozinho conforme seu **investimento por corrida** e o **Acerto**
    (feedback) dos pilotos. Ajuste em *Carro & Investimentos*.
 4. **Durante o ano inteiro** — negocie em *Pilotos & Contratos*, *Motores* e *Patrocinadores* pensando
